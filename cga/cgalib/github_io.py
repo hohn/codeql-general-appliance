@@ -50,7 +50,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           persist-credentials: false
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
       - name: Install reference book builder
         run: cargo install mdbook --version 0.5.4 --locked
       - name: Build and check documentation
@@ -59,14 +59,14 @@ jobs:
       # .agent-notes documentation. Archive the filtered site explicitly.
       - name: Package documentation
         run: tar -C "$RUNNER_TEMP/cga-pages" -cf "$RUNNER_TEMP/artifact.tar" .
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: github-pages
           path: ${{ runner.temp }}/artifact.tar
           if-no-files-found: error
       - name: Deploy documentation
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 """.replace("BRANCHES", json.dumps([branch]))
 
 
