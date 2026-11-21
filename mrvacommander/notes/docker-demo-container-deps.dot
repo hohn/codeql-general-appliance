@@ -1,0 +1,24 @@
+digraph G {
+    // Define nodes
+    mrvadata [label="mrvadata" shape=box];
+    client_qldbtools [label="client-qldbtools" shape=box];
+    client_ghmrva [label="client-ghmrva" shape=box];
+    code_server [label="code-server" shape=box];
+    rabbitmq [label="rabbitmq" shape=box];
+    server [label="server" shape=box];
+    dbstore [label="dbstore" shape=box];
+    artifactstore [label="artifactstore" shape=box];
+    agent [label="agent" shape=box];
+
+    // Define edges (dependencies)
+    server -> rabbitmq;
+    server -> dbstore;
+    server -> artifactstore;
+    dbstore -> mrvadata;
+    agent -> rabbitmq;
+    agent -> dbstore;
+    agent -> artifactstore;
+
+    // Define styling
+    edge [arrowhead=normal];
+}

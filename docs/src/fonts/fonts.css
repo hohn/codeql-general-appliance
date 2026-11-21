@@ -1,0 +1,4 @@
+html {
+  font-family: Arial, Helvetica, sans-serif;
+  --mono-font: ui-monospace, "SFMono-Regular", Consolas, monospace;
+}

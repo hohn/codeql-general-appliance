@@ -1,0 +1,17 @@
+cve	source_package	query_id	vulnerable_none	vulnerable_trace	patched_none	patched_trace	current_none	current_trace	total_results	known_fault_site	known_fault_file	fault_file_in_vulnerable_or_patched_result_path	assessment
+CVE-2018-1000052	fmtlib	cpp/tainted-format-string	0	0	0	0	0	0	0	fmt::print invalid-format-specifier handling	src/format.cc	no	not-found
+CVE-2018-1000127	memcached	cpp/tainted-arithmetic	6	14	6	14	49	10	99	item_free	items.c	no	not-found
+CVE-2018-10887	libgit2	cpp/tainted-arithmetic	11	29	11	29	40	45	165	git_delta_apply	src/delta.c	no	not-found
+CVE-2018-12326	redis	cpp/overrun-write	0	0	0	0	0	0	0	redis-cli command-line handling	src/redis-cli.c	no	not-found
+CVE-2018-12982	libpodofo	cpp/overrun-write	0	0	0	0	0	0	0	PdfVariant::DelayedLoad	src/base/PdfVariant.h	no	not-found
+CVE-2018-13785	libpng1.6	cpp/tainted-arithmetic	0	2	0	2	0	1	5	png_check_chunk_length	pngrutil.c	no	not-found
+CVE-2018-17540	strongswan	cpp/overrun-write	0	0	0	0	0	0	0	GMP certificate parsing	src/libstrongswan/plugins/gmp/gmp_rsa_private_key.c	no	not-found
+CVE-2018-19886	faac	cpp/overrun-write	0	0	0	0	0	0	0	huffcode	libfaac/huff2.c	no	not-found
+CVE-2018-20182	rdesktop	cpp/overrun-write	0	0	0	0	0	0	0	seamless_process_line	seamless.c	no	not-found
+CVE-2018-20534	libsolv	cpp/overrun-write	0	0	0	0	0	0	0	testcase parser illegal access	ext/testcase.c	no	not-found
+CVE-2018-5205	irssi	cpp/tainted-format-string	0	0	0	0	0	0	0	incomplete escape-code handling	src/fe-common/core/formats.c	no	not-found
+CVE-2019-11072	lighttpd	cpp/tainted-arithmetic	25	27	25	27	136	110	350	burl_normalize_2F_to_slash_fix	src/burl.c	no	not-found
+CVE-2019-13115	libssh2	cpp/tainted-arithmetic	15	3	3	3	4	2	30	kex_method_diffie_hellman_group_exchange_sha256_key_exchange	src/kex.c	no	not-found
+CVE-2019-15296	faad2	cpp/overrun-write	0	0	0	0	0	0	0	faad_resetbits	libfaad/bits.c	no	not-found
+CVE-2019-15945	opensc	cpp/overrun-write	0	0	0	0	0	0	0	decode_bit_string	src/libopensc/asn1.c	no	not-found
+CVE-2019-5052	sdl-image1.2	cpp/tainted-arithmetic	0	0	0	0	0	0	0	PCX loader allocation arithmetic	IMG_pcx.c	no	not-found

@@ -1,0 +1,874 @@
+#!/usr/bin/env bash
+
+# Human/LLM-in-the-loop driver for the standalone MULTI-LANGUAGE e2e test.
+#
+# Sibling of run-system-02 / run-system-03, exercising a further axis.
+# run-system-02 tests MULTIPLE USERS (two users, one session each, one shared
+# pack); run-system-03 tests MULTIPLE SESSIONS BELONGING TO ONE USER (three
+# sessions, three distinct packs, all in ONE language). This script
+# (run-system-04) tests MULTIPLE SESSIONS EACH IN A DISTINCT LANGUAGE:
+#
+#   Test axes (this script):
+#     users              :: 1              (alice)
+#     sessions per user  :: 3
+#     packs              :: 3 packs, each in a DISTINCT language
+#     jobs per session   :: distinct counts (3, 2, 1)
+#     workers            :: multiple
+#     session submission :: immediate
+#     axis under test    :: multiple sessions, one per language (cpp/python/js)
+#
+# One user (sent as the X-MRVA-User header on every submission) opens THREE
+# sessions in quick succession. Each session:
+#   - targets a DIFFERENT CodeQL language (cpp, python, javascript) and so
+#     carries its OWN query pack (built for that language), meaning the
+#     server's per-pack SHA1 (job_info.pack_sha1, shown in the sysview as
+#     pack-<sha1>) is DISTINCT across the three sessions, and
+#   - requests a DISTINCT number of repos, so the three sessions have job
+#     counts 3, 2 and 1 (six jobs total). Each session's repos are CodeQL DBs
+#     of that session's language.
+# In --mode=standalone the server's PoolManager spawns LocalArgoClient worker
+# subprocesses that claim the jobs from Postgres and analyze the DBs in
+# parallel.
+#
+# Like run-system-02, this is a phase-decomposed, dispatchable driver:
+#
+#   ./run-system-04 -h                     # list phases (default)
+#   ./run-system-04 all                    # full pipeline
+#   ./run-system-04 reset                  # drop tables, wipe work dir
+#
+# It shares the sibling library (config + Postgres/pg helpers, state file) and
+# the sibling query/cleanup scripts with run-system-02, but uses its OWN work
+# dir, logs and state file (see the overrides below) so the two scenarios do
+# not clobber each other's on-disk state. They still share the same Postgres
+# database and the same port, so run ONE scenario at a time.
+#
+# The pipeline deliberately LEAVES the Go server running and the Postgres
+# tables populated on exit (for `query`); run `cleanup` when done.
+#
+# Linux only. Run from the system-tests/ directory. Requires: go,
+# codeql >= 2.23.6, host PostgreSQL, python3 (drives CGA).
+
+set -euo pipefail
+
+# --- independent on-disk identity --------------------------------------
+#
+# Override the sibling library's default work dir / logs / state BEFORE
+# sourcing it, and export them so the exec'd query/cleanup scripts inherit
+# the same values. Everything else (ports, Postgres, table list, pg helpers)
+# is shared with run-system-02.
+export MRVA_WORK_DIR="${MRVA_WORK_DIR:-/tmp/mrva-standalone-multilang}"
+# All transient files (server/CGA/minio logs, PID files, submission
+# body, state) live under /tmp/mrva-${RUN_TAG}/ — see the shared lib.
+export RUN_TAG="${RUN_TAG:-multilang}"
+
+# This scenario exercises the MinIO object-storage backend (blobs in MinIO,
+# only references in Postgres) rather than the filesystem artifact store. The
+# server + the agent subprocesses it spawns pick this up via
+# MRVA_STANDALONE_STORAGE (exported here so it wins over the lib default and is
+# inherited by every child). Override MRVA_STANDALONE_STORAGE=filesystem to
+# fall back.
+export MRVA_STANDALONE_STORAGE="${MRVA_STANDALONE_STORAGE:-minio}"
+
+# shellcheck source=standalone-multi-agent-lib.sh
+. "$(dirname "$0")/standalone-multi-agent-lib.sh"
+
+# State handed between separate invocations (SID1..3, SERVER_PID, ...).
+load_state
+
+# ---- Single-user, three-session scenario ------------------------------
+#
+# Harness-level user name. Sent as the X-MRVA-User header on each submission
+# (the standalone dev authenticator trusts it), so it appears in
+# job_info.user_id for all three sessions. Override via the environment.
+USER_NAME="${USER_NAME:-alice}"
+
+# One query per session, and EACH SESSION IS A DIFFERENT LANGUAGE, so the three
+# packs are built for different CodeQL languages and are therefore distinct.
+# Every query is a self-contained `@kind problem` query under ../../sample-query/
+# that imports only its language library, so CGA bundles each into
+# its own pack (dep codeql/<lang>-all).
+#
+#   session1 :: cpp         session2 :: python        session3 :: javascript
+SESSION1_LANGUAGE="${SESSION1_LANGUAGE:-cpp}"
+SESSION2_LANGUAGE="${SESSION2_LANGUAGE:-python}"
+SESSION3_LANGUAGE="${SESSION3_LANGUAGE:-javascript}"
+
+SESSION1_QUERY="${SESSION1_QUERY:-../../sample-query/ReturnValueIgnored.ql}"
+SESSION2_QUERY="${SESSION2_QUERY:-../../sample-query/python/ToDoComment.ql}"
+SESSION3_QUERY="${SESSION3_QUERY:-../../sample-query/javascript/TodoComments.ql}"
+
+# Distinct repo counts per session (3, 2, 1). Repos are named <owner>/<repo>
+# (the submitted NameWithOwner); on disk the DBs live under
+# $SAMPLE_DB_ROOT/<language>/<owner>/<repo> and MUST be CodeQL DBs of that
+# session's language (cpp under cpp/*, python under python/*, javascript under
+# javascript/*). phase_stage prepends each repo's language and zips whichever
+# ones it finds on disk.
+SESSION1_REPOS=(
+    debian/iniparser-4.1
+    debian/lua-filesystem-1.8.0
+    debian/libgmpada-1.5
+)
+SESSION2_REPOS=(
+    benjaminp/six
+    asweigart/pyperclip
+)
+SESSION3_REPOS=(
+    jonschlinkert/is-number
+)
+
+# Map each repo (owner/repo) to its language so the deduplicated STAGE_REPOS
+# union can locate the DB under $SAMPLE_DB_ROOT/<language>/<owner>/<repo>.
+declare -A REPO_LANG
+for _r in "${SESSION1_REPOS[@]}"; do REPO_LANG["$_r"]="$SESSION1_LANGUAGE"; done
+for _r in "${SESSION2_REPOS[@]}"; do REPO_LANG["$_r"]="$SESSION2_LANGUAGE"; done
+for _r in "${SESSION3_REPOS[@]}"; do REPO_LANG["$_r"]="$SESSION3_LANGUAGE"; done
+
+# Per-session pack artifacts (built by phase_pack).
+PACK1_TGZ="${MRVA_WORK_DIR}/query-pack-1.tgz"
+PACK2_TGZ="${MRVA_WORK_DIR}/query-pack-2.tgz"
+PACK3_TGZ="${MRVA_WORK_DIR}/query-pack-3.tgz"
+
+# Union of all sessions' repos (deduplicated) — what needs staging on disk.
+mapfile -t STAGE_REPOS < <(printf '%s\n' \
+    "${SESSION1_REPOS[@]}" "${SESSION2_REPOS[@]}" "${SESSION3_REPOS[@]}" | sort -u)
+
+# Job accounting. Each session analyzes its own repos; totals drive poll/verify.
+NJOBS1=${#SESSION1_REPOS[@]}
+NJOBS2=${#SESSION2_REPOS[@]}
+NJOBS3=${#SESSION3_REPOS[@]}
+NJOBS_TOTAL=$(( NJOBS1 + NJOBS2 + NJOBS3 ))
+
+# Record the phase that just ran, so `where` can point at the current step.
+_mark() {
+    CURRENT_PHASE="$1"
+    save_state CURRENT_PHASE "$1"
+}
+
+# ======================================================================
+# Phases. Each is self-contained: it (re)derives what it needs from the
+# shared lib config, the persisted state file, or the server log.
+# ======================================================================
+
+# --- preflight: tools, Postgres, free port -----------------------------
+phase_preflight() {
+    echo "--- preflight ---"
+    if [ -z "$CODEQL_CLI_PATH" ]; then
+        echo "ERROR: codeql not found on PATH"
+        exit 1
+    fi
+    codeql version --format=terse | sed 's/^/codeql version: /'
+    go version | sed 's/^/go version: /'
+
+    pg_ensure_running
+    pg_isready -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" | sed 's/^/pg_isready: /'
+    pg_ensure_role_db
+
+    # Reclaim port: kill any stale process bound to PORT.
+    local stale_pids p
+    stale_pids="$(lsof -ti tcp:"$PORT" 2>/dev/null || true)"
+    if [ -n "$stale_pids" ]; then
+        echo "killing stale processes on port ${PORT}: ${stale_pids}"
+        for p in $stale_pids; do
+            kill "$p" 2>/dev/null || true
+        done
+        sleep 1
+    fi
+    # Also reclaim the MinIO port when the MinIO backend is selected.
+    minio_reclaim_port
+    db_server_reclaim_port
+}
+
+# --- reset: clean slate (drop tables, wipe work dir + logs) -------------
+phase_reset() {
+    echo "--- reset (clean slate) ---"
+    psql_mrva -q -c "
+DROP TABLE IF EXISTS $(IFS=,; echo "${MRVA_TABLES[*]}") CASCADE;
+DROP SEQUENCE IF EXISTS $(IFS=,; echo "${MRVA_SEQUENCES[*]}") CASCADE;
+" >/dev/null
+
+    rm -rf "$MRVA_WORK_DIR" "$MRVA_TMP_DIR"
+    mkdir -p "$MRVA_ARTIFACT_DIR" "$MRVA_QLDB_DIR" "$MRVA_DB_SERVE_DIR" "$MRVA_TMP_DIR"
+    echo "  dropped tables; wiped ${MRVA_WORK_DIR} and transient files"
+}
+
+# --- stage: place sample CodeQL DBs where the qldbstore expects them ----
+#
+# Stages the UNION of all sessions' repos. Repos shipped as a sibling
+# <repo>.zip (rather than an unpacked directory) are extracted on demand: the
+# zip holds a single top-level bundle dir which we rename to <repo>. The agent
+# locates the DB inside by content (codeql-database.yml + src.zip), so the
+# exact bundle dir name does not matter.
+phase_stage() {
+    echo "--- staging ${#STAGE_REPOS[@]} CodeQL DBs (union of all sessions) ---"
+    local repo name owner lang src
+    for repo in "${STAGE_REPOS[@]}"; do
+        name="$(basename "$repo")"
+        owner="$(dirname "$repo")"
+        lang="${REPO_LANG[$repo]}"
+        src="${SAMPLE_DB_ROOT}/${lang}/${owner}/${name}"
+
+        # Extract the zipped DB the first time we need it.
+        if [ ! -d "$src" ]; then
+            local zipf="${src}.zip" tmpd bundle
+            if [ ! -f "$zipf" ]; then
+                echo "ERROR: neither DB dir nor zip found for ${repo}" >&2
+                echo "  looked for: $src  and  $zipf" >&2
+                exit 1
+            fi
+            echo "  extracting ${zipf##*/}"
+            tmpd="$(mktemp -d "${TMPDIR:-/tmp}/mrva-db.XXXXXX")"
+            unzip -q "$zipf" -d "$tmpd"
+            bundle="$(find "$tmpd" -mindepth 1 -maxdepth 1 -type d | head -1)"
+            if [ -z "$bundle" ]; then
+                echo "ERROR: ${zipf} contained no top-level dir" >&2
+                rm -rf "$tmpd"; exit 1
+            fi
+            mv "$bundle" "$src"
+            rm -rf "$tmpd"
+        fi
+
+        mkdir -p "$MRVA_DB_SERVE_DIR/${owner}/${name}"
+        cga db zip --db-dir "$src" \
+            --output "$MRVA_DB_SERVE_DIR/${owner}/${name}/${owner}_${name}_db.zip"
+        echo "  staged ${repo}"
+    done
+    find "$MRVA_DB_SERVE_DIR" -name '*_db.zip' -exec ls -lh {} \;
+}
+
+# --- build: server + agent binaries ------------------------------------
+phase_build() {
+    echo "--- building server + agent ---"
+    make -s -C ../../server-commander mrvaserver mrvaagent
+}
+
+# --- start: launch the Go server in standalone mode --------------------
+#
+# The server owns agent lifecycle: in --mode=standalone it wires up
+# LocalArgoClient, which fork/execs MRVA_ENVSIM_AGENT_BINARY per spawned
+# worker. Agent stdout/stderr is inherited, so all agent log lines land in
+# $SERVER_LOG.
+phase_start() {
+    echo "--- starting Go server on :${PORT} (no Docker) ---"
+    # Bring up the object store first: in the MinIO backend the server + agents
+    # connect to it for pack/result blobs (no-op for the filesystem backend).
+    minio_start
+    db_server_start
+    nohup ../../server-commander/mrvaserver --mode=standalone --loglevel=info \
+        --dbpath="$MRVA_QLDB_DIR" \
+        ${MRVA_DBG_DUMP_SYSVIEW:+--dbg-dump-sysview} \
+        > "$SERVER_LOG" 2>&1 &
+    SERVER_PID=$!
+    echo "$SERVER_PID" > "$SERVER_PID_FILE"
+    save_state SERVER_PID "$SERVER_PID"
+    # Record the dump path (if capturing) so stop/cleanup can remove it later.
+    [ -n "${MRVA_DBG_DUMP_SYSVIEW:-}" ] && save_state SYSVIEW_DUMP_PATH "$SYSVIEW_DUMP_PATH"
+
+    local _
+    for _ in $(seq 1 20); do
+        if curl -sf "$SERVER/" >/dev/null 2>&1; then
+            break
+        fi
+        sleep 0.5
+    done
+    if ! curl -sf "$SERVER/" >/dev/null 2>&1; then
+        echo "ERROR: server did not come up. Tail:"
+        tail -30 "$SERVER_LOG"
+        exit 1
+    fi
+    echo "  server up (pid ${SERVER_PID})"
+}
+
+# --- pack: build the THREE distinct query packs ------------------------
+#
+# One pack per session, each from a different query, so their decoded-pack
+# SHA1s (job_info.pack_sha1) differ. Each pack's SHA1 is recorded in the state
+# file (PACK_SHA1_n) so verify can assert the server saw exactly that pack for
+# session n.
+_build_pack() {
+    local query="$1" out="$2" sha_key="$3" language="$4"
+    echo "--- building ${language} query pack from ${query##*/} -> ${out##*/} ---"
+    cga_pack_query "$query" "$out" >> "$REQ_LOG" 2>&1
+    ls -lh "$out"
+    local sha
+    sha="$(sha1sum "$out" | awk '{print $1}')"
+    echo "  ${out##*/} sha1=${sha}"
+    save_state "$sha_key" "$sha"
+}
+
+phase_pack() {
+    : > "$REQ_LOG"
+    _build_pack "$SESSION1_QUERY" "$PACK1_TGZ" PACK_SHA1_1 "$SESSION1_LANGUAGE"
+    _build_pack "$SESSION2_QUERY" "$PACK2_TGZ" PACK_SHA1_2 "$SESSION2_LANGUAGE"
+    _build_pack "$SESSION3_QUERY" "$PACK3_TGZ" PACK_SHA1_3 "$SESSION3_LANGUAGE"
+    load_state
+    echo "--- three packs built; expected pack SHA1s ---"
+    echo "  session1: ${PACK_SHA1_1}"
+    echo "  session2: ${PACK_SHA1_2}"
+    echo "  session3: ${PACK_SHA1_3}"
+    if [ "$PACK_SHA1_1" = "$PACK_SHA1_2" ] || [ "$PACK_SHA1_1" = "$PACK_SHA1_3" ] \
+       || [ "$PACK_SHA1_2" = "$PACK_SHA1_3" ]; then
+        echo "ERROR: packs are not distinct; the multi-pack axis needs 3 different packs" >&2
+        exit 1
+    fi
+}
+
+# --- submit helper: POST one SubmitMsg for a single session ------------
+#
+# Args: <session-label> <pack-tgz> <state-key-for-session-id> <language> \
+#       <repo> [<repo>...]
+# The user name (USER_NAME) is sent as the X-MRVA-User header on every session,
+# so all three sessions are attributed to the same user; the returned session
+# id (persisted under $3) distinguishes them. The language is per-session (this
+# scenario submits a different language for each).
+_submit_session() {
+    local label="$1" pack="$2" sid_key="$3" language="$4"; shift 4
+    local repos=("$@")
+    echo "--- submit (${USER_NAME}, ${label}, ${language}): SubmitMsg with ${#repos[@]} repos, pack ${pack##*/} ---"
+    printf '    %s\n' "${repos[@]}"
+    local out_json="${SUBMIT_JSON%.json}-${label}.json"
+    cga_submit "$label" "$USER_NAME" "$language" "$pack" "$SERVER" "${repos[@]}" > "$out_json"
+    cat "$out_json"; echo
+    local sid
+    sid="$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['id'])" \
+            "$out_json")"
+    echo "${USER_NAME} ${label} session=${sid}"
+    save_state "$sid_key" "$sid"
+}
+
+# --- submit1 / submit2 / submit3: one submission per session -----------
+phase_submit1() {
+    _submit_session session1 "$PACK1_TGZ" SID1 "$SESSION1_LANGUAGE" "${SESSION1_REPOS[@]}"
+}
+phase_submit2() {
+    _submit_session session2 "$PACK2_TGZ" SID2 "$SESSION2_LANGUAGE" "${SESSION2_REPOS[@]}"
+}
+phase_submit3() {
+    _submit_session session3 "$PACK3_TGZ" SID3 "$SESSION3_LANGUAGE" "${SESSION3_REPOS[@]}"
+}
+
+# --- poll: wait until ALL jobs (all sessions) reach a terminal state ---
+phase_poll() {
+    load_state
+    if [ -z "${SID1:-}" ] && [ -z "${SID2:-}" ] && [ -z "${SID3:-}" ]; then
+        echo "ERROR: no session ids; run 'submit1'/'submit2'/'submit3' first"
+        exit 1
+    fi
+    local sids=()
+    [ -n "${SID1:-}" ] && sids+=("$SID1")
+    [ -n "${SID2:-}" ] && sids+=("$SID2")
+    [ -n "${SID3:-}" ] && sids+=("$SID3")
+    local in_list; in_list="$(IFS=,; echo "${sids[*]}")"
+
+    echo "--- polling job_status (expect ${NJOBS_TOTAL} terminal rows across sessions ${in_list}) ---"
+    # common.Status values: 0=Pending 1=Queued 2=Succeeded 3=Failed.
+    local deadline summary terminal
+    deadline=$(( $(date +%s) + POLL_DEADLINE_SECS ))
+    while true; do
+        summary="$(psql_mrva -t -A -F'|' -c \
+                    "SELECT status, COUNT(*) FROM job_status
+                      WHERE session_id IN (${in_list}) GROUP BY status;" 2>/dev/null \
+                | tr '\n' ' ')"
+        terminal="$(psql_mrva -t -A -c \
+                    "SELECT COUNT(*) FROM job_status
+                      WHERE session_id IN (${in_list}) AND status IN (2,3);" 2>/dev/null \
+                | tr -d '[:space:]')"
+        echo "  $(date +%H:%M:%S) status: ${summary:-<none>} (terminal=${terminal}/${NJOBS_TOTAL})"
+        if [ "${terminal:-0}" -ge "$NJOBS_TOTAL" ]; then
+            echo "  -> all ${NJOBS_TOTAL} jobs reached a terminal state"
+            break
+        fi
+        if [ "$(date +%s)" -ge "$deadline" ]; then
+            echo "  -> TIMEOUT after ${POLL_DEADLINE_SECS}s"
+            break
+        fi
+        sleep "$POLL_INTERVAL"
+    done
+}
+
+# --- artifacts: list result artifacts + SARIF result counts ------------
+#
+# Backend-aware:
+#   - filesystem: result zips are plain files under MRVA_ARTIFACT_DIR; unzip
+#     each and print its SARIF result count.
+#   - minio: blobs live in the MinIO object store (only references in
+#     Postgres), so there is nothing under MRVA_ARTIFACT_DIR. Prove the blobs
+#     landed in MinIO (bucket object count) and that the filesystem store was
+#     NOT used, then summarize each result by downloading it through the
+#     server (which reads from MinIO).
+phase_artifacts() {
+    if storage_is_minio; then
+        phase_artifacts_minio
+        return
+    fi
+    echo "--- artifacts on disk ---"
+    find "$MRVA_ARTIFACT_DIR" -type f -exec ls -lh {} \;
+
+    local repo slug rzip stmp
+    for repo in "${STAGE_REPOS[@]}"; do
+        slug="$(echo "$repo" | tr '/' '-')"
+        rzip="$(find "$MRVA_ARTIFACT_DIR" -name "*-results-*${slug}*" -type f | head -1)"
+        echo "--- SARIF summary for ${repo} ---"
+        if [ -z "$rzip" ]; then
+            echo "  (no result artifact found)"
+            continue
+        fi
+        stmp="$(mktemp "${TMPDIR:-/tmp}/mrva-sarif.XXXXXX")"
+        unzip -p "$rzip" results.sarif > "$stmp" 2>/dev/null
+        python3 - "$stmp" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+for r in d.get("runs", []):
+    print("  result count:", len(r.get("results", [])))
+PY
+        rm -f "$stmp"
+    done
+}
+
+# Artifact inspection for the MinIO backend. Confirms blobs are in the object
+# store (not on the filesystem) and prints each result's SARIF count via the
+# server download endpoint.
+phase_artifacts_minio() {
+    echo "--- artifacts in MinIO (object store) ---"
+
+    # (a) The filesystem artifact store must be empty: proves MinIO is in use.
+    local fs_files
+    fs_files="$(find "$MRVA_ARTIFACT_DIR" -type f 2>/dev/null | wc -l | tr -d ' ')"
+    echo "  filesystem artifact store files under ${MRVA_ARTIFACT_DIR}: ${fs_files} (expect 0)"
+
+    # (b) Count objects in the MinIO bucket data dir. Single-node MinIO stores
+    # each object as a directory containing an 'xl.meta'; count those.
+    local objs
+    objs="$(find "${MINIO_DATA_DIR}/${MINIO_BUCKET}" -name xl.meta 2>/dev/null | wc -l | tr -d ' ')"
+    echo "  objects in MinIO bucket '${MINIO_BUCKET}': ${objs}"
+    find "${MINIO_DATA_DIR}/${MINIO_BUCKET}" -maxdepth 1 -mindepth 1 -type d 2>/dev/null \
+        | sed 's#.*/#    #' | sort
+
+    # (c) SARIF result count per result, fetched through the server (reads MinIO).
+    local rows sid owner repo enc stmp
+    rows="$(psql_mrva -t -A -F'|' -c \
+              "SELECT js.session_id, js.owner, js.repo
+                 FROM job_status js
+                WHERE js.status=2
+                ORDER BY js.session_id, js.repo;" 2>/dev/null)"
+    while IFS='|' read -r sid owner repo; do
+        [ -n "$sid" ] || continue
+        echo "--- SARIF summary for ${owner}/${repo} (session ${sid}) ---"
+        # The download endpoint takes a base64url (with padding) encoding of the
+        # marshalled JobSpec JSON. NameWithOwner is embedded, so its fields are
+        # promoted/flat: {"SessionID":N,"Owner":"..","Repo":".."}.
+        enc="$(printf '{"SessionID":%s,"Owner":"%s","Repo":"%s"}' \
+                 "$sid" "$owner" "$repo" | base64 -w0 | tr '+/' '-_')"
+        stmp="$(mktemp "${TMPDIR:-/tmp}/mrva-sarif.XXXXXX")"
+        if curl -sf "${SERVER}/download/${enc}" -o "${stmp}.zip" 2>/dev/null \
+           && unzip -p "${stmp}.zip" results.sarif > "$stmp" 2>/dev/null; then
+            python3 - "$stmp" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+for r in d.get("runs", []):
+    print("  result count:", len(r.get("results", [])))
+PY
+        else
+            echo "  (result not retrievable via download endpoint; blob is in MinIO)"
+        fi
+        rm -f "$stmp" "${stmp}.zip"
+    done <<< "$rows"
+}
+
+# --- ingest phases (optional; NOT part of `all`) -----------------------
+#
+# Identical in spirit to run-system-02: collect result SARIF into the
+# sysview-shaped tree, turn each into SQLite, roll up into one DuckDB.
+phase_copy_sarif() {
+    echo "--- copy_sarif -> ${DATA_LARGE_DIR} (user-/session-/job- tree) ---"
+    local bucket="$MRVA_ARTIFACT_DIR/mrvabucket"
+
+    local rows
+    rows="$(psql_mrva -t -A -F'|' -c \
+              "SELECT user_id, session_id, owner, repo FROM job_info
+                ORDER BY user_id, session_id, repo;" 2>/dev/null)"
+    if [ -z "$rows" ]; then
+        echo "  (no jobs in job_info; run the pipeline first)"
+        return 0
+    fi
+
+    local prev_key="" jobnum=0 copied=0 missing=0
+    local user sid owner repo key artifact dest
+    while IFS='|' read -r user sid owner repo; do
+        [ -n "$sid" ] || continue
+        key="${user}/${sid}"
+        if [ "$key" != "$prev_key" ]; then
+            jobnum=0
+            prev_key="$key"
+        fi
+        jobnum=$(( jobnum + 1 ))
+
+        # Key format: <sid>-results-<language>-<owner>-<repo>-<sha>. The
+        # language and DB SHA are not in Postgres, so glob over them.
+        artifact="$(ls -1 "${bucket}/${sid}-results-"*"-${owner}-${repo}-"* 2>/dev/null | head -1 || true)"
+        dest="${DATA_LARGE_DIR}/user-${user}/session-${sid}/job-${jobnum}"
+        if [ ! -f "$artifact" ]; then
+            echo "  MISSING artifact for ${user}/${sid} ${owner}/${repo}: ${artifact}"
+            missing=$(( missing + 1 ))
+            continue
+        fi
+        mkdir -p "$dest"
+        if unzip -p "$artifact" results.sarif > "${dest}/${owner}-${repo}.sarif" 2>/dev/null; then
+            echo "  ${user}/session-${sid}/job-${jobnum} <- ${owner}/${repo}"
+            copied=$(( copied + 1 ))
+        else
+            echo "  FAILED to extract results.sarif from ${artifact}"
+            rm -f "${dest}/${owner}-${repo}.sarif"
+            missing=$(( missing + 1 ))
+        fi
+    done <<< "$rows"
+
+    echo "  copied=${copied} missing=${missing}"
+}
+
+phase_tolite() {
+    echo "--- tolite: srfi tolite on all SARIF under ${DATA_LARGE_DIR} ---"
+    if [ ! -x "$SRFI" ]; then
+        echo "ERROR: srfi not found or not executable: $SRFI" >&2
+        return 1
+    fi
+    local sarifs=() f
+    mapfile -t sarifs < <(find "$DATA_LARGE_DIR" -type f -name '*.sarif' 2>/dev/null | sort)
+    if [ "${#sarifs[@]}" -eq 0 ]; then
+        echo "  (no SARIF found; run copy_sarif first)"
+        return 0
+    fi
+    local n=0
+    for f in "${sarifs[@]}"; do
+        "$SRFI" tolite "$f" | sed 's/^/  /'
+        n=$(( n + 1 ))
+    done
+    echo "  converted ${n} SARIF file(s) to SQLite"
+}
+
+phase_toduck() {
+    echo "--- toduck: srfi toduck over all SQLite under ${DATA_LARGE_DIR} ---"
+    if [ ! -x "$SRFI" ]; then
+        echo "ERROR: srfi not found or not executable: $SRFI" >&2
+        return 1
+    fi
+    local sqlites=()
+    mapfile -t sqlites < <(find "$DATA_LARGE_DIR" -type f -name '*.sqlite' 2>/dev/null | sort)
+    if [ "${#sqlites[@]}" -eq 0 ]; then
+        echo "  (no SQLite found; run tolite first)"
+        return 0
+    fi
+    "$SRFI" toduck "${DATA_LARGE_DIR}/all" "${sqlites[@]}" | sed 's/^/  /'
+    echo "  DuckDB: ${DATA_LARGE_DIR}/all.duckdb"
+}
+
+# --- claims: prove every job claimed once (no double-claim) ------------
+#
+# With three sessions the right uniqueness key is the (session_id, repo)
+# pair. We expect exactly $NJOBS_TOTAL distinct pairs and no pair twice.
+phase_claims() {
+    echo "--- agent claims (proves every job claimed once, no double-claim) ---"
+    grep "Job claimed" "$SERVER_LOG" | sed 's/^/  /' || echo "  (no claims logged)"
+    N_WORKERS="$(grep "Job claimed" "$SERVER_LOG" 2>/dev/null \
+                  | grep -oE 'worker_id=[^ ]+' | sort -u | wc -l | tr -d ' ')"
+    N_CLAIM_PAIRS="$(grep "Job claimed" "$SERVER_LOG" 2>/dev/null \
+                  | grep -oE 'session_id=[^ ]+ owner=[^ ]+ repo=[^ ]+' \
+                  | sort -u | wc -l | tr -d ' ')"
+    N_CLAIMS="$(grep -c "Job claimed" "$SERVER_LOG" 2>/dev/null | tr -d ' ')"
+    echo "  distinct workers=${N_WORKERS} distinct (session,repo) claims=${N_CLAIM_PAIRS} total claim lines=${N_CLAIMS} (expect ${NJOBS_TOTAL})"
+}
+
+# Shared error scan: print result, return 1 if real (non-benign) errors.
+_error_check() {
+    if grep -E "ERROR|panic|fatal" "$SERVER_LOG" 2>/dev/null \
+         | grep -v 'mrva-project-resolver' >/dev/null; then
+        echo "errors (excluding benign mrva-project-resolver):"
+        grep -E "ERROR|panic|fatal" "$SERVER_LOG" \
+          | grep -v 'mrva-project-resolver' | head -10
+        return 1
+    fi
+    echo "NO ERRORS (mrva-project-resolver warnings are benign on dev hosts)"
+    return 0
+}
+
+# --- logs: server (+agent) log tail + error scan -----------------------
+phase_logs() {
+    echo "--- server log tail ---"
+    tail -25 "$SERVER_LOG"
+    echo "--- errors in server log ---"
+    _error_check || true
+}
+
+# --- verify: final PASS/FAIL gate --------------------------------------
+phase_verify() {
+    load_state
+    echo "--- verify ---"
+
+    # Sessions actually submitted.
+    local sids=()
+    [ -n "${SID1:-}" ] && sids+=("$SID1")
+    [ -n "${SID2:-}" ] && sids+=("$SID2")
+    [ -n "${SID3:-}" ] && sids+=("$SID3")
+    local in_list; in_list="$(IFS=,; echo "${sids[*]:-0}")"
+
+    # Re-derive the assertions from persisted state + the log.
+    local succeeded results
+    succeeded="$(psql_mrva -t -A -c \
+                  "SELECT COUNT(*) FROM job_status
+                    WHERE session_id IN (${in_list}) AND status=2;" \
+                2>/dev/null | tr -d '[:space:]')"
+    # Every succeeded job must also have persisted its result reference.
+    results="$(psql_mrva -t -A -c \
+                  "SELECT COUNT(*) FROM analyze_results
+                    WHERE session_id IN (${in_list});" \
+                2>/dev/null | tr -d '[:space:]')"
+    N_WORKERS="$(grep "Job claimed" "$SERVER_LOG" 2>/dev/null \
+                  | grep -oE 'worker_id=[^ ]+' | sort -u | wc -l | tr -d ' ')"
+    N_CLAIM_PAIRS="$(grep "Job claimed" "$SERVER_LOG" 2>/dev/null \
+                  | grep -oE 'session_id=[^ ]+ owner=[^ ]+ repo=[^ ]+' \
+                  | sort -u | wc -l | tr -d ' ')"
+    local log_err
+    if _error_check; then log_err=0; else log_err=1; fi
+
+    # Identity: EVERY job across ALL sessions must be attributed to the one
+    # user. A single distinct user_id proves the X-MRVA-User header flowed
+    # through the dev authenticator into job_info for every session.
+    local users_seen user_ok=1
+    users_seen="$(psql_mrva -t -A -c \
+            "SELECT COALESCE(string_agg(DISTINCT user_id, ','), '') FROM job_info
+              WHERE session_id IN (${in_list});" 2>/dev/null | tr -d '[:space:]')"
+    [ "$users_seen" = "$USER_NAME" ] || user_ok=0
+
+    # --- axis under test: multiple sessions, distinct packs per session ---
+    #
+    # (a) Each session's jobs must all share ONE pack_sha1 (the pack that
+    #     session was submitted with), and it must equal the SHA1 we recorded
+    #     for that pack at submit time.
+    # (b) Across the three sessions the pack_sha1 values must be DISTINCT
+    #     (three different packs), which is the whole point of this scenario.
+    local pack_ok=1 distinct_packs
+    local s sid exp got
+    local -a s_ids=("${SID1:-}" "${SID2:-}" "${SID3:-}")
+    local -a s_exp=("${PACK_SHA1_1:-}" "${PACK_SHA1_2:-}" "${PACK_SHA1_3:-}")
+    for s in 0 1 2; do
+        sid="${s_ids[$s]}"; exp="${s_exp[$s]}"
+        [ -n "$sid" ] || { pack_ok=0; continue; }
+        # distinct pack_sha1 values seen for this session (expect exactly one)
+        got="$(psql_mrva -t -A -c \
+                "SELECT string_agg(DISTINCT pack_sha1, ',') FROM job_info
+                  WHERE session_id = ${sid};" 2>/dev/null | tr -d '[:space:]')"
+        if [ "$got" != "$exp" ]; then
+            pack_ok=0
+            echo "  pack mismatch session ${sid}: got '${got}' want '${exp}'"
+        fi
+    done
+    # Count distinct pack_sha1 across all three sessions (expect 3).
+    distinct_packs="$(psql_mrva -t -A -c \
+            "SELECT COUNT(DISTINCT pack_sha1) FROM job_info
+              WHERE session_id IN (${in_list});" 2>/dev/null | tr -d '[:space:]')"
+
+    # Starting-worker visibility (same cumulative-counter check as system-02).
+    local spawns_observed
+    spawns_observed="$(psql_mrva -t -A -c \
+            "SELECT COALESCE(n_tup_ins, 0) FROM pg_stat_user_tables
+              WHERE relname = 'pending_spawns';" 2>/dev/null | tr -d '[:space:]')"
+
+    echo
+    echo "user: ${USER_NAME}"
+    echo "sessions: session1=${SID1:-<none>} (${SESSION1_LANGUAGE}, ${NJOBS1} jobs) session2=${SID2:-<none>} (${SESSION2_LANGUAGE}, ${NJOBS2} jobs) session3=${SID3:-<none>} (${SESSION3_LANGUAGE}, ${NJOBS3} jobs)"
+    echo "identity (distinct user_id across all sessions): '${users_seen}'"
+    echo "packs: session1=${PACK_SHA1_1:-?} session2=${PACK_SHA1_2:-?} session3=${PACK_SHA1_3:-?}"
+    echo "distinct packs across sessions: ${distinct_packs:-0} (expect 3)"
+    echo "starting workers recorded in pending_spawns this run: ${spawns_observed:-0}"
+    echo "server still running (pid $(cat "$SERVER_PID_FILE" 2>/dev/null)); Postgres left populated."
+    echo "  inspect:      ./run-system-04 query"
+    echo "  ingest SARIF: ./run-system-04 ingest-all   (copy_sarif + tolite + toduck)"
+    echo "  tear down:    ./run-system-04 cleanup"
+
+    # Gate: every job succeeded, every succeeded job persisted a result row,
+    # every job claimed exactly once (distinct (session,repo) pairs == total),
+    # all jobs attributed to the one user, the three sessions carry three
+    # distinct packs each matching its recorded SHA1, a starting worker was
+    # made visible, and no real errors. Worker count is informational only.
+    if [ "${succeeded:-0}" = "$NJOBS_TOTAL" ] \
+       && [ "${results:-0}" = "$NJOBS_TOTAL" ] \
+       && [ "${N_CLAIM_PAIRS:-0}" = "$NJOBS_TOTAL" ] \
+       && [ "${user_ok:-0}" -eq 1 ] \
+       && [ "${pack_ok:-0}" -eq 1 ] \
+       && [ "${distinct_packs:-0}" = "3" ] \
+       && [ "${spawns_observed:-0}" -ge 1 ] \
+       && [ "${log_err:-0}" -eq 0 ]; then
+        echo "PASS: ${USER_NAME} ran ${NJOBS_TOTAL} jobs across 3 sessions (${NJOBS1}/${NJOBS2}/${NJOBS3}), all succeeded, ${results} results persisted, ${N_CLAIM_PAIRS} distinct claims via ${N_WORKERS} worker(s), 3 distinct packs (one per session), ${spawns_observed} starting-worker(s) recorded, correct identity, no errors"
+        return 0
+    else
+        echo "FAIL: succeeded=${succeeded}/${NJOBS_TOTAL} results=${results}/${NJOBS_TOTAL} claim_pairs=${N_CLAIM_PAIRS}/${NJOBS_TOTAL} workers=${N_WORKERS} user_ok=${user_ok} (users_seen='${users_seen}' want '${USER_NAME}') pack_ok=${pack_ok} distinct_packs=${distinct_packs}/3 spawns_observed=${spawns_observed} log_err=${log_err}"
+        return 1
+    fi
+}
+
+# --- query / cleanup / stop --------------------------------------------
+#
+# query and cleanup delegate to the shared sibling scripts (which inherit our
+# exported MRVA_WORK_DIR / SERVER_LOG / STATE_FILE ... via exec). stop is a
+# local copy of run-system-02's stop.
+phase_query() {
+    exec "$(dirname "$0")/query-standalone-multi-agent-e2e.sh"
+}
+phase_cleanup() {
+    exec "$(dirname "$0")/cleanup-standalone-multi-agent-e2e.sh"
+}
+
+# --- stop: stop the server but keep all state --------------------------
+phase_stop() {
+    load_state
+    echo "--- stopping Go server (keeping state) ---"
+    local stopped=0 pid seen_pids="" stale_pids p
+    for pid in "${SERVER_PID:-}" "$(cat "$SERVER_PID_FILE" 2>/dev/null || true)"; do
+        [ -n "$pid" ] || continue
+        case " $seen_pids " in *" $pid "*) continue ;; esac
+        seen_pids="$seen_pids $pid"
+        if kill -0 "$pid" 2>/dev/null; then
+            kill "$pid" 2>/dev/null || true
+            echo "  sent SIGTERM to server pid ${pid}"
+            stopped=1
+        fi
+    done
+    stale_pids="$(lsof -ti tcp:"$PORT" 2>/dev/null || true)"
+    if [ -n "$stale_pids" ]; then
+        for p in $stale_pids; do
+            kill "$p" 2>/dev/null || true
+            echo "  killed process on port ${PORT}: ${p}"
+            stopped=1
+        done
+    fi
+    [ "$stopped" -eq 1 ] || echo "  (no running server found)"
+    rm -f "$SERVER_PID_FILE"
+    # Stop MinIO too (keeps its data dir); no-op for the filesystem backend.
+    minio_stop
+    db_server_stop
+}
+
+# --- where: show pipeline steps, pointing at the current one -----------
+phase_where() {
+    load_state
+    echo "pipeline (==> current step):"
+    local p mark
+    for p in "${ALL_PHASES[@]}"; do
+        if [ "$p" = "${CURRENT_PHASE:-}" ]; then mark="==>"; else mark="   "; fi
+        printf '  %s %s\n' "$mark" "$p"
+    done
+    [ -n "${CURRENT_PHASE:-}" ] || echo "  (no phase run yet)"
+}
+
+# ======================================================================
+# Dispatcher
+# ======================================================================
+
+# The full pipeline, in order.
+ALL_PHASES=(preflight reset stage build start pack submit1 submit2 submit3 \
+            poll artifacts claims logs verify)
+
+usage() {
+    cat <<USAGE
+Usage: $(basename "$0") [PHASE ...]
+
+Run the standalone MULTI-LANGUAGE e2e test (one user, three sessions, three
+distinct packs each in a different language) one phase at a time, several
+phases in sequence, or the whole pipeline. With no arguments, prints this help;
+use 'all' to run everything.
+
+One user (${USER_NAME}) opens three sessions, each in its OWN language with its
+OWN query pack and a distinct job count:
+  session1: ${SESSION1_LANGUAGE} (${NJOBS1} repos)   session2: ${SESSION2_LANGUAGE} (${NJOBS2} repos)   session3: ${SESSION3_LANGUAGE} (${NJOBS3} repo)   (=${NJOBS_TOTAL} jobs)
+
+Phases (in pipeline order):
+  preflight | pre      check codeql/go, ensure Postgres, free the port
+  reset | clean-slate  drop mrva tables, wipe work dir + logs
+  stage                stage the union of all sessions' CodeQL DBs (extracts zips)
+  build                build mrvaserver + mrvaagent
+  start                launch the Go server in --mode=standalone
+  pack                 build the THREE distinct query packs (one per language)
+  submit1 | s1         POST ${USER_NAME}'s session 1 (${SESSION1_LANGUAGE}, ${NJOBS1} repos, pack 1)
+  submit2 | s2         POST ${USER_NAME}'s session 2 (${SESSION2_LANGUAGE}, ${NJOBS2} repos, pack 2)
+  submit3 | s3         POST ${USER_NAME}'s session 3 (${SESSION3_LANGUAGE}, ${NJOBS3} repo, pack 3)
+  poll                 wait until all ${NJOBS_TOTAL} jobs reach a terminal state
+  artifacts            list result artifacts + SARIF result counts
+  claims               show per-job claims (no double-claim)
+  logs                 tail the server log + scan for errors
+  verify               final PASS/FAIL gate (exit code reflects result)
+
+Ingest phases (optional; NOT part of 'all'). Run after artifacts exist:
+  copy_sarif           collect result SARIF into ${DATA_LARGE_DIR} as
+                       user-<name>/session-<id>/job-<num> (sysview-shaped)
+  tolite               srfi tolite: each SARIF -> per-job SQLite
+  toduck               srfi toduck: all SQLite -> one cumulative DuckDB
+
+Meta:
+  all                  run every pipeline phase above, in order
+  ingest-all | ingest  run copy_sarif, tolite, toduck in order
+  where | -w           show the pipeline with ==> at the current step
+  query                dump Postgres state (query-*.sh)
+  stop                 stop the server, keep tables/work dir/dump (restart with 'start')
+  cleanup              stop server, drop tables, remove work dir (cleanup-*.sh)
+  -h | --help | help   show this help
+
+Examples:
+  $(basename "$0")                 # show help
+  $(basename "$0") all             # full run
+  $(basename "$0") start pack submit1 submit2 submit3 poll
+  $(basename "$0") where           # which step am I on?
+USAGE
+}
+
+# Map a user-facing token (with aliases) to a phase, run it, and record
+# progress. Meta commands return early and are not recorded as steps.
+dispatch_one() {
+    local token="$1" name="" p
+    case "$token" in
+        preflight|pre)           name=preflight ;;
+        reset|clean-slate|clean) name=reset ;;
+        stage)                   name=stage ;;
+        build)                   name=build ;;
+        start)                   name=start ;;
+        pack)                    name=pack ;;
+        submit1|s1)              name=submit1 ;;
+        submit2|s2)              name=submit2 ;;
+        submit3|s3)              name=submit3 ;;
+        poll)                    name=poll ;;
+        artifacts)               name=artifacts ;;
+        claims)                  name=claims ;;
+        logs)                    name=logs ;;
+        verify)                  name=verify ;;
+        copy_sarif|copy-sarif)   name=copy_sarif ;;
+        tolite)                  name=tolite ;;
+        toduck)                  name=toduck ;;
+        ingest-all|ingest)       for p in copy_sarif tolite toduck; do dispatch_one "$p"; echo; done; return ;;
+        query)                   phase_query; return ;;
+        stop)                    phase_stop; return ;;
+        cleanup)                 phase_cleanup; return ;;
+        all)                     for p in "${ALL_PHASES[@]}"; do dispatch_one "$p"; echo; done; return ;;
+        -h|--help|help)          usage; return ;;
+        -w|--where|where)        phase_where; return ;;
+        *)
+            echo "unknown phase: $token" >&2
+            echo "try: $(basename "$0") -h" >&2
+            return 2
+            ;;
+    esac
+    # Run the resolved phase, then mark it as the current step. reset wipes
+    # the state file mid-run, so marking afterwards re-persists the pointer.
+    "phase_${name}"
+    _mark "$name"
+}
+
+main() {
+    if [ "$#" -eq 0 ]; then
+        dispatch_one help
+        return
+    fi
+    local token
+    for token in "$@"; do
+        dispatch_one "$token"
+    done
+}
+
+main "$@"

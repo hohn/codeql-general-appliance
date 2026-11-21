@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>CGA Bench</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="../../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../../docs/readme-layout.css" />
+  <link rel="stylesheet" href="../../docs/cga-reference.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">CGA Bench</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#cga-bench" id="toc-cga-bench">CGA Bench</a>
+<ul>
+<li><a href="#experiment-purpose-and-contract-humans-and-llms"
+id="toc-experiment-purpose-and-contract-humans-and-llms">Experiment
+purpose and contract (humans and LLMs)</a>
+<ul>
+<li><a href="#session-actions" id="toc-session-actions">Session
+actions</a></li>
+</ul></li>
+<li><a href="#start-an-experiment" id="toc-start-an-experiment">Start an
+experiment</a>
+<ul>
+<li><a href="#stop-or-restart-the-viewer"
+id="toc-stop-or-restart-the-viewer">Stop or restart the viewer</a></li>
+</ul></li>
+<li><a href="#human-workflow" id="toc-human-workflow">Human workflow</a>
+<ul>
+<li><a href="#shared-element-references"
+id="toc-shared-element-references">Shared element references</a></li>
+</ul></li>
+<li><a href="#browse-completed-results"
+id="toc-browse-completed-results">Browse completed results</a></li>
+<li><a href="#choose-existing-inputs-or-prepare-your-own"
+id="toc-choose-existing-inputs-or-prepare-your-own">Choose existing
+inputs or prepare your own</a></li>
+<li><a href="#advance-pause-and-preserve-evidence"
+id="toc-advance-pause-and-preserve-evidence">Advance, pause, and
+preserve evidence</a></li>
+<li><a href="#compare-and-use-the-browser"
+id="toc-compare-and-use-the-browser">Compare and use the
+browser</a></li>
+<li><a href="#assistant-endpoints"
+id="toc-assistant-endpoints">Assistant endpoints</a></li>
+<li><a href="#validation" id="toc-validation">Validation</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="cga-bench">CGA Bench</h1>
+<p>For a shorter usage outline, see the <a
+href="../../guides/introductory/bench.html">introductory Bench guide</a>.
+This document remains the detailed reference.</p>
+<p><code>cga bench</code> is an experiment workbench, not another MRVA
+pipeline. Each experiment holds an append-only, one-based session array.
+Every session has the same four cells: <strong>D</strong> (database
+selection), <strong>Q</strong> (accepted query pack), <strong>J</strong>
+(MRVA submission), and <strong>R</strong> (frozen results). Comparison
+<strong>E.C</strong> is a separate, explicitly invoked view. Selecting a
+cell replaces a fixed detail panel, never expands a tree. The browser
+consumes prebuilt CodeQL databases through indexed SQLite catalogues;
+its input-authoring workflow focuses on writing and refining
+queries.</p>
+<p>Commands are standard-library Python CGAST filters with human output
+on stderr. The dispatcher records them in an initialized
+<code>.cga</code> workflow. Direct <code>bin/cgabench</code> use retains
+JSON-in/JSON-out composition.</p>
+<p>The human UI contains named actions and selectable tables, not
+general command forms or raw state dumps. The explicit VS Code launcher
+and the advanced read-only SQL panel are exceptions. Detailed state,
+command access, source, and provenance remain available to LLM clients
+through the APIs below.</p>
+<h2 id="experiment-purpose-and-contract-humans-and-llms">Experiment
+purpose and contract (humans and LLMs)</h2>
+<p>Each experiment studies <strong>exactly one changing input</strong>,
+never database and query changes together:</p>
+<table>
+<colgroup>
+<col style="width: 13%" />
+<col style="width: 34%" />
+<col style="width: 52%" />
+</colgroup>
+<thead>
+<tr>
+<th>Experiment mode</th>
+<th>Fixed input</th>
+<th>Changing input</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Query changes</td>
+<td>Database selection and database contents</td>
+<td>Existing, copied, written, or refined queries</td>
+</tr>
+<tr>
+<td>Database changes</td>
+<td>Accepted query selection and query pack</td>
+<td>Selection of existing indexed databases or database revisions</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Session 1 (S1) is the reference session</strong> in both
+modes. The Sessions grid represents either experiment type using the
+same D/Q/J/R cells. Humans and LLMs prepare only D and Q. J and R are
+derived by running the session: they are not user-authored inputs and
+must not be cloned into a later session.</p>
+<p>Comparison is a separate, later operation in
+<strong>Comparison</strong>. It runs only on an explicit comparison
+action, never because an input was edited, a session was
+added/run/completed, or the section was expanded. <strong>View
+comparison</strong> displays existing comparison evidence without
+recomputing it. Experimental comparisons use S1 as the baseline and
+require its completed results.</p>
+<h3 id="session-actions">Session actions</h3>
+<p>Later sessions clone/reference <strong>exactly one</strong> accepted
+input from a prior session: D for query-change experiments, or Q for
+database-change experiments. They do not clone both inputs, jobs, or
+results.</p>
+<table>
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 46%" />
+<col style="width: 42%" />
+</colgroup>
+<thead>
+<tr>
+<th>Input row</th>
+<th>Query-change experiment</th>
+<th>Database-change experiment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Database D</td>
+<td>Clone/reference the fixed database input</td>
+<td>Edit the database selection</td>
+</tr>
+<tr>
+<td>Query Q</td>
+<td>Edit, copy, write, or refine query source</td>
+<td>Clone/reference the fixed query input</td>
+</tr>
+</tbody>
+</table>
+<p>Here, <strong>Edit database</strong> means changing a selection of
+prebuilt, indexed databases, not building databases inside Bench.
+<strong>Edit query</strong> can begin with a session-local copy of an
+existing query’s source. Copying editable source is distinct from
+cloning an accepted, fixed query artifact.</p>
+<p>Database identities retain MRVA’s <code>owner/repository</code>
+format. The repository name includes a content hash, so revisions,
+architecture, build mode, and other content changes have distinct
+identities. Bench rejects different bytes under an already accepted
+identity and does not force-overwrite cached downloads.</p>
+<p>The same contract applies to both human and LLM interfaces:</p>
+<ul>
+<li>Select one experiment mode in the header’s <strong>Mode</strong>
+menu; S1 is marked <strong>Reference</strong>. Choosing a mode validates
+it immediately and updates the Sessions guidance. Both choices appear
+directly in the menu, with a checkmark beside the selected mode; there
+is no nested selector or validation button. The mode cannot change after
+sessions exist.</li>
+<li><strong>Add session</strong> creates a variant with only the fixed
+input inherited, defaulting to S1. This is enabled after S1’s fixed
+input is accepted; S1’s results need not be complete merely to prepare
+another session.</li>
+<li><strong>Clone…</strong> on the fixed D/Q row and
+<strong>Edit</strong> on the changing row. S1 establishes both original
+inputs; later sessions cannot edit the fixed side or clone both sides.
+S1’s fixed input locks when variants exist. J/R remain inspectable,
+derived cells.</li>
+<li>Clones reference accepted snapshots, not mutable workspace links.
+They reuse database archives/query packs without copying large files and
+record the source session, input stage, and content digests. A
+prior-session source must have the same fixed input as S1.</li>
+<li>Bench validates the fixed-input invariant in CLI/API operations,
+before running, and before comparison; UI controls alone are
+insufficient. Submitted input and completed evidence remain
+immutable.</li>
+<li>Automatic advancement is preserved: accepting the second ready input
+starts analysis, subject to the fixed-input validation. Comparison
+remains a separate, explicit action; <code>--no-advance</code> still
+defers analysis.</li>
+<li>Comparison always includes completed S1 as baseline and retains
+selected result snapshots and provenance. Revisiting or expanding
+Comparison never executes it.</li>
+<li>Explicit mode selection and validation are required before further
+mutations of existing experiments. These are disposable prototypes, so
+no automatic migration or legacy behavior exemption is needed; do not
+silently classify or delete them.</li>
+</ul>
+<p>Choose a mode at initialization with
+<code>init NAME --mode query-changes</code> or
+<code>--mode database-changes</code>, or explicitly afterwards with
+<code>mode MODE</code>. An unclassified experiment stays readable but
+cannot prepare, add, or run sessions, or compute comparisons. Selecting
+a mode validates any existing accepted fixed inputs against S1 without
+rewriting session evidence. An incompatible prototype needs a separate
+experiment.</p>
+<p>For an editable Q cell, <strong>Copy to editable draft</strong>
+accepts either a selected library query or an earlier session’s accepted
+query. It creates a new directory, copies source/support files, records
+provenance, and opens the draft editor. Earlier-session copies come from
+the frozen query pack, not its original mutable source directory.
+Copying/saving a draft does not accept Q or start analysis; choose the
+edited query from its table when ready.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> bench mode query-changes</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> bench session refined          <span class="co"># inherits S1.D only</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> bench clone <span class="at">--session</span> 2 <span class="at">--stage</span> D <span class="at">--from-session</span> 1 <span class="at">--no-advance</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> bench copy-query <span class="at">--session</span> 2 <span class="at">--from-session</span> 1 <span class="at">--directory</span> queries/refined</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Or use --generation HASH --row N to copy a selected library query.</span></span></code></pre></div>
+<h2 id="start-an-experiment">Start an experiment</h2>
+<p><a
+href="illustration/six-session-shell-equivalent.sh"><code>illustration/six-session-shell-equivalent.sh</code></a>
+reconstructs the live <code>my-bench</code> six-session query study as a
+shell sequence. It uses lower-level <code>cga</code> commands without
+Bench to show accepted query variants, observed finding counts,
+selection/packing, and the job protocol Bench manages. The sequence
+deliberately repeats every session’s setup and execution inline, without
+helper functions or loops, exposing the bookkeeping hidden by the grid.
+Its manual count comparison does not reproduce Bench’s finding-level
+diffs or accepted-input/result snapshot safeguards. It is an
+illustration for a <strong>new</strong> workflow, not a script to run
+against the existing viewer; read its infrastructure warning before
+executing it.</p>
+<p>The companion <a
+href="illustration/six-session-storage-equivalent.html"><code>six-session-storage-equivalent.md</code></a>
+is a linked, hand-kept view of the same study’s accepted inputs,
+downloaded artifacts, findings stores, submissions, and comparison
+evidence. It distinguishes retained SQL findings databases from the
+JSON-based comparison and records the connections a user would otherwise
+have to maintain.</p>
+<p>To turn both complete sources into large, zoomable vector posters,
+run from <code>cga/</code>:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> cgabench/illustration/render_illustrations.py</span></code></pre></div>
+<p>The generator needs Python 3 and Ghostscript (<code>gs</code>), not
+the live Bench or MRVA. It writes SVG, PostScript, single-page PDF, PNG
+overviews, and JSON geometry/source audits under
+<code>illustration/rendered/</code>. These generated files are tracked
+in Git for direct viewing and reuse; regenerate and stage them with
+source changes. Use <code>--output-dir PATH</code> to choose another
+destination. The command poster puts every script line on one continuous
+winding path; the storage poster places the full Markdown sections in
+six session folders and connects specific input/result fields. Solid,
+dashed, and dash-dot wires distinguish inputs, derivations, and JSON
+comparison inputs; dotted wires retain section references. Source text,
+including repeated paths and hashes, is never abbreviated. The SVGs
+include the original source and its SHA-256 in metadata, plus
+source-line coordinates for auditing; internal wiring ports link to
+their document sections. The PDFs use custom poster-sized pages, not
+text squeezed onto office paper.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> my-bench</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> my-bench</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> init .</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> chain start</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> bench init query-study <span class="at">--mode</span> query-changes</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> bench session baseline <span class="at">--user</span> alice</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> bench advance</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> bench show <span class="st">&#39;E.S[1].D&#39;</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> bench serve                    <span class="co"># http://127.0.0.1:8610</span></span></code></pre></div>
+<p><code>session</code> appends S1 or a variant inheriting S1’s fixed
+input and makes it active. Accept S1’s fixed input before creating
+variants; incomplete jobs/results do not prevent preparing variants.
+Calling <code>cga bench session</code> without arguments generates an
+internal label from the next row number and reuses the first session’s
+MRVA identity. For an experiment without sessions, it uses the logged-in
+OS username (<code>getpass.getuser()</code>). Explicit names and
+<code>--user</code> remain available to CLI/LLM clients; existing
+sessions are not renamed or reassigned. <code>--session N</code>
+addresses a specific row; otherwise commands use the active row.
+<code>show</code> accepts <code>E</code>, <code>E.C</code>,
+<code>E.S[N]</code>, <code>E.S[N].D/Q/J/R</code>, and column aliases
+<code>E.D/Q/J/R[N]</code>. It prints the projection on stderr and
+preserves CGAST stdout.</p>
+<p><code>serve</code> prepares the bench’s own analysis infrastructure
+automatically: check PostgreSQL/tools and reclaim spurious service
+ports, reset a new runtime, build, then start MRVA and the database
+archive server (plus MinIO when selected). Runtime/scratch files default
+below the workflow’s <code>.cga/</code>; environment overrides are
+preserved. Existing bench runtimes restart without resetting MRVA state.
+The bench and <code>mrva-flow</code> are independent and must not run
+MRVA simultaneously.</p>
+<p><code>--no-services</code> disables automatic infrastructure setup;
+it does not disable the warm Copilot assistant.
+<code>--no-assistant</code> skips automatic Copilot startup (the panel
+can still start it explicitly). Setup errors leave the viewer available
+with an explicit infrastructure warning and detailed assistant
+diagnostics. <strong>Prepare services</strong>, <strong>Check
+services</strong>, <strong>Stop services</strong>, and confirmed
+maintenance actions are also available in the UI. Infrastructure groups
+these under <strong>setup</strong> and <strong>Maintenance</strong>
+labels, with maintenance actions visible without a separate toggle. Both
+groups use light cards with stacked action rows; action buttons
+throughout the detail views share the same light, left-accented style.
+Stage colors still indicate their status, and expand/collapse arrows and
+VID anchors remain borderless. Running an action titles the detail pane
+with that action; <strong>View infrastructure</strong> returns to
+<strong>Detail: Infrastructure</strong> while preserving the last
+action’s result and any error. <strong>Stop services</strong> stops
+MRVA/archive/MinIO, not the shared host PostgreSQL.</p>
+<h3 id="stop-or-restart-the-viewer">Stop or restart the viewer</h3>
+<p>Restart the viewer after Python backend changes; browser reloads pick
+up static assets but cannot reload the running backend. If the backend
+lacks the session evidence fields required by the page, Bench reports an
+explicit restart error.</p>
+<p>Run from the same bench workflow directory (or one of its
+subdirectories):</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> bench stop <span class="kw">&amp;&amp;</span> <span class="ex">cga</span> bench serve <span class="at">--no-services</span> <span class="at">--editor-port</span> 8611</span></code></pre></div>
+<p><code>stop</code> sends SIGTERM only to that workflow’s recorded
+viewer and waits for its HTTP listener, warm Copilot assistant, owned VS
+Code editors and legacy terminals to finish shutting down. It does not
+stop MRVA/archive/MinIO, alter experiment state, or record a workflow
+step. It succeeds when the viewer is already stopped, so the command
+above works on first startup too. <code>serve</code> remains a
+foreground command; its original Ctrl+C/SIGTERM shutdown behavior is
+unchanged.</p>
+<p>Ownership is tracked under <code>.cga/runtime/cgabench/</code> using
+a lifetime lock and PID/boot/start-time identity, so stale records
+cannot stop a reused PID. Only one viewer may serve a workflow at a
+time. Stop waits up to 30 seconds; if cleanup has not finished, it
+reports an error rather than force-killing processes or starting another
+viewer over them.</p>
+<p>For raw CGAST files, use the same explicit file for both
+commands:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> bench stop <span class="at">--session-file</span> /path/to/session.json <span class="kw">&amp;&amp;</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="ex">cga</span> bench serve <span class="at">--session-file</span> /path/to/session.json <span class="at">--no-services</span> <span class="at">--editor-port</span> 8611</span></code></pre></div>
+<p>Their ownership files live beside the CGAST in
+<code>.cgabench-runtime/session.json/</code>. Viewers launched before
+this ownership tracking was added must be stopped once with Ctrl+C or
+<code>kill -TERM &lt;their-PID&gt;</code>; <code>stop</code> never
+searches for processes by name or kills an unrecorded port owner.</p>
+<h2 id="human-workflow">Human workflow</h2>
+<p><strong>Apple outline</strong> is the default presentation.
+<strong>View &gt; Appearance</strong> switches between <strong>Apple
+outline</strong> and the original <strong>Classic</strong> layout. The
+choice is saved only in this browser
+(<code>cga.bench.presentation</code>), not in the experiment, workflow,
+or API model. Switching presentation preserves current inputs, selected
+detail, and Classic disclosure state.</p>
+<p>The Apple layout has a header (<strong>P_head</strong>), a left
+navigation outline (<strong>P_1</strong>), upper-right content
+(<strong>P_2</strong>), and lower-right detail (<strong>P_3</strong>).
+Both dividers support dragging, arrow keys, and double-click/Home to
+reset. Narrow screens stack the panes vertically.</p>
+<ul>
+<li>P_head uses a split toolbar: its left background continues P_1’s
+gray surface, and its white right portion holds the experiment title and
+right-aligned controls. The boundary tracks the resizable divider.
+Reload is an accessible circular-arrow icon; View and Mode are
+borderless text menus with chevrons. These controls use subtle gray
+hover/open backgrounds and keyboard focus rings.</li>
+<li>The sidebar button at the far left hides/restores P_1, preserving
+its width, selection, and P_2/P_3 content. It stays visible when
+navigation is hidden. Classic retains its original header controls and
+workflow pane.</li>
+<li>P_1 contains MRVA system summary and Workflow commands, with
+Infrastructure (Setup, Maintenance, and System view), Sessions, and
+Comparison beneath it. Disclosure arrows expand/collapse independently
+of row selection. Up/Down and Home/End navigate visible rows; Left/Right
+collapse/expand branches. A muted Contents heading, rounded gray row
+selection, and single-line labels with ellipsis/full-label tooltips
+follow the sidebar presentation.</li>
+<li>Selecting a row displays its existing content in P_2. Sessions is
+selected initially. Selecting an infrastructure command exposes its
+action button there; selection alone never executes it.</li>
+<li>Apple Sessions uses one row per session, with Compare, Session, D,
+Q, J, R, and Action columns. Compact status buttons show Unicode
+symbols: <strong>○</strong> empty/blocked, <strong>◐</strong> running,
+<strong>✓</strong> complete, and <strong>×</strong> failed. The legend,
+full-status tooltips, and accessible labels explain them; VID anchors
+remain beside each status. Completed sessions omit the disabled Continue
+button. Classic retains its original sessions-as-columns table.</li>
+<li>Clicking a session’s D/Q/J/R status or Edit/Clone control opens the
+unchanged detail (<code>:e7n</code>) in P_3. Infrastructure
+actions/status and explicit comparison views/reports use P_3 too.
+Selecting Comparison does not compute a comparison;
+<strong>Compare</strong> is still an explicit action.</li>
+<li>Infrastructure &gt; <strong>System view</strong> (<code>:m3d</code>)
+opens the existing read-only MRVA dashboard directly in P_3 without
+changing P_2. The embedded dashboard retains its original colors, even
+in the Apple presentation. Offline errors appear in P_3, and leaving the
+view stops its background polling. <strong>View &gt; live
+system</strong> remains the separate-window option. Infrastructure
+command diagnostics still appear in P_3; Classic retains <strong>View
+infrastructure</strong>.</li>
+</ul>
+<p>Embedding permits only the configured <code>CGA_MRVA_SERVER</code>
+HTTP(S) origin in Bench’s <code>frame-src</code> policy, alongside its
+existing same-origin permission. The iframe allows scripts and its own
+origin, but not forms, popups, or top-level navigation. Activating this
+policy requires a viewer restart (<code>cga bench stop</code>, then
+<code>cga bench serve --no-services</code> with the original port/editor
+options); this ends the viewer-owned assistant, but does not change the
+experiment or restart MRVA.</p>
+<p>Apple uses system fonts, grayscale selection/focus, and gray/black
+surfaces, except for the embedded MRVA dashboard. Grid status symbols do
+not rely on color; full status names remain in tooltips and accessible
+labels. Rounded controls, VID references, and shadowless boxes remain
+available in both presentations.</p>
+<p>In Classic, the top of the page has a collapsible MRVA system
+summary, including server identities, job/worker state counts, and
+pending spawns. Runtime details appear directly below the summary cards
+without a separate toggle. It refreshes independently of the experiment
+and reports offline errors. Expand/collapse controls use borderless
+arrows, retaining keyboard focus indicators.</p>
+<p>Beside <strong>Reload</strong>, the <strong>View</strong> menu offers
+<strong>live system</strong> (or <strong>offline system</strong>) and
+<strong>Copilot assistant</strong>, with matching item styles.
+<strong>live system</strong> opens the existing MRVA system view;
+<strong>Copilot assistant</strong> opens the shared Copilot xterm.js
+terminal in a separate popup. Repeated clicks focus the same open
+window. Bench starts one interactive Copilot process at viewer startup,
+before optional infrastructure setup, so opening the popup attaches to
+that already-starting session rather than paying startup cost then.
+Normal Copilot trust, authentication, and permission prompts remain in
+effect; an unattended first run can wait for your response there. The
+initial prompt supplies the live workflow/Bench API context and asks
+Copilot to wait for a request without running tools or changing state.
+It is not pinned to a session or fact frontier.</p>
+<p>In Classic, the View and Mode controls align with Reload. Their
+dropdowns use a compact macOS-style panel in the summary cards’ light
+blue, with rounded corners, borderless rows, and blue
+hover/keyboard-focus highlighting. All page buttons share that
+borderless, rounded styling and system font; stage status colors remain
+distinct. <strong>Add session</strong>, <strong>Reload</strong>,
+<strong>View</strong>, and <strong>Mode</strong> retain thin blue-gray
+outlines to make them recognizable as buttons. Infrastructure’s Setup
+and Maintenance groups and the expanded Comparison controls use the same
+light blue panel and rounded corners. All boxes, including dropdowns,
+are shadowless.</p>
+<p>Closing the popup, navigation, and browser reload do not stop this
+assistant; reopening or reconnecting replays its bounded in-memory
+terminal output. All windows share the same PTY and input.
+<strong>Reconnect</strong>, <strong>Start assistant</strong>, and
+<strong>Stop assistant</strong> live in the popup, not the main Bench
+page. <strong>Reconnect</strong> attaches without starting another
+process. <strong>Stop assistant</strong> stops the shared process;
+<strong>Start assistant</strong> explicitly starts a fresh session after
+exit/stop or retries a startup failure. Startup/connection errors appear
+in the popup; blocked-popup errors appear below the main page header.
+Viewer shutdown stops this process; a viewer restart starts a new
+conversation. VID popup terminals remain independent, paste-only shells.
+The assistant runs as the viewer’s OS account, with its authentication
+and normal Copilot permissions, not a session’s MRVA identity.</p>
+<p>Below it, the collapsible <strong>Workflow commands</strong> pane on
+the left contains infrastructure actions, <strong>Add session</strong>,
+the transposed D/Q/J/R grid, and comparison actions. Sessions are
+columns; database, query, job, and result stages are rows.
+<strong>Infrastructure</strong>, <strong>Sessions</strong>, and
+<strong>Comparison</strong> are independently collapsible subtopics;
+Sessions contains both Add session and the grid. Collapsing them leaves
+the current detail and experiment state unchanged. The shared
+<strong>Detail</strong> pane on the right displays infrastructure action
+status/errors, the selected cell, or comparison results. <strong>View
+infrastructure</strong> and <strong>View comparison</strong> revisit
+those details without running an action. Drag the divider or use its
+arrow keys to resize the panes; double-click or press Home to reset it.
+Narrow screens stack the panes.</p>
+<p>Input preparation belongs to the editable cell’s <strong>Detail:
+session N, stage D/Q</strong> panel. D shows only database preparation;
+Q shows only query preparation. Selecting a later session’s fixed cell
+shows its clone provenance and a prior-session source dropdown instead
+of editing controls. The model’s one-based session addresses
+(<code>E.S[N].D/Q/J/R</code>) are unchanged.</p>
+<h3 id="shared-element-references">Shared element references</h3>
+<p>Small anchor symbols (Unicode U+2693) identify meaningful panels and
+controls, session headings, D/Q/J/R cells, their accepted
+inputs/repository jobs/results, and library rows. For example,
+<code>:f3a,1,J</code> is S1’s J cell and <code>:f3a,1,J,2</code> is its
+second repository job in accepted database order. These are logical
+identities, not render positions or revision numbers; existing
+<code>E.S[N]</code> addresses still work. The global root registry uses
+permanent opaque three-character base-36 IDs.</p>
+<p>Anchors follow text labels and compact buttons; hover or focus to
+discover the VID. Single-click to copy the short VID only. Double-click
+to copy it and open an independent inspector, not to run its adjacent
+action. Clipboard failures are shown without blocking inspection. The
+active origin anchor and popup share a highlight color. The popup pins
+accumulated immutable facts at opening and owns a separate xterm.js
+shell. <strong>Paste Copilot command with context</strong> inserts only;
+press Enter yourself to start Copilot with normal permissions. Closing a
+popup stops its shell, with a 120-second inactivity expiry for lost
+tabs. These are distinct from the legacy session D/R terminals, which
+retain their existing lifetime.</p>
+<p>Use <code>cga show :f3a,1,J</code>,
+<code>cga related :f3a,1,J</code>, or
+<code>cga open :f3a,1,J --url http://127.0.0.1:8610</code> from the
+shell. Copy a popup’s full pinned reference when sharing context across
+chains. <code>/api/vid/registry</code> and <code>/api/llm</code>
+describe discovery; the full <a
+href="../README.html#visual-element-identifiers-vids">VID contract</a>
+documents qualification, facts, raw-file observations, and terminal
+ownership.</p>
+<p><strong>Add session</strong> requires no name or identity input.
+Session column headings show the one-based number and status, with
+<strong>Reference</strong> on S1, for example <strong>1 Reference
+(incomplete)</strong>. Internal names and MRVA identities remain in the
+detailed assistant model.</p>
+<p>Detail displays the cell’s requirement and accepted-input summary in
+a labelled <strong>Status</strong> box, separate from the optional
+<strong>Development note</strong> form and <strong>Stage
+history</strong>.</p>
+<p>In D, <strong>Read existing database catalogue</strong> is the only
+preparation path, shown as text rather than a dropdown; use <strong>Load
+database catalogue</strong> to import it. In Q, choose <strong>Read
+existing query library</strong> and <strong>Index query
+library</strong>. Input paths initially suggest the same catalogue and
+sample query directory used by <code>mrva-flow</code>. Loading/indexing
+in Detail updates only the selected session’s library, not other
+sessions or <code>mrva-flow</code> state. Existing shared libraries
+remain available as defaults until a session loads its own.</p>
+<p>Database preparation includes a <strong>Discovered
+catalogues</strong> dropdown populated from <code>metadata.sql</code>
+files under the bench workspace and CGA component directory. Hidden
+directories, <code>node_modules</code>, and <code>__pycache__</code> are
+skipped; directory symlinks are not traversed. The suggested
+<code>cgadl/db-collection.global/metadata.sql</code> is also checked
+explicitly so a linked collection remains available. <strong>Rescan
+catalogues</strong> discovers newly added files. Choosing an option
+fills the path; <strong>Load database catalogue</strong> performs the
+import. Manual path/URL entry remains available for files elsewhere or
+named differently. Discovery details use an outline: the number found,
+<strong>Searched</strong> with one nested entry per root, and the scan
+exclusions/instructions.</p>
+<p>Catalogues are SQLite files, not SQL scripts or CodeQL database
+archives. They contain metadata and download locations for prebuilt
+databases. Obtain a catalogue from a collection provider or generate one
+using database preparation tools (see <a href="../README-prep.html">CGA
+preparation</a>); the bench consumes, rather than constructs, these
+catalogues.</p>
+<p>The loaded library appears as a filterable, paginated table.
+<strong>Find substring in library metadata</strong> searches all
+metadata columns, including the CodeQL version; <code>%</code> and
+<code>_</code> are literal characters, not SQL wildcards. Matching is
+case-insensitive for ASCII letters. Select database rows and <strong>Use
+selected databases</strong> to download and accept them. Select one
+query and <strong>Use query and continue</strong> to build its pack and
+accept it. Acceptance advances the session; once both inputs are ready,
+analysis starts automatically. Tables carry a library-generation token
+so a stale selection cannot silently target newly indexed rows.
+Downloads go into the bench-owned archive server directory.</p>
+<p>Choose <strong>Write query and index</strong> in a Q cell to create a
+persistent query directory with an editable dummy <code>.ql</code>
+query, <code>qlpack.yml</code>, and a README. Manifest generation reuses
+<code>cgaql</code>’s exact installed-bundle dependency logic. Existing
+directories are never overwritten. Edit/save the query in the fixed
+detail panel, then choose it from the workspace table to accept it. The
+starter deliberately finds nothing; developing and validating a detector
+remains an explicit user/assistant task. Saving a draft does not
+silently replace an accepted query or the library previously loaded
+using <strong>Read existing query library</strong>.</p>
+<p>Database acquisition, building, validation, and catalogue generation
+happen outside the browser using the existing preparation components.
+Legacy database preparation CLI/API operations remain supported, but D
+detail does not offer a build terminal or build-output import path.
+Existing terminal sessions are not stopped by this UI change.</p>
+<p>The browser’s <strong>Open VS Code</strong> button starts a native,
+password-authenticated <a href="../cgacc/README.html">Coder
+code-server</a> pop-up for the completed R cell. Install it once with
+<code>cga cc install</code>, or set <code>CGACC_CODE_SERVER</code> to an
+existing installation. No session editor is started until the button is
+clicked; the shared assistant starts separately with Bench. For remote
+use, <a href="../cgagateway/README.html">CGA gateway</a> exposes Bench at
+<code>http://127.0.0.1:8599/bench/</code> and discovers live session
+editors through the same SSH-forwarded port; the default automatic
+editor ports work without extra forwards. For direct-port SSH
+forwarding, start with <code>cga bench serve --editor-port 8611</code>:
+S1 uses 8611, S2 uses 8612, and so on, independent of opening order. The
+default <code>0</code> retains automatic ports. Occupied/out-of-range
+ports report errors rather than silently changing ports. See <a
+href="../cgacc/doc/usage.html#ssh-forwarding">the forwarding example</a>.
+Editors survive navigation/reload and pop-up closure; reopening reuses
+the same session process. SIGINT/SIGTERM stops owned editors and legacy
+PTYs without stopping MRVA services. Legacy terminal history is buffered
+in memory (one MiB per PTY, with an explicit truncation notice), not
+registered as CGAST evidence; normal shell history rules still apply.
+Deliberately detached processes are not managed. Shells run as the
+bench’s OS account, not the row’s MRVA identity. This full-shell
+capability is intended for a trusted single-user loopback host: do not
+publish or proxy the bench port to untrusted clients.</p>
+<p>The assistant popup uses locally vendored xterm.js; the main Bench
+page and D/R detail cells contain no terminal. The historical cell
+terminal API remains available for compatibility; no CDN or Node runtime
+is needed to serve the Bench page.</p>
+<h2 id="browse-completed-results">Browse completed results</h2>
+<p>Every session detail (D, Q, J, or R) includes
+<strong>Databases</strong>, <strong>Queries</strong>, <strong>Result
+summary</strong>, and <strong>Findings</strong> tabs in the same light
+card style as the other controls. Each shows a count, at most one
+preview row, and a <strong>Browse all / SQL</strong> popup link. The
+previews use the session’s accepted database archives, accepted query
+snapshot, and total/per-repository findings, with VID anchors to their
+source evidence. Unaccepted inputs and unavailable results are labeled
+explicitly. The selected stage opens its matching tab (J opens the
+result summary); switching tabs is read-only. Arrow keys and Home/End
+navigate the tabs.</p>
+<p>For completed sessions, the <strong>Findings</strong> tab shows the
+total count, one finding, and a <strong>Browse all findings /
+SQL</strong> link. Full filtering, pagination, SQL, and editor controls
+live in that popup, not the main detail pane.</p>
+<p>The evidence popup uses the same restricted DuckDB SELECT/WITH
+interface as Findings, including SQL aggregates, empty-result columns,
+explicit errors, and <strong>Previous/Next</strong> pagination (30 rows
+per page). Its tables are <strong>databases</strong>,
+<strong>queries</strong>, <strong>result_summaries</strong>, or
+<strong>sarif_results</strong> (Findings), selected by the popup’s
+session and tab; the available columns are listed above the SQL editor.
+<code>ordinal</code> retains the one-based accepted evidence order.
+<strong>Show all rows</strong> restores the default SQL; rows remain
+paginated. Database/query/result summaries load only the selected
+session’s retained evidence into a temporary database; Findings uses its
+existing session-local DuckDB. Browsing never accepts inputs, runs
+analysis, or changes evidence. Repeated popup-link clicks focus the same
+window.</p>
+<p>Open a completed session’s Findings popup to see a paginated table
+with repository, rule ID/name, kind, file URI, line/column, and SARIF
+message. Existing completed sessions work without resubmission or
+reingestion: R processing already invokes <code>cgasi ingest</code>,
+which creates per-job SQLite databases and a combined session-local
+DuckDB.</p>
+<p><strong>Apply exact-match filters</strong> uses the same query
+builder as <code>cga sarif-ingest search</code>. Repository choices map
+to the job’s SARIF filename; rule ID, kind, file URI, and start line are
+also available. Nonempty filters are combined with AND; text matches are
+exact and case-sensitive. <strong>Clear filters</strong> returns to all
+findings. <strong>Previous/Next</strong> show 30 rows at a time.</p>
+<p><strong>Run read-only SQL</strong> runs one SELECT or WITH query over
+<code>sarif_results</code> using cgasi’s structured DuckDB query
+helpers. For example:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> rule_id, <span class="fu">count</span>(<span class="op">*</span>) <span class="kw">AS</span> findings</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> sarif_results</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="kw">GROUP</span> <span class="kw">BY</span> rule_id</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="kw">ORDER</span> <span class="kw">BY</span> findings <span class="kw">DESC</span>, rule_id</span></code></pre></div>
+<p>Columns are <code>user</code>, <code>file_name</code>,
+<code>kind</code>, <code>rule_id</code>, <code>rule_name</code>,
+<code>uri</code>, <code>start_line</code>, <code>start_column</code>,
+and <code>result_json</code> (the original SARIF finding). SQL replaces
+the exact-match view rather than silently combining filters. Returned
+columns and pagination adapt to the query, including aggregates and
+empty results. Errors are shown beside the table, never as a successful
+empty result. DuckDB parses/normalizes one SELECT before execution; the
+database is opened read-only in CLI safe mode, initialization files and
+external filesystem/network access are disabled, and each query
+operation times out after 15 seconds. No view operation changes the
+session, checkpoint, frozen snapshot, or completed stage history.</p>
+<p>The findings <strong>Open VS Code</strong> button opens a project in
+the existing, separate <code>.cga/tmp/cgabench-query/session-N</code>
+directory (or <code>.cgabench-query/session-N</code> beside a raw
+session file). It is independent of the D build shell. The generated
+<code>query.code-workspace</code> sets that folder as the integrated
+terminal working directory. <code>AGENTS.md</code> and
+<code>.github/copilot-instructions.md</code> point assistants to
+<code>bench-context.json</code>, refreshed with the session identity,
+accepted inputs, DuckDB/per-job SQLite paths, frozen snapshot, static
+documentation and API URLs/headers/examples. They direct assistants to
+use read-only result queries, without reingestion or execution workflow
+mutations. Existing instruction/project files are not overwritten. Agent
+extensions/authentication remain user-managed; opening VS Code does not
+start Copilot or override permission/trust controls. The editor has your
+OS account’s full permissions; instructions are not a shell sandbox. See
+<a href="../cgacc/doc/usage.html">cgacc’s runtime contract</a>.</p>
+<h2 id="choose-existing-inputs-or-prepare-your-own">Choose existing
+inputs or prepare your own</h2>
+<p>Database/query refinement happens inside the respective workspace.
+Seed a session from top-level <code>cgadl-metadata</code>,
+<code>cgaql-index</code>, and <code>cgaql-querydir</code>, or import
+them directly. Low-level tool output is reserved for terminal/LLM use.
+The examples below establish S1. For variants, prepare only the changing
+stage; the fixed stage must use Clone instead of
+library/tool/work/accept operations.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> bench tool <span class="at">--stage</span> D <span class="at">--</span> dl getmeta /path/to/metadata.sql</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> bench tool <span class="at">--stage</span> D <span class="at">--</span> dl list 20</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> bench tool <span class="at">--stage</span> D <span class="at">--</span> dl select primary_language cpp git_owner acme</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> bench tool <span class="at">--stage</span> D <span class="at">--</span> dl download</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> bench database</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> bench tool <span class="at">--stage</span> Q <span class="at">--</span> ql index /path/to/queries</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> bench tool <span class="at">--stage</span> Q <span class="at">--</span> ql list 20</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> bench tool <span class="at">--stage</span> Q <span class="at">--</span> ql select id cpp/my-query</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> bench tool <span class="at">--stage</span> Q <span class="at">--</span> ql pack</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> bench query</span></code></pre></div>
+<p>The tool commands use <strong>session-local workspace state</strong>,
+not another row’s selection. Selecting again invalidates its previous
+download/pack association. Acceptance freezes the selected metadata and
+copies the query pack; later workspace operations cannot silently change
+accepted inputs. Database archive digests are recorded at acceptance and
+rechecked before submission. A session must have one language; its
+database and query languages must agree.</p>
+<p>For user-created inputs, use existing
+<code>cga db</code>/<code>cga catalog</code> preparation commands, or
+write/refine queries in your editor and index/pack them as above. The
+bench supplies a starter/editor but does not replace database builders
+or automate local query evaluation. <code>work</code> records required
+work and refinement notes:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> bench work <span class="at">--stage</span> Q <span class="at">--note</span> <span class="st">&#39;Write and smoke-test the refined detector&#39;</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> bench tool <span class="at">--stage</span> Q <span class="at">--</span> ql index /path/to/my-new-queries</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> bench tool <span class="at">--stage</span> Q <span class="at">--</span> ql select id cpp/refined-detector</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> bench tool <span class="at">--stage</span> Q <span class="at">--</span> ql pack</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> bench query <span class="at">--source</span> user</span></code></pre></div>
+<p>Explicit prepared artifacts can also be accepted:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> bench database <span class="at">--source</span> user <span class="at">--selection</span> databases.json <span class="at">--dbdir</span> ./downloaded</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> bench query <span class="at">--source</span> user <span class="at">--selection</span> queries.json <span class="at">--pack</span> ./query.tgz</span></code></pre></div>
+<p>Database selections use the existing
+<code>{"databases": [...]}</code> envelope and download layout
+<code>OWNER/REPO/OWNER_REPO_db.zip</code>. Query selections use
+<code>{"queries": [...]}</code>. Database rows require
+<code>git_owner</code>, <code>git_repo</code>,
+<code>primary_language</code>; query rows require <code>language</code>.
+For current CGA selections, <code>database</code>/<code>query</code> can
+omit paths. With multiple <code>cgaql</code> bundles,
+<code>--pack-index N</code> (zero-based) freezes exactly the
+corresponding query row. An explicit <code>--pack</code> must already
+represent the supplied selection.</p>
+<h2 id="advance-pause-and-preserve-evidence">Advance, pause, and
+preserve evidence</h2>
+<p>Accepting an input advances automatically; <code>--no-advance</code>
+defers execution. <code>advance</code> stops at the first missing
+accepted input. With D and Q accepted, it uses the real
+<code>cgamr submit</code>/<code>status</code>/<code>download</code>/<code>verify</code>
+and <code>cgasi ingest</code> components. Each invocation checks status
+once, returning <strong>running</strong> if work is pending. There is no
+automatic polling loop. Invoke <code>advance</code> again to resume; the
+browser has the same action.</p>
+<p>Infrastructure actions reuse the existing CGA lifecycle components.
+The usual <code>CGA_MRVA_*</code> environment settings apply;
+<code>session --server URL</code> pins a specific endpoint.
+<code>--user</code> is the authenticated MRVA identity, while bench
+session names are experiment labels. Ingestion needs the existing SARIF
+tooling, SQLite, and DuckDB.</p>
+<p>Every external operation has an atomic session checkpoint. Successful
+submission is retained even if status/download/ingestion subsequently
+fails, so retrying <code>advance</code> does not submit again. Errors
+are nonzero with explicit stderr diagnostics, and raw filters also emit
+the partial CGAST for recovery. Workflow failures remain in the workflow
+attempt journal without committing a new node; the session’s
+already-recorded checkpoint lets the UI display the failure and the next
+<code>advance</code> recover completed operations.</p>
+<p>If submission itself fails or is interrupted after starting, its
+outcome is <strong>uncertain</strong>: automatic resubmission is
+refused. Inspect the MRVA server before creating a replacement session.
+This deliberately avoids duplicating a job when the server received a
+request but its response was lost.</p>
+<p>Partial/missing downloads are retried on the next advance. Result
+archives are ordered by the submitted repositories before ingestion,
+regardless of server status ordering. Selections whose repository names
+would collide under MRVA’s <code>OWNER-REPO.zip</code> result naming are
+rejected explicitly.</p>
+<p>Once submission starts, D and Q are locked. Completed sessions are
+immutable evidence; new database/query revisions belong to a new
+session. Results include per-job ingestion records, zero-finding jobs,
+exact SARIF findings, query/database digests, MRVA identity, and
+source/result provenance. Workflow artifact discovery registers these
+files in the normal configured object store.</p>
+<p>Checkpoints and raw component files are operational paths under
+<code>CGAST_TMPDIR</code> (or the existing CGA scratch default). Retain
+them for resuming a live bench; CAS workflow evidence alone does not
+recreate a running MRVA session. Concurrent browser mutations are
+serialized by the workflow lock (or a session-file lock); raw filter
+callers must serialize their own state-file updates.</p>
+<h2 id="compare-and-use-the-browser">Compare and use the browser</h2>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> bench session refined <span class="at">--user</span> alice</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Choose/refine/accept its inputs, then advance until complete.</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> bench compare 1 2</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> bench show E.C</span></code></pre></div>
+<p>With no indices, <code>compare</code> uses all complete rows in
+insertion order. At least two distinct complete results are required. S1
+is always included and moved to the first position, even if omitted or
+listed later; incomplete S1 blocks comparison. For example,
+<code>compare 2</code> compares S2 to S1. Each input reports
+<strong>added</strong> and <strong>removed</strong> findings relative to
+it, and <strong>common</strong> means present in every input. Duplicates
+are compared as multisets, not discarded. All selected result references
+and their D/Q/J provenance are retained; prior comparison artifacts
+remain in comparison history.</p>
+<p>Matching is deliberately conservative: exact repository, rule ID,
+primary physical/logical locations (including regions), and SARIF
+message. Artifact and rule indices are resolved. Renamed repositories,
+changed source-root URIs, shifted line numbers, or changed messages are
+<strong>not</strong> treated as equivalent. This is finding comparison,
+not automatic CVE correctness evaluation. Completed finding snapshots
+are digest-checked before comparison.</p>
+<p><code>serve --port N</code> exposes the standalone grid, fixed
+details, and comparison panels. The browser can append sessions, load
+libraries, choose prepared inputs, create/edit queries, record work,
+advance, and compare selected rows. Mutations use the same CLI commands
+through <code>cga</code>, including workflow history and artifacts. The
+grid is refreshed on explicit reload/action, not periodically, so
+unfinished form input is preserved. It binds loopback only; same-origin
+mutation requests are required. Use an SSH local forward for remote
+access.</p>
+<p>Outside a workflow, supply a persisted CGAST explicitly:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> bench serve <span class="at">--session-file</span> /path/to/session.json</span></code></pre></div>
+<p>That file must already contain an initialized bench. Browser changes
+are atomic file updates; CLI filters still require the caller to persist
+their output. Session-file mode does not start infrastructure
+automatically.</p>
+<h2 id="assistant-endpoints">Assistant endpoints</h2>
+<p>The discoverable CLI entry point is
+<code>cga llm context bench</code> (alias <code>cga llm cb</code>). It
+reads local experiment/session context without requiring this server.
+Add <code>--show-html-endpoint</code>,
+<code>--show-json-endpoint</code>, or <code>--show-docs</code> to print
+the viewer URL, model URL, or local documentation paths; use
+<code>--port PORT</code> for a non-default viewer port.</p>
+<p><code>GET /api/llm</code> describes the detailed interface. All are
+on the bench’s own origin:</p>
+<table>
+<colgroup>
+<col style="width: 28%" />
+<col style="width: 71%" />
+</colgroup>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/api/view</code></td>
+<td>Command-free human projection and MRVA summary</td>
+</tr>
+<tr>
+<td><code>/api/model</code></td>
+<td>Full addressable experiment, state, histories, and comparison
+provenance</td>
+</tr>
+<tr>
+<td><code>/api/catalogues</code></td>
+<td>Discovered catalogue paths and scan roots; GET rescans</td>
+</tr>
+<tr>
+<td><code>/api/collections/databases</code></td>
+<td>Loaded catalogue rows, search/pagination, generation token</td>
+</tr>
+<tr>
+<td><code>/api/collections/queries</code></td>
+<td>Session library (shared fallback), or
+<code>source=user&amp;session=N</code> workspace</td>
+</tr>
+<tr>
+<td><code>/api/query-source?session=N</code></td>
+<td>Editable query source and pinned pack manifest</td>
+</tr>
+<tr>
+<td><code>/api/sysview</code></td>
+<td>Detailed MRVA system proxy</td>
+</tr>
+<tr>
+<td><code>POST /api/action</code></td>
+<td>Named human actions with structured fields</td>
+</tr>
+<tr>
+<td><code>POST /api/command</code></td>
+<td>Detailed allowlisted bench argv, including session-local tool
+operations</td>
+</tr>
+<tr>
+<td><code>POST /api/results</code></td>
+<td>Session-scoped exact-match search or read-only SQL with
+pagination</td>
+</tr>
+<tr>
+<td><code>POST /api/evidence</code></td>
+<td>Session/stage-scoped retained database/query/result summary SQL
+pages</td>
+</tr>
+<tr>
+<td><code>POST /api/editor</code></td>
+<td>Open/reuse password-authenticated VS Code for a completed
+session</td>
+</tr>
+<tr>
+<td><code>POST /api/terminal</code></td>
+<td>Persistent separate D/R shells:
+open/read/write/resize/insert/stop</td>
+</tr>
+</tbody>
+</table>
+<p>Mutations require <code>Content-Type: application/json</code> and
+<code>X-CGA-Bench: 1</code>, with same-origin browser requests. Human
+errors are summarized; full diagnostics remain on stderr/in workflow
+attempts and <code>startup_error</code> in <code>/api/llm</code>.
+Libraries support <code>search</code>, <code>offset</code>,
+<code>limit</code> (maximum 100), <code>session</code>, and
+<code>source=list|user</code>. Selection commands require the returned
+<code>generation</code> and row IDs, for example
+<code>choose-databases --generation HASH --rows 1 2</code>. Named
+preparation commands are <code>mode MODE</code>,
+<code>clone --stage D|Q --from-session N</code>,
+<code>copy-query</code>, <code>catalogue PATH [--session N]</code>,
+<code>library DIRECTORY [--session N]</code>, <code>create-query</code>,
+<code>edit-query</code>, and <code>infrastructure setup|...</code>.
+Omitting <code>--session</code> on catalogue/library commands retains
+the shared-library behavior.
+<code>catalogue --session N --source user PATH</code> marks the
+built-catalogue handoff, independently of existing-catalogue defaults.
+Human catalogue/library actions carry the selected session; canonical
+LLM addresses such as <code>E.S[1].D</code> remain unchanged.</p>
+<p>Result requests require the same JSON/same-origin headers, an
+explicit one-based <code>session</code>, <code>offset</code> (default
+0), and <code>limit</code> (default 30, maximum 100). Supply either
+<code>filters</code> (string values for <code>file_name</code>,
+<code>rule_id</code>, <code>kind</code>, <code>uri</code>,
+<code>start_line</code>) or <code>sql</code>. Responses include
+<code>rows</code>, <code>columns</code>, <code>total</code>,
+<code>has_more</code>, and repository/SQLite provenance.
+<code>/api/llm</code> documents this format.</p>
+<p>Editor requests use the same JSON/same-origin guards and take
+<code>{"session": N}</code>. The non-cacheable response contains the
+local login URL, generated password, workspace/project paths and PID.
+The UI submits the password in a pop-up form, never in a URL. Missing
+code-server, blocked pop-ups and startup failures are shown
+explicitly.</p>
+<p>Legacy terminal requests use the same JSON/same-origin guards.
+<code>open</code> takes <code>session</code>, <code>columns</code>,
+<code>rows</code>, optional <code>stage</code> (<code>D</code> by
+default, or completed <code>R</code>), and optional
+<code>restart</code>; subsequent operations take the opaque returned
+<code>id</code>. <code>read</code> additionally takes a byte
+<code>cursor</code>, returning base64 output, the next cursor,
+truncation/running status, and explicit errors. <code>write</code> takes
+UTF-8 <code>data</code>; <code>insert</code> pastes the prepared Copilot
+command with no Enter. Terminal input is not an allowlisted bench
+command: it is intentionally a full interactive shell. Scripts remain
+restricted to this origin; forms may additionally target IPv4 loopback
+ports for code-server login.</p>
+<h2 id="validation">Validation</h2>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> cga/cgabench</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> <span class="at">-m</span> unittest discover <span class="at">-s</span> tests</span></code></pre></div>
+<p>Focused tests cover state/address invariants, input freezing,
+blocked/failed resume behavior, duplicate-sensitive comparison, and
+browser persistence. The integration test uses the <strong>real
+component binaries and SARIF ingestion</strong> against a localhost
+MRVA-protocol fixture, including a failed-status workflow recovery, two
+completed sessions, comparison, and browser-to-dispatcher recording.</p>
+<p>When Chromium and a Node version with built-in WebSocket support are
+available, the suite also exercises library loading, table-based
+selection, query creation/copying/editing, mode selection, Clone/Edit
+controls, status/notes, and the editor launch/error paths in a real
+headless browser. When code-server is installed, it also checks
+authenticated pop-up workbench loading and process reuse across reloads.
+<code>cd cga/cgacc &amp;&amp; python3 -m unittest discover -s tests</code>
+checks native authentication, session isolation, restart and shutdown.
+Legacy PTY tests cover resizing, bounded output, persistence,
+foreground-job shutdown, and insertion without execution. A fake Copilot
+executable checks command arguments without starting an actual paid LLM
+session.</p>
+</body>
+</html>

@@ -1,0 +1,671 @@
+#!/usr/bin/env bash
+
+# Human/LLM-in-the-loop driver for the standalone STATUS + DOWNLOAD e2e test.
+#
+# Sibling of run-system-02 / run-system-03 / run-system-04. Those exercise the
+# SUBMIT path (multiple users / multiple sessions / multiple languages) and then
+# assert on Postgres state directly. This script (run-system-05) instead
+# exercises the two client-lifecycle operations that come AFTER submission and
+# that a real MRVA client drives against the server's HTTP API:
+#
+#   Test axes (this script):
+#     users              :: 2              (bob, eve)
+#     submissions        :: 2              (bob-1, eve-1), one session each
+#     operations tested  :: STATUS request + DOWNLOAD request (the focus)
+#     backend            :: MinIO object store
+#
+# Both operations use the CGA MRVA client:
+#   - status  : GET  .../variant-analyses/{session}          -> overall + repos
+#   - download: GET  .../variant-analyses/{session}/repos/... -> artifact_url,
+#               then fetch the result archive.
+# Either can be called any time after a submission is sent.
+#
+# The intended interaction sequence (see `all`):
+#     submit  bob-1 ; job-status bob-1     # status should be other than done
+#     submit  eve-1 ; job-status eve-1     # status should be other than done
+#     repeat until done: job-status bob-1 ; job-status eve-1
+#     download bob-1 ; download eve-1      # may be empty; that's fine
+#
+# Unlike the siblings' fixed submit1/submit2/submit3 phases, the per-submission
+# operations here are PARAMETERIZED nested commands that take a submission name:
+#
+#   ./run-system-05 pack bob-1            # build bob-1's query pack
+#   ./run-system-05 submit bob-1          # POST bob-1
+#   ./run-system-05 job-status eve-1      # GET eve-1's status
+#   ./run-system-05 download bob-1        # download bob-1's results
+#
+# Global (non-parameterized) phases: preflight reset stage build start / stop /
+# cleanup / verify / all. It shares the sibling library (config + Postgres/MinIO
+# helpers, state file) and the sibling query/cleanup scripts, but uses its OWN
+# work dir, logs and state file so the scenarios do not clobber each other. They
+# still share the same Postgres database and port, so run ONE at a time.
+#
+# The pipeline deliberately LEAVES the Go server running and Postgres populated
+# on exit (for `query`); run `cleanup` when done.
+#
+# Linux only. Run from the system-tests/ directory. Requires: go,
+# codeql >= 2.23.6, host PostgreSQL, python3 (drives CGA), the
+# community MinIO server build.
+
+set -euo pipefail
+
+# --- independent on-disk identity --------------------------------------
+export MRVA_WORK_DIR="${MRVA_WORK_DIR:-/tmp/mrva-standalone-statusdl}"
+# All transient files (server/CGA/minio logs, PID files, submission
+# body, state) live under /tmp/mrva-${RUN_TAG}/ — see the shared lib.
+export RUN_TAG="${RUN_TAG:-statusdl}"
+
+# This scenario exercises the MinIO object-storage backend (blobs in MinIO,
+# only references in Postgres). Override MRVA_STANDALONE_STORAGE=filesystem to
+# fall back.
+export MRVA_STANDALONE_STORAGE="${MRVA_STANDALONE_STORAGE:-minio}"
+
+# shellcheck source=standalone-multi-agent-lib.sh
+. "$(dirname "$0")/standalone-multi-agent-lib.sh"
+
+# State handed between separate invocations (SID_<name>, SERVER_PID, ...).
+load_state
+
+# ---- Two-user, one-submission-each scenario ---------------------------
+#
+# Each submission has a NAME (bob-1, eve-1) used on the command line and as the
+# state-file key suffix. A submission carries: the submitting user (sent as the
+# X-MRVA-User header), the CodeQL language, the query to pack, and the repos to
+# analyze. Both submissions are cpp and reuse the already-staged cpp/debian DBs,
+# with distinct repo counts so the two sessions differ.
+SUBMISSIONS=(bob-1 eve-1)
+
+declare -A SUB_USER SUB_LANG SUB_QUERY SUB_REPOS
+SUB_USER[bob-1]="bob"
+SUB_LANG[bob-1]="cpp"
+SUB_QUERY[bob-1]="../../sample-query/ReturnValueIgnored.ql"
+SUB_REPOS[bob-1]="debian/iniparser-4.1 debian/libgmpada-1.5"
+
+SUB_USER[eve-1]="eve"
+SUB_LANG[eve-1]="cpp"
+SUB_QUERY[eve-1]="../../sample-query/DeadCodeCondition.ql"
+SUB_REPOS[eve-1]="debian/lua-filesystem-1.8.0"
+
+# Union of all submissions' repos (deduplicated) — what needs staging on disk.
+_all_repos() {
+    local n
+    for n in "${SUBMISSIONS[@]}"; do
+        printf '%s\n' ${SUB_REPOS[$n]}
+    done
+}
+mapfile -t STAGE_REPOS < <(_all_repos | sort -u)
+
+# Map each repo (owner/repo) to its language for staging under
+# $SAMPLE_DB_ROOT/<language>/<owner>/<repo>.
+declare -A REPO_LANG
+for _n in "${SUBMISSIONS[@]}"; do
+    for _r in ${SUB_REPOS[$_n]}; do REPO_LANG["$_r"]="${SUB_LANG[$_n]}"; done
+done
+
+# Total jobs across all submissions (drives verify).
+NJOBS_TOTAL=0
+for _n in "${SUBMISSIONS[@]}"; do
+    # shellcheck disable=SC2206
+    _arr=(${SUB_REPOS[$_n]})
+    NJOBS_TOTAL=$(( NJOBS_TOTAL + ${#_arr[@]} ))
+done
+
+# Where downloaded result archives land (one subdir per submission).
+DOWNLOAD_DIR="${MRVA_WORK_DIR}/downloads"
+
+# Record the phase that just ran, so `where` can point at the current step.
+_mark() {
+    CURRENT_PHASE="$1"
+    save_state CURRENT_PHASE "$1"
+}
+
+# --- helpers -----------------------------------------------------------
+
+# Sanitize a submission name into a shell-safe state-file key suffix
+# (bob-1 -> bob_1). Session ids are stored as SID_<suffix>.
+_state_key() { printf 'SID_%s' "${1//[^A-Za-z0-9]/_}"; }
+
+# Fetch the persisted session id for a submission (empty if not submitted).
+_get_sid() {
+    load_state
+    local key; key="$(_state_key "$1")"
+    printf '%s' "${!key:-}"
+}
+
+# Assert a submission name exists in the registry.
+_require_submission() {
+    local name="$1" n
+    for n in "${SUBMISSIONS[@]}"; do
+        [ "$n" = "$name" ] && return 0
+    done
+    echo "ERROR: unknown submission '${name}' (known: ${SUBMISSIONS[*]})" >&2
+    return 2
+}
+
+# ======================================================================
+# Global phases (no argument)
+# ======================================================================
+
+# --- preflight: tools, Postgres, free port -----------------------------
+phase_preflight() {
+    echo "--- preflight ---"
+    if [ -z "$CODEQL_CLI_PATH" ]; then
+        echo "ERROR: codeql not found on PATH"
+        exit 1
+    fi
+    codeql version --format=terse | sed 's/^/codeql version: /'
+    go version | sed 's/^/go version: /'
+
+    pg_ensure_running
+    pg_isready -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" | sed 's/^/pg_isready: /'
+    pg_ensure_role_db
+
+    # Reclaim port: kill any stale process bound to PORT.
+    local stale_pids p
+    stale_pids="$(lsof -ti tcp:"$PORT" 2>/dev/null || true)"
+    if [ -n "$stale_pids" ]; then
+        echo "killing stale processes on port ${PORT}: ${stale_pids}"
+        for p in $stale_pids; do
+            kill "$p" 2>/dev/null || true
+        done
+        sleep 1
+    fi
+    minio_reclaim_port
+    db_server_reclaim_port
+}
+
+# --- reset: clean slate (drop tables, wipe work dir + logs) -------------
+phase_reset() {
+    echo "--- reset (clean slate) ---"
+    psql_mrva -q -c "
+DROP TABLE IF EXISTS $(IFS=,; echo "${MRVA_TABLES[*]}") CASCADE;
+DROP SEQUENCE IF EXISTS $(IFS=,; echo "${MRVA_SEQUENCES[*]}") CASCADE;
+" >/dev/null
+
+    rm -rf "$MRVA_WORK_DIR" "$MRVA_TMP_DIR"
+    mkdir -p "$MRVA_ARTIFACT_DIR" "$MRVA_QLDB_DIR" "$MRVA_DB_SERVE_DIR" "$MRVA_TMP_DIR"
+    echo "  dropped tables; wiped ${MRVA_WORK_DIR} and transient files"
+}
+
+# --- stage: place sample CodeQL DBs where the qldbstore expects them ----
+phase_stage() {
+    echo "--- staging ${#STAGE_REPOS[@]} CodeQL DBs (union of all submissions) ---"
+    local repo name owner lang src
+    for repo in "${STAGE_REPOS[@]}"; do
+        name="$(basename "$repo")"
+        owner="$(dirname "$repo")"
+        lang="${REPO_LANG[$repo]}"
+        src="${SAMPLE_DB_ROOT}/${lang}/${owner}/${name}"
+
+        if [ ! -d "$src" ]; then
+            local zipf="${src}.zip" tmpd bundle
+            if [ ! -f "$zipf" ]; then
+                echo "ERROR: neither DB dir nor zip found for ${repo}" >&2
+                echo "  looked for: $src  and  $zipf" >&2
+                exit 1
+            fi
+            echo "  extracting ${zipf##*/}"
+            tmpd="$(mktemp -d "${TMPDIR:-/tmp}/mrva-db.XXXXXX")"
+            unzip -q "$zipf" -d "$tmpd"
+            bundle="$(find "$tmpd" -mindepth 1 -maxdepth 1 -type d | head -1)"
+            if [ -z "$bundle" ]; then
+                echo "ERROR: ${zipf} contained no top-level dir" >&2
+                rm -rf "$tmpd"; exit 1
+            fi
+            mv "$bundle" "$src"
+            rm -rf "$tmpd"
+        fi
+
+        mkdir -p "$MRVA_DB_SERVE_DIR/${owner}/${name}"
+        cga db zip --db-dir "$src" \
+            --output "$MRVA_DB_SERVE_DIR/${owner}/${name}/${owner}_${name}_db.zip"
+        echo "  staged ${repo}"
+    done
+    find "$MRVA_DB_SERVE_DIR" -name '*_db.zip' -exec ls -lh {} \;
+}
+
+# --- build: server + agent binaries ------------------------------------
+phase_build() {
+    echo "--- building server + agent ---"
+    make -s -C ../../server-commander mrvaserver mrvaagent
+}
+
+# --- start: launch the Go server in standalone mode --------------------
+phase_start() {
+    echo "--- starting Go server on :${PORT} (no Docker) ---"
+    minio_start
+    db_server_start
+    nohup ../../server-commander/mrvaserver --mode=standalone --loglevel=info \
+        --dbpath="$MRVA_QLDB_DIR" \
+        ${MRVA_DBG_DUMP_SYSVIEW:+--dbg-dump-sysview} \
+        > "$SERVER_LOG" 2>&1 &
+    SERVER_PID=$!
+    echo "$SERVER_PID" > "$SERVER_PID_FILE"
+    save_state SERVER_PID "$SERVER_PID"
+    [ -n "${MRVA_DBG_DUMP_SYSVIEW:-}" ] && save_state SYSVIEW_DUMP_PATH "$SYSVIEW_DUMP_PATH"
+
+    local _
+    for _ in $(seq 1 20); do
+        if curl -sf "$SERVER/" >/dev/null 2>&1; then
+            break
+        fi
+        sleep 0.5
+    done
+    if ! curl -sf "$SERVER/" >/dev/null 2>&1; then
+        echo "ERROR: server did not come up. Tail:"
+        tail -30 "$SERVER_LOG"
+        exit 1
+    fi
+    echo "  server up (pid ${SERVER_PID})"
+}
+
+# ======================================================================
+# Parameterized phases (take a submission name)
+# ======================================================================
+
+# --- pack <name>: build one submission's query pack --------------------
+phase_pack() {
+    local name="$1"; _require_submission "$name"
+    local query="${SUB_QUERY[$name]}" language="${SUB_LANG[$name]}"
+    local out="${MRVA_WORK_DIR}/query-pack-${name}.tgz"
+    mkdir -p "$MRVA_WORK_DIR"
+    echo "--- pack ${name}: build ${language} pack from ${query##*/} -> ${out##*/} ---"
+    cga_pack_query "$query" "$out" >> "$REQ_LOG" 2>&1
+    ls -lh "$out"
+    local sha; sha="$(sha1sum "$out" | awk '{print $1}')"
+    echo "  ${out##*/} sha1=${sha}"
+}
+
+# --- submit <name>: POST one submission --------------------------------
+phase_submit() {
+    local name="$1"; _require_submission "$name"
+    local user="${SUB_USER[$name]}" language="${SUB_LANG[$name]}"
+    local pack="${MRVA_WORK_DIR}/query-pack-${name}.tgz"
+    # shellcheck disable=SC2206
+    local repos=(${SUB_REPOS[$name]})
+    if [ ! -f "$pack" ]; then
+        echo "ERROR: pack for ${name} not built; run: $(basename "$0") pack ${name}" >&2
+        exit 1
+    fi
+    echo "--- submit ${name} (user=${user}, ${language}): ${#repos[@]} repos, pack ${pack##*/} ---"
+    printf '    %s\n' "${repos[@]}"
+
+    local out_json="${SUBMIT_JSON%.json}-${name}.json"
+    cga_submit "$name" "$user" "$language" "$pack" "$SERVER" "${repos[@]}" > "$out_json"
+    cat "$out_json"; echo
+    local sid
+    sid="$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['id'])" \
+            "$out_json")"
+    echo "${name} session=${sid}"
+    save_state "$(_state_key "$name")" "$sid"
+}
+
+# --- job-status <name>: GET the status request for one submission ------
+#
+# Drives the CGA client's `status` subcommand against the server and prints a
+# human summary (overall session status + per-repo analysis_status/result
+# count). Sets LAST_OVERALL to the overall status string ("in_progress" until
+# the session reaches a terminal "succeeded"/"failed"/"cancelled").
+LAST_OVERALL=""
+phase_job_status() {
+    local name="$1"; _require_submission "$name"
+    local sid; sid="$(_get_sid "$name")"
+    if [ -z "$sid" ]; then
+        echo "ERROR: no session id for ${name}; run: $(basename "$0") submit ${name}" >&2
+        exit 1
+    fi
+    echo "--- job-status ${name} (session ${sid}) ---"
+    local json
+    json="$(cga_status_json "$name")"
+    LAST_OVERALL="$(printf '%s' "$json" \
+        | python3 -c 'import json,sys; print(json.load(sys.stdin).get("status",""))')"
+    printf '%s' "$json" | python3 -c '
+import json, sys
+d = json.load(sys.stdin)
+print("  --- session status from server")
+print("  overall:", d.get("status"))
+for sr in d.get("scanned_repositories", []):
+    repo = sr.get("repository", {})
+    print("  - %-40s %-12s results=%s size=%s" % (
+        repo.get("full_name"), sr.get("analysis_status"),
+        sr.get("result_count"), sr.get("artifact_size_in_bytes")))
+'
+}
+
+# --- download <name>: GET the download request for one submission ------
+#
+# Drives the CGA client's `download` subcommand. It fetches each result archive
+# reported by status into DOWNLOAD_DIR/<name>/. Results may legitimately be
+# empty; the point is to exercise the download operation end to end.
+phase_download() {
+    local name="$1"; _require_submission "$name"
+    local sid; sid="$(_get_sid "$name")"
+    if [ -z "$sid" ]; then
+        echo "ERROR: no session id for ${name}; run: $(basename "$0") submit ${name}" >&2
+        exit 1
+    fi
+    local dest="${DOWNLOAD_DIR}/${name}"
+    mkdir -p "$dest"
+    echo "--- download ${name} (session ${sid}) -> ${dest} ---"
+    cga mr download --name "$name" --output-dir "$dest"
+    echo "  archives in ${dest}:"
+    find "$dest" -type f -name '*.zip' -exec ls -lh {} \; | sed 's/^/    /' \
+        || echo "    (none)"
+}
+
+# ======================================================================
+# Poll + verify + all
+# ======================================================================
+
+# --- poll: repeat job-status for every submission until all are done ---
+phase_poll() {
+    echo "--- poll: repeat status for all submissions until each is done ---"
+    local deadline name done_all
+    deadline=$(( $(date +%s) + POLL_DEADLINE_SECS ))
+    while true; do
+        done_all=1
+        for name in "${SUBMISSIONS[@]}"; do
+            phase_job_status "$name"
+            case "$LAST_OVERALL" in
+                succeeded|failed|cancelled) : ;;   # terminal
+                *) done_all=0 ;;                    # still in_progress
+            esac
+        done
+        if [ "$done_all" -eq 1 ]; then
+            echo "  -> all submissions reached a terminal state"
+            break
+        fi
+        if [ "$(date +%s)" -ge "$deadline" ]; then
+            echo "  -> TIMEOUT after ${POLL_DEADLINE_SECS}s"
+            break
+        fi
+        sleep "$POLL_INTERVAL"
+    done
+}
+
+# Shared error scan: print result, return 1 if real (non-benign) errors.
+_error_check() {
+    if grep -E "ERROR|panic|fatal" "$SERVER_LOG" 2>/dev/null \
+         | grep -v 'mrva-project-resolver' >/dev/null; then
+        echo "errors (excluding benign mrva-project-resolver):"
+        grep -E "ERROR|panic|fatal" "$SERVER_LOG" \
+          | grep -v 'mrva-project-resolver' | head -10
+        return 1
+    fi
+    echo "NO ERRORS (mrva-project-resolver warnings are benign on dev hosts)"
+    return 0
+}
+
+# --- logs: server (+agent) log tail + error scan -----------------------
+phase_logs() {
+    echo "--- server log tail ---"
+    tail -25 "$SERVER_LOG"
+    echo "--- errors in server log ---"
+    _error_check || true
+}
+
+# --- verify: final PASS/FAIL gate --------------------------------------
+#
+# The focus is the status + download OPERATIONS, so the gate is:
+#   (a) every submission got a session id (submit worked),
+#   (b) the STATUS request returned a terminal "succeeded" overall for each,
+#   (c) the DOWNLOAD request produced one result archive per repo
+#       (NJOBS_TOTAL archives across all submissions), and
+#   (d) no real server errors.
+phase_verify() {
+    load_state
+    echo "--- verify ---"
+    local name sid ok=1
+    local n_sids=0 n_done=0 n_archives=0
+
+    for name in "${SUBMISSIONS[@]}"; do
+        sid="$(_get_sid "$name")"
+        if [ -n "$sid" ]; then
+            n_sids=$(( n_sids + 1 ))
+        else
+            echo "  MISSING session id for ${name}"; ok=0; continue
+        fi
+        # (b) overall status via the status endpoint
+        phase_job_status "$name" >/dev/null
+        if [ "$LAST_OVERALL" = "succeeded" ]; then
+            n_done=$(( n_done + 1 ))
+        else
+            echo "  ${name}: overall status '${LAST_OVERALL}' (want succeeded)"
+            ok=0
+        fi
+        # (c) downloaded archives for this submission
+        local dest="${DOWNLOAD_DIR}/${name}" cnt
+        cnt="$(find "$dest" -type f -name '*.zip' 2>/dev/null | wc -l | tr -d ' ')"
+        n_archives=$(( n_archives + cnt ))
+    done
+
+    local log_err
+    if _error_check; then log_err=0; else log_err=1; fi
+
+    echo
+    echo "submissions: ${SUBMISSIONS[*]}"
+    echo "session ids obtained: ${n_sids}/${#SUBMISSIONS[@]}"
+    echo "sessions succeeded (via status request): ${n_done}/${#SUBMISSIONS[@]}"
+    echo "result archives downloaded: ${n_archives}/${NJOBS_TOTAL}"
+    echo "server still running (pid $(cat "$SERVER_PID_FILE" 2>/dev/null)); Postgres left populated."
+    echo "  inspect:   ./run-system-05 query"
+    echo "  tear down: ./run-system-05 cleanup"
+
+    if [ "$ok" -eq 1 ] \
+       && [ "$n_sids" -eq "${#SUBMISSIONS[@]}" ] \
+       && [ "$n_done" -eq "${#SUBMISSIONS[@]}" ] \
+       && [ "$n_archives" -eq "$NJOBS_TOTAL" ] \
+       && [ "$log_err" -eq 0 ]; then
+        echo "PASS: status request reported all ${#SUBMISSIONS[@]} session(s) succeeded; download request retrieved ${n_archives}/${NJOBS_TOTAL} result archive(s); no errors"
+        return 0
+    else
+        echo "FAIL: sids=${n_sids}/${#SUBMISSIONS[@]} done=${n_done}/${#SUBMISSIONS[@]} archives=${n_archives}/${NJOBS_TOTAL} log_err=${log_err}"
+        return 1
+    fi
+}
+
+# --- all: the scripted status+download interaction ---------------------
+#
+# Mirrors the intended sequence: submit each user and check its status is other
+# than done, poll until both are done, then download both.
+phase_all() {
+    phase_preflight; echo
+    phase_reset;     echo
+    phase_stage;     echo
+    phase_build;     echo
+    phase_start;     echo
+
+    local name
+    for name in "${SUBMISSIONS[@]}"; do
+        phase_pack "$name"; echo
+    done
+
+    # Static part: submit each, then immediately check status. Right after
+    # submission the session is normally still in_progress; we REPORT the early
+    # status (it is racy — fast jobs may already be done — so this is
+    # informational, not a gate).
+    for name in "${SUBMISSIONS[@]}"; do
+        phase_submit "$name"; echo
+        phase_job_status "$name"
+        case "$LAST_OVERALL" in
+            succeeded|failed|cancelled)
+                echo "  note: ${name} already terminal ('${LAST_OVERALL}') at first status check (fast worker)";;
+            *)
+                echo "  ok: ${name} status is other than done ('${LAST_OVERALL}')";;
+        esac
+        echo
+    done
+
+    # Repeat status until every submission is done.
+    phase_poll; echo
+
+    # Then download each submission's results.
+    for name in "${SUBMISSIONS[@]}"; do
+        phase_download "$name"; echo
+    done
+
+    phase_logs; echo
+    phase_verify
+}
+
+# --- query / cleanup / stop --------------------------------------------
+phase_query() {
+    exec "$(dirname "$0")/query-standalone-multi-agent-e2e.sh"
+}
+phase_cleanup() {
+    exec "$(dirname "$0")/cleanup-standalone-multi-agent-e2e.sh"
+}
+
+# --- stop: stop the server but keep all state --------------------------
+phase_stop() {
+    load_state
+    echo "--- stopping Go server (keeping state) ---"
+    local stopped=0 pid seen_pids="" stale_pids p
+    for pid in "${SERVER_PID:-}" "$(cat "$SERVER_PID_FILE" 2>/dev/null || true)"; do
+        [ -n "$pid" ] || continue
+        case " $seen_pids " in *" $pid "*) continue ;; esac
+        seen_pids="$seen_pids $pid"
+        if kill -0 "$pid" 2>/dev/null; then
+            kill "$pid" 2>/dev/null || true
+            echo "  sent SIGTERM to server pid ${pid}"
+            stopped=1
+        fi
+    done
+    stale_pids="$(lsof -ti tcp:"$PORT" 2>/dev/null || true)"
+    if [ -n "$stale_pids" ]; then
+        for p in $stale_pids; do
+            kill "$p" 2>/dev/null || true
+            echo "  killed process on port ${PORT}: ${p}"
+            stopped=1
+        done
+    fi
+    [ "$stopped" -eq 1 ] || echo "  (no running server found)"
+    rm -f "$SERVER_PID_FILE"
+    minio_stop
+    db_server_stop
+}
+
+# --- where: show pipeline steps, pointing at the current one -----------
+phase_where() {
+    load_state
+    echo "phases run so far (last: ${CURRENT_PHASE:-<none>}):"
+    echo "  global:        preflight reset stage build start"
+    echo "  per submission: pack <name>  submit <name>  job-status <name>  download <name>"
+    echo "  meta:          poll  logs  verify  all  stop  query  cleanup"
+    echo "  submissions:   ${SUBMISSIONS[*]}"
+}
+
+# ======================================================================
+# Dispatcher
+# ======================================================================
+
+usage() {
+    cat <<USAGE
+Usage: $(basename "$0") [COMMAND ...]
+
+Run the standalone STATUS + DOWNLOAD e2e test (two users, one submission each;
+exercises the server's status and download HTTP requests via CGA).
+With no arguments, prints this help; use 'all' to run the whole scripted
+interaction.
+
+Submissions: ${SUBMISSIONS[*]}
+  bob-1: user=${SUB_USER[bob-1]} ${SUB_LANG[bob-1]} repos=[${SUB_REPOS[bob-1]}]
+  eve-1: user=${SUB_USER[eve-1]} ${SUB_LANG[eve-1]} repos=[${SUB_REPOS[eve-1]}]
+
+Global phases (no argument):
+  preflight | pre      check codeql/go, ensure Postgres, free the port
+  reset | clean-slate  drop mrva tables, wipe work dir + logs
+  stage                stage the union of all submissions' CodeQL DBs
+  build                build mrvaserver + mrvaagent
+  start                launch the Go server in --mode=standalone
+
+Per-submission commands (take a submission NAME, e.g. bob-1):
+  pack <name>          build that submission's query pack
+  submit <name>        POST that submission (records its session id)
+  job-status <name>    GET the STATUS request for that submission
+  download <name>      GET the DOWNLOAD request; save archives under
+                       ${DOWNLOAD_DIR}/<name>/
+
+Meta:
+  poll                 repeat job-status for every submission until all done
+  logs                 tail the server log + scan for errors
+  verify               final PASS/FAIL gate (exit code reflects result)
+  all                  full scripted interaction (setup -> submit+status ->
+                       poll -> download -> verify)
+  where | -w           show the command groups and known submissions
+  query                dump Postgres state (query-*.sh)
+  stop                 stop the server, keep tables/work dir (restart with 'start')
+  cleanup              stop server, drop tables, remove work dir (cleanup-*.sh)
+  -h | --help | help   show this help
+
+Examples:
+  $(basename "$0")                       # show help
+  $(basename "$0") all                   # full scripted run
+  $(basename "$0") pack bob-1 submit bob-1 job-status bob-1
+  $(basename "$0") submit eve-1 job-status eve-1
+  $(basename "$0") download bob-1 download eve-1
+USAGE
+}
+
+# Commands that consume the NEXT token as a submission name.
+_takes_name() {
+    case "$1" in
+        pack|submit|job-status|job_status|status|download) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+# Run one command token (possibly consuming a submission-name argument, passed
+# as $2). Meta commands return early and are not recorded as steps.
+dispatch_one() {
+    local token="$1" arg="${2:-}"
+    case "$token" in
+        preflight|pre)           phase_preflight ;;
+        reset|clean-slate|clean) phase_reset ;;
+        stage)                   phase_stage ;;
+        build)                   phase_build ;;
+        start)                   phase_start ;;
+        pack)                    phase_pack "$arg" ;;
+        submit)                  phase_submit "$arg" ;;
+        job-status|job_status|status) phase_job_status "$arg" ;;
+        download)                phase_download "$arg" ;;
+        poll)                    phase_poll ;;
+        logs)                    phase_logs ;;
+        verify)                  phase_verify; return ;;
+        all)                     phase_all; return ;;
+        query)                   phase_query; return ;;
+        stop)                    phase_stop; return ;;
+        cleanup)                 phase_cleanup; return ;;
+        -h|--help|help)          usage; return ;;
+        -w|--where|where)        phase_where; return ;;
+        *)
+            echo "unknown command: $token" >&2
+            echo "try: $(basename "$0") -h" >&2
+            return 2
+            ;;
+    esac
+    _mark "$token"
+}
+
+main() {
+    if [ "$#" -eq 0 ]; then
+        usage
+        return
+    fi
+    # Walk the tokens; commands that take a submission name consume the next.
+    while [ "$#" -gt 0 ]; do
+        local token="$1"; shift
+        if _takes_name "$token"; then
+            if [ "$#" -eq 0 ]; then
+                echo "ERROR: '${token}' requires a submission name (${SUBMISSIONS[*]})" >&2
+                exit 2
+            fi
+            dispatch_one "$token" "$1"; shift
+        else
+            dispatch_one "$token"
+        fi
+        echo
+    done
+}
+
+main "$@"

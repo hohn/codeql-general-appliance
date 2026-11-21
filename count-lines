@@ -1,0 +1,234 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+usage() {
+    cat <<'EOF'
+Usage: count-lines [--list]
+
+Count tracked repository text in three mutually exclusive categories:
+
+  source code          Programming, query, stylesheet, and build files, plus
+                       executable scripts with a shebang, grouped by language.
+  human documentation Markdown, AsciiDoc, Org, reStructuredText, and TeX.
+  LLM documentation   Agent instructions and LLM-specific documentation in
+                       those same source formats.
+
+Tracked symlinks are excluded so linked mdBook pages are not counted twice.
+Rendered and binary formats such as HTML and PDF are also excluded. Use --list
+to show every classified file.
+EOF
+}
+
+list_files=false
+if (($# > 1)); then
+    usage >&2
+    exit 2
+fi
+
+case "${1:-}" in
+    "")
+        ;;
+    --list)
+        list_files=true
+        ;;
+    -h|--help)
+        usage
+        exit 0
+        ;;
+    *)
+        usage >&2
+        exit 2
+        ;;
+esac
+
+script_dir=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+repo_root=$(git -C "$script_dir" rev-parse --show-toplevel)
+cd "$repo_root"
+
+is_llm_documentation() {
+    local path=$1
+    local lower=${path,,}
+
+    case "$lower" in
+        agents.md|*/agents.md|\
+        claude.md|*/claude.md|\
+        copilot.md|*/copilot.md|\
+        gemini.md|*/gemini.md|\
+        .agent-notes/*|*/.agent-notes/*|\
+        docs/cga-help-llm.org|\
+        .github/copilot-instructions.md|\
+        .github/instructions/*.instructions.md|\
+        .github/agents/*.agent.md|\
+        .github/prompts/*.prompt.md|\
+        *llm*instructions*.md|*llm*instructions*.mdx|\
+        *llm*instructions*.rst|*llm*instructions*.adoc|\
+        *llm*instructions*.asciidoc|*llm*instructions*.org|\
+        *llm*instructions*.tex)
+            return 0
+            ;;
+    esac
+    return 1
+}
+
+is_human_documentation() {
+    local lower=${1,,}
+
+    case "$lower" in
+        *.md|*.mdx|*.rst|*.adoc|*.asciidoc|*.org|*.tex)
+            return 0
+            ;;
+    esac
+    return 1
+}
+
+source_language() {
+    local path=$1
+    local lower=${path,,}
+    local name=${path##*/}
+    local first_line
+    local interpreter
+    local i
+    local -a shebang
+
+    case "$name" in
+        Makefile|GNUmakefile) printf 'Make\n'; return ;;
+        Dockerfile|Containerfile) printf 'Dockerfile\n'; return ;;
+        CMakeLists.txt) printf 'CMake\n'; return ;;
+        meson.build) printf 'Meson\n'; return ;;
+        BUILD|BUILD.bazel|WORKSPACE) printf 'Starlark\n'; return ;;
+    esac
+
+    case "$lower" in
+        *.awk) printf 'AWK\n'; return ;;
+        *.bash|*.sh) printf 'Shell\n'; return ;;
+        *.c|*.h) printf 'C\n'; return ;;
+        *.cc|*.cpp|*.cxx|*.hh|*.hpp|*.hxx) printf 'C++\n'; return ;;
+        *.clj|*.cljs|*.cljc) printf 'Clojure\n'; return ;;
+        *.css) printf 'CSS\n'; return ;;
+        *.ex|*.exs) printf 'Elixir\n'; return ;;
+        *.erl|*.hrl) printf 'Erlang\n'; return ;;
+        *.fs|*.fsx) printf 'F#\n'; return ;;
+        *.go) printf 'Go\n'; return ;;
+        *.graphql|*.gql) printf 'GraphQL\n'; return ;;
+        *.java) printf 'Java\n'; return ;;
+        *.js|*.jsx|*.mjs|*.cjs) printf 'JavaScript\n'; return ;;
+        *.kt|*.kts) printf 'Kotlin\n'; return ;;
+        *.lua) printf 'Lua\n'; return ;;
+        *.php) printf 'PHP\n'; return ;;
+        *.pl|*.pm) printf 'Perl\n'; return ;;
+        *.proto) printf 'Protocol Buffers\n'; return ;;
+        *.py) printf 'Python\n'; return ;;
+        *.ql|*.qll) printf 'CodeQL\n'; return ;;
+        *.r) printf 'R\n'; return ;;
+        *.rb) printf 'Ruby\n'; return ;;
+        *.rs) printf 'Rust\n'; return ;;
+        *.scss) printf 'SCSS\n'; return ;;
+        *.sed) printf 'sed\n'; return ;;
+        *.sql) printf 'SQL\n'; return ;;
+        *.svelte) printf 'Svelte\n'; return ;;
+        *.swift) printf 'Swift\n'; return ;;
+        *.ts|*.tsx) printf 'TypeScript\n'; return ;;
+        *.vue) printf 'Vue\n'; return ;;
+    esac
+
+    if [[ -x "$path" ]] && IFS= read -r first_line <"$path"; then
+        [[ "$first_line" == '#!'* ]] || return 1
+        read -r -a shebang <<<"${first_line#\#!}"
+        for ((i = 0; i < ${#shebang[@]}; i++)); do
+            interpreter=${shebang[i]}
+            interpreter=${interpreter##*/}
+            case "$interpreter" in
+                env|-*) continue ;;
+                uv)
+                    [[ "${shebang[i+1]:-}" == run ]] || break
+                    i=$((i + 1))
+                    continue
+                    ;;
+                bash|sh|dash|ksh|zsh) printf 'Shell\n'; return ;;
+                fish) printf 'Fish\n'; return ;;
+                python|python[0-9]*) printf 'Python\n'; return ;;
+                node|nodejs|deno|bun) printf 'JavaScript\n'; return ;;
+                perl) printf 'Perl\n'; return ;;
+                ruby) printf 'Ruby\n'; return ;;
+                awk|gawk|mawk) printf 'AWK\n'; return ;;
+                sed) printf 'sed\n'; return ;;
+                lua|lua[0-9]*) printf 'Lua\n'; return ;;
+                php|php[0-9]*) printf 'PHP\n'; return ;;
+                Rscript) printf 'R\n'; return ;;
+                *) break ;;
+            esac
+        done
+        printf 'Other scripts\n'
+        return 0
+    fi
+    return 1
+}
+
+count_lines() {
+    local -n files=$1
+
+    if ((${#files[@]} == 0)); then
+        printf '0\n'
+        return
+    fi
+    wc -l -- "${files[@]}" | awk 'END { print $1 }'
+}
+
+source_files=()
+human_doc_files=()
+llm_doc_files=()
+declare -A source_languages=()
+declare -A languages=()
+
+while IFS= read -r -d '' path; do
+    [[ -f "$path" && ! -L "$path" ]] || continue
+
+    if is_llm_documentation "$path"; then
+        llm_doc_files+=("$path")
+    elif is_human_documentation "$path"; then
+        human_doc_files+=("$path")
+    elif language=$(source_language "$path"); then
+        source_files+=("$path")
+        source_languages["$path"]=$language
+        languages["$language"]=1
+    fi
+done < <(git ls-files -z)
+
+source_lines=$(count_lines source_files)
+human_doc_lines=$(count_lines human_doc_files)
+llm_doc_lines=$(count_lines llm_doc_files)
+
+if "$list_files"; then
+    for path in "${source_files[@]}"; do
+        printf 'source code (%s)\t%s\n' "${source_languages[$path]}" "$path"
+    done
+    for path in "${human_doc_files[@]}"; do
+        printf 'human documentation\t%s\n' "$path"
+    done
+    for path in "${llm_doc_files[@]}"; do
+        printf 'LLM documentation\t%s\n' "$path"
+    done
+    printf '\n'
+fi
+
+printf '%-24s %8s %12s\n' "Category" "Files" "Lines"
+while IFS= read -r language; do
+    [[ -n "$language" ]] || continue
+    language_files=()
+    for path in "${source_files[@]}"; do
+        if [[ "${source_languages[$path]}" == "$language" ]]; then
+            language_files+=("$path")
+        fi
+    done
+    printf '%-24s %8s %12s\n' \
+        "$language" "${#language_files[@]}" "$(count_lines language_files)"
+done < <(printf '%s\n' "${!languages[@]}" | LC_ALL=C sort)
+printf '%-24s %8s %12s\n' \
+    "Human documentation" "${#human_doc_files[@]}" "$human_doc_lines"
+printf '%-24s %8s %12s\n' \
+    "LLM documentation" "${#llm_doc_files[@]}" "$llm_doc_lines"
+printf '%-24s %8s %12s\n' \
+    "Total" \
+    "$(( ${#source_files[@]} + ${#human_doc_files[@]} + ${#llm_doc_files[@]} ))" \
+    "$(( source_lines + human_doc_lines + llm_doc_lines ))"

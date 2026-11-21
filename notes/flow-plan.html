@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>CGA Flow Plan</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">CGA Flow Plan</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#cga-flow-plan" id="toc-cga-flow-plan">CGA Flow Plan</a>
+<ul>
+<li><a href="#scope-and-terminology"
+id="toc-scope-and-terminology">Scope and terminology</a></li>
+<li><a href="#principles" id="toc-principles">Principles</a></li>
+<li><a href="#scripts-are-the-source-of-truth"
+id="toc-scripts-are-the-source-of-truth">Scripts are the source of
+truth</a>
+<ul>
+<li><a href="#user-facing-core" id="toc-user-facing-core">User-facing
+core</a></li>
+<li><a href="#consequences" id="toc-consequences">Consequences</a></li>
+<li><a href="#llm-role" id="toc-llm-role">LLM role</a></li>
+</ul></li>
+<li><a href="#llm-support-for-cga-use"
+id="toc-llm-support-for-cga-use">1. LLM support for CGA use</a>
+<ul>
+<li><a href="#goal" id="toc-goal">Goal</a></li>
+<li><a href="#current-foundation" id="toc-current-foundation">Current
+foundation</a></li>
+<li><a href="#searchable-outline-and-text-projection"
+id="toc-searchable-outline-and-text-projection">Searchable outline and
+text projection</a></li>
+<li><a href="#commentary" id="toc-commentary">Commentary</a></li>
+</ul></li>
+<li><a href="#user-relevance-and-presentation-metadata"
+id="toc-user-relevance-and-presentation-metadata">User relevance and
+presentation metadata</a>
+<ul>
+<li><a href="#problem" id="toc-problem">Problem</a></li>
+<li><a href="#proposed-non-intrusive-tags"
+id="toc-proposed-non-intrusive-tags">Proposed non-intrusive
+tags</a></li>
+<li><a href="#where-tags-should-live"
+id="toc-where-tags-should-live">Where tags should live</a></li>
+<li><a href="#script-tagging-requirements"
+id="toc-script-tagging-requirements">Script tagging
+requirements</a></li>
+<li><a href="#review-of-the-initial-mrva-flow.sh-tag-experiment"
+id="toc-review-of-the-initial-mrva-flow.sh-tag-experiment">Review of the
+initial <code>mrva-flow.sh</code> tag experiment</a></li>
+<li><a href="#uses" id="toc-uses">Uses</a></li>
+</ul></li>
+<li><a href="#text-editing-and-execution-facilities"
+id="toc-text-editing-and-execution-facilities">2. Text editing and
+execution facilities</a>
+<ul>
+<li><a href="#xterm.js" id="toc-xterm.js">xterm.js</a></li>
+<li><a href="#commentary-1" id="toc-commentary-1">Commentary</a></li>
+<li><a href="#lower-risk-editing-path"
+id="toc-lower-risk-editing-path">Lower-risk editing path</a></li>
+<li><a href="#vs-code-option" id="toc-vs-code-option">VS Code
+option</a></li>
+<li><a href="#commentary-2" id="toc-commentary-2">Commentary</a></li>
+</ul></li>
+<li><a href="#flows-to-accommodate-in-cga-unified-view"
+id="toc-flows-to-accommodate-in-cga-unified-view">3. Flows to
+accommodate in CGA Unified View</a>
+<ul>
+<li><a href="#shared-flow-contract" id="toc-shared-flow-contract">Shared
+flow contract</a></li>
+<li><a href="#mrva-flow"
+id="toc-mrva-flow"><code>mrva-flow</code></a></li>
+<li><a href="#query-dev-flow"
+id="toc-query-dev-flow"><code>query-dev-flow</code></a></li>
+<li><a href="#query-suite-review-flow"
+id="toc-query-suite-review-flow"><code>query-suite-review-flow</code></a></li>
+<li><a href="#commentary-on-multiple-flows"
+id="toc-commentary-on-multiple-flows">Commentary on multiple
+flows</a></li>
+</ul></li>
+<li><a href="#cross-cutting-design-questions"
+id="toc-cross-cutting-design-questions">Cross-cutting design
+questions</a></li>
+<li><a href="#proposed-roadmap" id="toc-proposed-roadmap">Proposed
+roadmap</a>
+<ul>
+<li><a href="#phase-1-searchable-cga-use-model"
+id="toc-phase-1-searchable-cga-use-model">Phase 1 — searchable CGA use
+model</a></li>
+<li><a href="#phase-2-multiple-read-only-flows"
+id="toc-phase-2-multiple-read-only-flows">Phase 2 — multiple read-only
+flows</a></li>
+<li><a href="#phase-3-structured-editing"
+id="toc-phase-3-structured-editing">Phase 3 — structured
+editing</a></li>
+<li><a href="#phase-4-optional-interactive-execution"
+id="toc-phase-4-optional-interactive-execution">Phase 4 — optional
+interactive execution</a></li>
+</ul></li>
+<li><a href="#llm-notes" id="toc-llm-notes">LLM notes</a></li>
+<li><a href="#decision-log" id="toc-decision-log">Decision log</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="cga-flow-plan">CGA Flow Plan</h1>
+<p>Evolving outline for CGA use, flow design, and future editing
+facilities.</p>
+<h2 id="scope-and-terminology">Scope and terminology</h2>
+<p>CGA has two distinct concerns:</p>
+<ol type="1">
+<li><strong>CGA use</strong> — running, observing, comparing, and
+reviewing analysis flows.</li>
+<li><strong>CGA development</strong> — changing CGA components, storage,
+APIs, and UI code.</li>
+</ol>
+<p>This plan is primarily about <strong>CGA use</strong>. Development
+work should expose stable interfaces that make CGA use understandable to
+humans, scripts, and LLMs.</p>
+<p>Canonical names:</p>
+<ul>
+<li><strong>CGA Unified View</strong> (<code>cgauv</code>,
+<code>cga uv</code>) joins workflow, state, provenance, transcripts,
+artifacts, and a compact MRVA runtime summary.</li>
+<li><strong>CGA Workflow State</strong> is the existing
+component-oriented dashboard.</li>
+<li><strong>MRVA System View</strong> is the internal server/worker/job
+runtime view.</li>
+<li><code>.cga/</code> is the durable workflow repository. Its graph is
+relational even when a UI uses stages or nested boxes for
+presentation.</li>
+</ul>
+<p><code>cgaud</code> is obsolete terminology; the component acronym is
+<code>cgauv</code>.</p>
+<h2 id="principles">Principles</h2>
+<ul>
+<li>Flow scripts are the origin of workflow intent, order, and mutable
+choices.</li>
+<li>Keep flow scripts legible, concise, and close to a human MRVA
+specification.</li>
+<li>Do not move flow semantics into UI configuration or generated
+framework code.</li>
+<li>Keep the canonical workflow representation textual and
+machine-readable.</li>
+<li>Treat every visual view as a projection of workflow/state/runtime
+data.</li>
+<li>Preserve existing views; add links and shared identities rather than
+forcing one UI to contain every detail.</li>
+<li>Start with a compact primary view and reveal details on demand.</li>
+<li>Do not imply that presentation nesting is authoritative graph
+topology.</li>
+<li>Keep current state, immutable history, failed attempts, source
+provenance, transcripts, and artifacts distinguishable.</li>
+<li>Prefer read-only observation until an editing/execution operation
+has a clear purpose, permission model, audit trail, and recovery
+behavior.</li>
+<li>Keep browser, CLI, VS Code, and LLM clients on the same versioned
+data model.</li>
+</ul>
+<h2 id="scripts-are-the-source-of-truth">Scripts are the source of
+truth</h2>
+<h3 id="user-facing-core">User-facing core</h3>
+<p>The core of a flow should read like an executable specification
+assembled from small CGA building blocks:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> dl getmeta ...</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> ql index ...</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> dl sql ...</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> dl download ...</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> ql select ...</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> ql pack</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> mr run ...</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> si ingest ...</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> ex human ...</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> ex llm ...</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> si verify ...</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> mx check</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> view ...</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> tree show <span class="at">-v</span> <span class="at">--format</span> html ...</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> tree show <span class="at">--control-flow</span> <span class="at">--format</span> html ...</span></code></pre></div>
+<p>Environment setup, lifecycle scaffolding, output locations, and
+instrumentation are necessary, but they are not the conceptual flow a
+CodeQL user should have to reason about first.</p>
+<h3 id="consequences">Consequences</h3>
+<ul class="task-list">
+<li><label><input type="checkbox" />Preserve the script as the
+authoritative, editable workflow definition.</label></li>
+<li><label><input type="checkbox" />Keep CGA commands composable enough
+that the script structure remains close to a numbered natural-language
+MRVA specification.</label></li>
+<li><label><input type="checkbox" />Keep introspection implicit in CGA
+command execution; do not add verbose instrumentation calls to the
+script.</label></li>
+<li><label><input type="checkbox" />Make CGA Unified View derive its
+command rail and source excerpts from the executed script rather than a
+separate UI flow definition.</label></li>
+<li><label><input type="checkbox" />Treat stage grouping and
+presentation tags as non-semantic hints.</label></li>
+<li><label><input type="checkbox" />Keep generated workflow code
+reviewable and intentionally sparse.</label></li>
+<li><label><input type="checkbox" />Establish style guidance for
+LLM-generated flow scripts:</label>
+<ul>
+<li>one meaningful CGA operation per command</li>
+<li>descriptive variables instead of expanded literals</li>
+<li>no duplicated state threading</li>
+<li>no hidden multi-subsystem shell functions</li>
+<li>bounded compound commands only when they represent one user
+operation</li>
+<li>setup separated visually from the conceptual flow</li>
+</ul></li>
+</ul>
+<h3 id="llm-role">LLM role</h3>
+<p>LLMs are well suited to translate a concise MRVA specification into a
+CGA flow script because:</p>
+<ul>
+<li><p>CGA commands provide constrained building blocks.</p></li>
+<li><p>The generated script remains close to the original
+specification.</p></li>
+<li><p><code>.cga</code> automatically supplies provenance, state
+history, artifacts, transcripts, attempts, and graphical/text
+projections.</p></li>
+<li><p>The script remains inspectable and editable by a human.</p></li>
+<li><p><label><input type="checkbox" checked="" />Define a
+spec-to-script prompt/template.</label></p></li>
+<li><p><label><input type="checkbox" checked="" />Add an example pairing
+an MRVA specification with its concise CGA script.</label></p></li>
+<li><p><label><input type="checkbox" checked="" />Add a review checklist
+for generated scripts.</label></p></li>
+<li><p><label><input type="checkbox" />Validate generated scripts
+structurally before execution.</label></p></li>
+<li><p><label><input type="checkbox" />Avoid generating dense,
+monolithic workflow implementations from scratch.</label></p></li>
+</ul>
+<h2 id="llm-support-for-cga-use">1. LLM support for CGA use</h2>
+<h3 id="goal">Goal</h3>
+<p>An LLM should be able to understand and navigate a CGA workflow
+without scraping rendered HTML or loading the complete state and
+artifact set at once.</p>
+<h3 id="current-foundation">Current foundation</h3>
+<ul class="task-list">
+<li><label><input type="checkbox"
+checked="" /><code>.cga/manifest.json</code> records chains, successful
+nodes, failed attempts, commands, relations, state objects, artifacts,
+timing, source excerpts, and transcript references.</label></li>
+<li><label><input type="checkbox" checked="" /><code>cgauv</code>
+provides normalized read-only endpoints:</label>
+<ul>
+<li><code>/api/model</code></li>
+<li><code>/api/step?id=...</code></li>
+<li><code>/api/sysview</code></li>
+</ul></li>
+<li><label><input type="checkbox" checked="" />CLI inspection exists
+through <code>cga status</code>, <code>cga chain</code>,
+<code>cga state</code>, <code>cga step</code>, <code>cga log</code>,
+<code>cga tree</code>, and <code>cga artifact</code>.</label></li>
+<li><label><input type="checkbox" checked="" />Human and LLM result
+exports exist through <code>cga ex human</code> and
+<code>cga ex llm</code>.</label></li>
+</ul>
+<h3 id="searchable-outline-and-text-projection">Searchable outline and
+text projection</h3>
+<ul class="task-list">
+<li><label><input type="checkbox" />Define a versioned <strong>CGA use
+model</strong> independent of HTML layout.</label></li>
+<li><label><input type="checkbox" />Provide all CGA Unified View content
+as concise outline/text:</label>
+<ul>
+<li>workflow and active-chain summary</li>
+<li>grouped command steps</li>
+<li>parent/child and artifact relations</li>
+<li>state-delta summaries</li>
+<li>source provenance</li>
+<li>transcript availability and excerpts</li>
+<li>active MRVA submission/runtime summary</li>
+</ul></li>
+<li><label><input type="checkbox" />Add a stable JSON schema identifier
+to normalized API responses.</label></li>
+<li><label><input type="checkbox" />Add a text/Markdown endpoint,
+tentatively:</label>
+<ul>
+<li><code>GET /api/outline</code></li>
+<li><code>cga uv outline</code></li>
+</ul></li>
+<li><label><input type="checkbox" />Support detail levels so callers can
+control context size:</label>
+<ul>
+<li>summary</li>
+<li>stage</li>
+<li>step</li>
+<li>full state delta</li>
+<li>transcript</li>
+<li>artifact metadata</li>
+</ul></li>
+<li><label><input type="checkbox" />Support search/filter without
+downloading all detail:</label>
+<ul>
+<li>command/tool/action</li>
+<li>stage</li>
+<li>state key</li>
+<li>artifact kind/name</li>
+<li>source path</li>
+<li>status/failure</li>
+<li>submission/user/session/repository</li>
+</ul></li>
+<li><label><input type="checkbox" />Add stable deep links for every
+user-relevant entity:</label>
+<ul>
+<li>workflow/chain/stage/step/attempt</li>
+<li>selected database</li>
+<li>selected query</li>
+<li>submission/session/job/repository</li>
+<li>ingestion/finding</li>
+<li>export/artifact</li>
+</ul></li>
+<li><label><input type="checkbox" />Ensure summaries link to the
+complete underlying collection rather than silently truncating
+it.</label></li>
+<li><label><input type="checkbox" />Expose selected database and query
+collections as normalized resources, not only static HTML tables or
+opaque selection artifacts.</label></li>
+<li><label><input type="checkbox" />Add filtering, search, sorting, and
+pagination for long collections.</label></li>
+<li><label><input type="checkbox" />Preserve the originating script
+command and selection criteria alongside the resulting selected
+items.</label></li>
+<li><label><input type="checkbox" checked="" />Define deterministic
+ordering and stable identifiers.</label></li>
+<li><label><input type="checkbox" checked="" />Define result-size limits
+and explicit pagination/truncation metadata.</label></li>
+<li><label><input type="checkbox" checked="" />Define initial
+sensitivity-tag redaction before external LLM use; expand field-level
+tagging as new sensitive data is identified.</label></li>
+<li><label><input type="checkbox" />Add examples of LLM tasks:</label>
+<ul>
+<li>explain the current flow</li>
+<li>locate the command that introduced a state key</li>
+<li>summarize a failed attempt</li>
+<li>compare two chains</li>
+<li>find relevant source and transcript excerpts</li>
+<li>enumerate produced artifacts</li>
+<li>assess MRVA completion and findings</li>
+</ul></li>
+</ul>
+<h3 id="commentary">Commentary</h3>
+<p>The outline should be generated from the same normalized model as the
+UI, not maintained as a second semantic database. HTML remains a client.
+LLMs should prefer JSON or Markdown with explicit schema/version and
+truncation markers.</p>
+<p>The existing <code>/api/model</code> plus <code>/api/step</code>
+split is a useful pattern: first retrieve a small navigational summary,
+then request only selected detail.</p>
+<p>Every summary should answer both:</p>
+<ol type="1">
+<li>What is important now?</li>
+<li>Where is the complete detail?</li>
+</ol>
+<p>No user-relevant detail should exist only in a static dashboard
+fragment.</p>
+<h2 id="user-relevance-and-presentation-metadata">User relevance and
+presentation metadata</h2>
+<h3 id="problem">Problem</h3>
+<p>Current CGAST, component state, runtime state, and artifacts mix:</p>
+<ul>
+<li>information central to a CodeQL/MRVA user</li>
+<li>operator/lifecycle information</li>
+<li>system implementation detail</li>
+<li>diagnostic/debug detail</li>
+</ul>
+<p>The distinction has not been identified consistently. CGA Unified
+View should not hard-code all of these judgments, and flow scripts
+should not be cluttered with presentation annotations.</p>
+<h3 id="proposed-non-intrusive-tags">Proposed non-intrusive tags</h3>
+<p>Use optional structured metadata with two layers:</p>
+<ol type="1">
+<li>defaults attached to command/state/artifact descriptions</li>
+<li>flow-specific tags attached at the authoritative script command
+site</li>
+</ol>
+<pre class="text"><code>audience:    user | operator | system
+prominence:  primary | detail | diagnostic
+searchable:  true | false
+sensitivity: normal | local-sensitive | secret
+subject:     catalogue | query | selection | run | finding | result | export | ...
+presentation: progress | collection | summary | ...</code></pre>
+<p>Interpretation:</p>
+<ul>
+<li><code>audience</code> says who normally needs the information.</li>
+<li><code>prominence</code> controls default placement, not
+accessibility.</li>
+<li><code>searchable</code> identifies useful indexed fields.</li>
+<li><code>sensitivity</code> controls rendering, export, and LLM
+disclosure.</li>
+<li><code>subject</code> identifies what the tagged step/data
+represents.</li>
+<li><code>presentation</code> is an optional view hint; it should not be
+confused with relevance or execution semantics.</li>
+</ul>
+<p>Unknown or untagged data should default to <code>detail</code>,
+remain reachable, and not be sent to an external LLM automatically.</p>
+<h3 id="where-tags-should-live">Where tags should live</h3>
+<ul class="task-list">
+<li><label><input type="checkbox" />Command metadata owned by the
+component that defines the command.</label></li>
+<li><label><input type="checkbox" />State-key metadata keyed by exact
+key or stable key pattern.</label></li>
+<li><label><input type="checkbox" />Artifact-kind metadata owned by
+artifact producers.</label></li>
+<li><label><input type="checkbox" />MRVA runtime-field metadata owned by
+the sysview schema.</label></li>
+<li><label><input type="checkbox" />Flow-specific command tags in the
+script when relevance differs for that flow.</label></li>
+<li><label><input type="checkbox" />Optional flow-level sidecar defaults
+only when repeating tags would make the script materially less
+legible.</label></li>
+</ul>
+<p>The tags must not become a second source of workflow semantics. They
+influence projection, search, and disclosure only.</p>
+<h3 id="script-tagging-requirements">Script tagging requirements</h3>
+<ul class="task-list">
+<li><label><input type="checkbox" checked="" />Define one controlled
+<code>key:value</code> vocabulary before applying tags
+broadly.</label></li>
+<li><label><input type="checkbox" checked="" />Decide initial tag scope
+explicitly:</label>
+<ul>
+<li>command/step</li>
+<li>resulting state keys</li>
+<li>resulting artifacts</li>
+<li>referenced collection items</li>
+</ul></li>
+<li><label><input type="checkbox" />Define reusable component/schema
+defaults and inheritance to flow overrides.</label></li>
+<li><label><input type="checkbox" checked="" />Parse common tags in the
+top-level <code>cga</code> dispatcher so every component does not need
+its own <code>--tag</code> implementation.</label></li>
+<li><label><input type="checkbox" checked="" />Store normalized tags in
+<code>.cga</code> node/attempt metadata.</label></li>
+<li><label><input type="checkbox" checked="" />Propagate tags to
+directly produced logical artifact occurrences while deduplicating only
+their CAS bytes.</label></li>
+<li><label><input type="checkbox" checked="" />Preserve tags in outline,
+search, collection, and deep-link APIs.</label></li>
+<li><label><input type="checkbox" checked="" />Reject unknown controlled
+tag keys/values.</label></li>
+<li><label><input type="checkbox" checked="" />Keep tags short enough
+that the command remains close to the MRVA specification.</label></li>
+</ul>
+<p>Tentative syntax:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> <span class="dt">\</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--tag</span> audience:user <span class="dt">\</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--tag</span> prominence:detail <span class="dt">\</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--tag</span> subject:database-catalogue <span class="dt">\</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  dl getmeta ...</span></code></pre></div>
+<p>The dispatcher supports common <code>--tag</code> options anywhere
+before an argument separator (<code>--</code>), removes them before
+component parsing, and records them on the <code>.cga</code> node or
+attempt. This keeps tags adjacent to the operation they describe without
+changing every component parser.</p>
+<p>Readable shorthand profiles can coexist with a controlled stored
+vocabulary:</p>
+<pre class="text"><code>user:viewable              -&gt; audience:user, prominence:detail
+user:show-progress         -&gt; audience:user, presentation:progress
+user:primary-interest-data -&gt; audience:user, prominence:primary
+                              subject:human-results</code></pre>
+<p>Search and APIs should expose the expanded canonical tags. The script
+may retain the concise profile when that materially improves
+readability.</p>
+<h3 id="review-of-the-initial-mrva-flow.sh-tag-experiment">Review of the
+initial <code>mrva-flow.sh</code> tag experiment</h3>
+<p>The intent is useful, but the example vocabulary mixes separate
+concerns:</p>
+<ul>
+<li><code>user:viewable</code> combines audience and accessibility.
+User-relevant details should already be reachable; a more searchable
+form is <code>audience:user</code>, <code>prominence:detail</code>, and
+a concrete <code>subject</code>.</li>
+<li><code>user:show-progress</code> combines audience with a
+presentation behavior. Prefer <code>audience:user</code> plus
+<code>presentation:progress</code>.</li>
+<li><code>user:primary-interest-data</code> captures the right intent
+but should be split into <code>audience:user</code>,
+<code>prominence:primary</code>, and a subject such as
+<code>subject:human-results</code>.</li>
+</ul>
+<p>Tags on a command are not automatically sufficient to search the
+items inside a selected database/query collection. The producer must
+expose normalized collection items and define whether command tags
+propagate to those items.</p>
+<p>The pilot tags in <code>mrva-flow.sh</code> are executable. Common
+tag parsing/storage is implemented and the accidental
+<code>--user "$FLOW_USER"</code> regression was restored.</p>
+<h3 id="uses">Uses</h3>
+<ul class="task-list">
+<li><label><input type="checkbox" />Default CGA Unified View detail
+selection.</label></li>
+<li><label><input type="checkbox" />Human “show user/operator/system
+detail” filters.</label></li>
+<li><label><input type="checkbox" />Search facets.</label></li>
+<li><label><input type="checkbox" />LLM context selection.</label></li>
+<li><label><input type="checkbox" />Redaction and disclosure
+warnings.</label></li>
+<li><label><input type="checkbox" />Outline detail levels.</label></li>
+<li><label><input type="checkbox" />Diagnostics view.</label></li>
+</ul>
+<h2 id="text-editing-and-execution-facilities">2. Text editing and
+execution facilities</h2>
+<h3 id="xterm.js">xterm.js</h3>
+<ul class="task-list">
+<li><label><input type="checkbox" />Keep xterm.js as a possible client,
+but do not add it without a concrete operation.</label></li>
+<li><label><input type="checkbox" />Before a real terminal,
+define:</label>
+<ul>
+<li>what process or shell it controls</li>
+<li>working directory and environment</li>
+<li>authentication and authorization</li>
+<li>PTY/WebSocket lifecycle</li>
+<li>resize and reconnect behavior</li>
+<li>command and output audit trail</li>
+<li>timeout/cancellation</li>
+<li>workspace and filesystem boundaries</li>
+<li>how terminal actions relate to <code>.cga</code> attempts/nodes</li>
+</ul></li>
+</ul>
+<h3 id="commentary-1">Commentary</h3>
+<p>A terminal is an execution surface, not a text-editing abstraction.
+It may be useful for debugging or running explicit flow operations, but
+it does not by itself provide safe structured editing, provenance,
+diagnostics, or review.</p>
+<p>The current terminal-styled pane should remain read-only until an
+executable use case is selected.</p>
+<h3 id="lower-risk-editing-path">Lower-risk editing path</h3>
+<ul class="task-list">
+<li><label><input type="checkbox" />Add source-location actions:</label>
+<ul>
+<li>copy path and line range</li>
+<li>open source in the local editor</li>
+<li>open transcript/artifact location</li>
+</ul></li>
+<li><label><input type="checkbox" />Define structured edit operations
+before arbitrary shell access:</label>
+<ul>
+<li>edit a query</li>
+<li>change a flow parameter</li>
+<li>select databases/queries</li>
+<li>branch from a prior step</li>
+<li>rerun a bounded stage</li>
+</ul></li>
+<li><label><input type="checkbox" />Record edits and executions as
+attempts with source/provenance.</label></li>
+<li><label><input type="checkbox" />Keep changes reviewable before
+execution.</label></li>
+</ul>
+<h3 id="vs-code-option">VS Code option</h3>
+<ul class="task-list">
+<li><label><input type="checkbox" />Evaluate a VS Code extension or
+webview host for CGA Unified View.</label></li>
+<li><label><input type="checkbox" />Reuse <code>cgauv</code> APIs and
+frontend concepts rather than moving the semantic model into VS
+Code.</label></li>
+<li><label><input type="checkbox" />Candidate VS Code
+integrations:</label>
+<ul>
+<li>reveal source range in an editor</li>
+<li>show diagnostics</li>
+<li>use native diff/review</li>
+<li>run named tasks</li>
+<li>use an integrated terminal when explicitly requested</li>
+<li>share selected step/context with Copilot/LLM tools</li>
+</ul></li>
+</ul>
+<h3 id="commentary-2">Commentary</h3>
+<p>Do not make VS Code the only CGA client. A VS Code host is attractive
+for editing, but the localhost web UI and CLI should remain viable. The
+preferred architecture is:</p>
+<pre class="text"><code>.cga + object store + MRVA
+            |
+      versioned CGA use model
+       /         |          \
+    browser     CLI       VS Code</code></pre>
+<p>This keeps automation, remote use, and non-VS-Code environments
+possible.</p>
+<h2 id="flows-to-accommodate-in-cga-unified-view">3. Flows to
+accommodate in CGA Unified View</h2>
+<h3 id="shared-flow-contract">Shared flow contract</h3>
+<p>Before adding more flow scripts, define what every flow exposes.</p>
+<ul class="task-list">
+<li><label><input type="checkbox" />Workflow identity and
+version.</label></li>
+<li><label><input type="checkbox" />Entry script(s) and supported
+actions.</label></li>
+<li><label><input type="checkbox" />Stage metadata:</label>
+<ul>
+<li>stable stage ID</li>
+<li>display name</li>
+<li>order</li>
+<li>command membership</li>
+</ul></li>
+<li><label><input type="checkbox" />Inputs, outputs, and artifact
+kinds.</label></li>
+<li><label><input type="checkbox" />Source provenance.</label></li>
+<li><label><input type="checkbox" />Success/terminal
+criteria.</label></li>
+<li><label><input type="checkbox" />Retry/resume/branch
+semantics.</label></li>
+<li><label><input type="checkbox" />Runtime services and health
+endpoints.</label></li>
+<li><label><input type="checkbox" />Flow-specific summary
+fields.</label></li>
+<li><label><input type="checkbox" />Optional comparison
+dimensions.</label></li>
+<li><label><input type="checkbox" />Optional presentation metadata
+overrides that do not alter execution.</label></li>
+</ul>
+<p>Stage grouping should eventually come from flow metadata rather than
+a hard-coded command-token table in <code>cgauv</code>.</p>
+<h3 id="mrva-flow"><code>mrva-flow</code></h3>
+<ul class="task-list">
+<li><label><input type="checkbox" checked="" />Single
+<code>mrva-flow.sh</code> driver.</label></li>
+<li><label><input type="checkbox" checked="" />One <code>.cga</code>
+node per meaningful state transition.</label></li>
+<li><label><input type="checkbox" checked="" />Grouped command rail in
+CGA Unified View.</label></li>
+<li><label><input type="checkbox" checked="" />Source, timing,
+transcripts, state deltas, component state, and artifacts.</label></li>
+<li><label><input type="checkbox" checked="" />Compact joined MRVA
+system summary.</label></li>
+<li><label><input type="checkbox" checked="" />Existing workflow-state,
+sysview, replay, DFG, and CFG views remain viable.</label></li>
+<li><label><input type="checkbox" checked="" />Define
+<code>mrva-flow/flow-view.json</code> presentation-only stage
+metadata.</label></li>
+<li><label><input type="checkbox" checked="" />Link the authoritative
+flow source from CGA Unified View.</label></li>
+<li><label><input type="checkbox" checked="" />Add flow-level
+outline/text export.</label></li>
+<li><label><input type="checkbox" />Add linked, searchable
+selected-database and selected-query views.</label></li>
+<li><label><input type="checkbox" />Decide whether internal
+<code>cga mr run</code> checkpoints should be expandable sub-operations
+in CGA Unified View.</label></li>
+</ul>
+<h3 id="query-dev-flow"><code>query-dev-flow</code></h3>
+<p>Planned driver: <code>query-dev-flow.sh</code>.</p>
+<p>Primary purpose: iterative development of one query against selected
+databases.</p>
+<p>Candidate stages:</p>
+<ol type="1">
+<li>Select/adopt query source.</li>
+<li>Select one or more representative databases.</li>
+<li>Compile/pack query.</li>
+<li>Run fast local validation.</li>
+<li>Inspect findings and diagnostics.</li>
+<li>Edit or branch.</li>
+<li>Compare rerun with baseline.</li>
+<li>Promote/export accepted query.</li>
+</ol>
+<p>Needs:</p>
+<ul class="task-list">
+<li><label><input type="checkbox" />Query source and pack
+identity.</label></li>
+<li><label><input type="checkbox" />Compiler diagnostics and source
+locations.</label></li>
+<li><label><input type="checkbox" />Fast rerun semantics that do not
+rebuild unrelated infrastructure.</label></li>
+<li><label><input type="checkbox" />Baseline-versus-candidate result
+comparison.</label></li>
+<li><label><input type="checkbox" />Finding examples linked to query
+source.</label></li>
+<li><label><input type="checkbox" />Explicit accepted/rejected
+experiment records.</label></li>
+<li><label><input type="checkbox" />Editor integration is likely more
+valuable here than a generic terminal.</label></li>
+</ul>
+<h3
+id="query-suite-review-flow"><code>query-suite-review-flow</code></h3>
+<p>Planned driver: <code>query-suite-review-flow.sh</code>.</p>
+<p>Primary purpose: review multiple queries across a representative
+database suite.</p>
+<p>Candidate stages:</p>
+<ol type="1">
+<li>Select query suite/version.</li>
+<li>Select database matrix.</li>
+<li>Plan query × database work.</li>
+<li>Execute bounded batches.</li>
+<li>Aggregate findings, failures, and performance.</li>
+<li>Review query-level summaries.</li>
+<li>Drill into outliers/findings.</li>
+<li>Record review disposition.</li>
+<li>Export review report.</li>
+</ol>
+<p>Needs:</p>
+<ul class="task-list">
+<li><label><input type="checkbox" />Matrix and batch representation
+without flattening thousands of steps into one rail.</label></li>
+<li><label><input type="checkbox" />Hierarchical presentation for
+navigation, while preserving many-to-many query/database
+relations.</label></li>
+<li><label><input type="checkbox" />Query and database
+facets.</label></li>
+<li><label><input type="checkbox" />Performance/resource
+summaries.</label></li>
+<li><label><input type="checkbox" />Partial completion and retry
+semantics.</label></li>
+<li><label><input type="checkbox" />Review
+annotations/dispositions.</label></li>
+<li><label><input type="checkbox" />Comparisons across suite versions or
+prior runs.</label></li>
+<li><label><input type="checkbox" />Sampling and pagination for
+LLM/human context limits.</label></li>
+</ul>
+<h3 id="commentary-on-multiple-flows">Commentary on multiple flows</h3>
+<p><code>mrva-flow</code> is linear and small. It should not dictate the
+only presentation. Future flows need a common model with optional
+projections:</p>
+<ul>
+<li>chronological command flow</li>
+<li>stage summary</li>
+<li>matrix</li>
+<li>comparison</li>
+<li>finding/review queue</li>
+<li>artifact/provenance graph</li>
+</ul>
+<p>The underlying relations should remain explicit so each projection
+can be derived without changing workflow truth.</p>
+<h2 id="cross-cutting-design-questions">Cross-cutting design
+questions</h2>
+<ul class="task-list">
+<li><label><input type="checkbox" />How are flows discovered?</label>
+<ul>
+<li>directory containing <code>.cga/</code></li>
+<li>registered workspace catalogue</li>
+<li>explicit <code>cga -C PATH</code></li>
+</ul></li>
+<li><label><input type="checkbox" />Should CGA Unified View select among
+workflows, or remain scoped to one <code>.cga</code> root per
+server?</label></li>
+<li><label><input type="checkbox" />How are flow metadata and UI hints
+versioned?</label></li>
+<li><label><input type="checkbox" />Which state is canonical when live
+runtime and durable workflow disagree?</label></li>
+<li><label><input type="checkbox" />How should stale/unavailable runtime
+state be represented?</label></li>
+<li><label><input type="checkbox" />Which annotations belong in
+<code>.cga</code>, and which belong in an external review
+store?</label></li>
+<li><label><input type="checkbox" />How are branches and comparisons
+selected without displaying the entire forest at once?</label></li>
+<li><label><input type="checkbox" />What is the authorization model
+before adding editing or execution?</label></li>
+<li><label><input type="checkbox" />Which operations must work
+remotely?</label></li>
+<li><label><input type="checkbox" />Which fields are user, operator,
+system, or diagnostic information?</label></li>
+<li><label><input type="checkbox" />Who owns relevance tags and reviews
+changes to them?</label></li>
+<li><label><input type="checkbox" />Can every summary/detail count be
+followed to the complete collection?</label></li>
+<li><label><input type="checkbox" />How should script setup be
+folded/collapsed without obscuring that the script remains
+authoritative?</label></li>
+</ul>
+<h2 id="proposed-roadmap">Proposed roadmap</h2>
+<h3 id="phase-1-searchable-cga-use-model">Phase 1 — searchable CGA use
+model</h3>
+<ul class="task-list">
+<li><label><input type="checkbox" checked="" />Define controlled tag
+vocabulary.</label></li>
+<li><label><input type="checkbox" checked="" />Define initial
+command/attempt/artifact/collection tag scope.</label></li>
+<li><label><input type="checkbox" checked="" />Implement common tag
+parsing and <code>.cga</code> storage.</label></li>
+<li><label><input type="checkbox" checked="" />Pilot structured tags in
+<code>mrva-flow.sh</code>.</label></li>
+<li><label><input type="checkbox" checked="" />Index tags and expose tag
+filtering/search.</label></li>
+<li><label><input type="checkbox" checked="" />Version normalized model,
+step, artifact, outline, search, and collection schemas.</label></li>
+<li><label><input type="checkbox" checked="" />Add
+<code>/api/outline</code> and <code>cga uv outline</code>.</label></li>
+<li><label><input type="checkbox" checked="" />Add bounded
+search/filter/detail-level controls with explicit pagination and
+truncation metadata.</label></li>
+<li><label><input type="checkbox" checked="" />Document and implement
+LLM-safe outline/search redaction for <code>sensitivity:secret</code>,
+with explicit local override and redaction counts.</label></li>
+<li><label><input type="checkbox" checked="" />Move
+<code>mrva-flow</code> stage metadata out of <code>cgauv</code> command
+heuristics while retaining a generic fallback for other
+flows.</label></li>
+<li><label><input type="checkbox" checked="" />Add linked
+selected-database and selected-query resources.</label></li>
+<li><label><input type="checkbox" checked="" />Add server-side
+filtering/search/sorting/pagination for long collections.</label></li>
+<li><label><input type="checkbox" checked="" />Add spec-to-script
+guidance, template, style rules, and review checklist in
+<code>cga/cgawf/FLOW-SCRIPT-GUIDE.md</code>.</label></li>
+</ul>
+<h3 id="phase-2-multiple-read-only-flows">Phase 2 — multiple read-only
+flows</h3>
+<ul class="task-list">
+<li><label><input type="checkbox" />Define the shared flow
+contract.</label></li>
+<li><label><input type="checkbox" />Implement
+<code>query-dev-flow.sh</code>.</label></li>
+<li><label><input type="checkbox" />Adapt CGA Unified View to
+query-development details.</label></li>
+<li><label><input type="checkbox" />Implement
+<code>query-suite-review-flow.sh</code>.</label></li>
+<li><label><input type="checkbox" />Add matrix/comparison/review
+projections.</label></li>
+</ul>
+<h3 id="phase-3-structured-editing">Phase 3 — structured editing</h3>
+<ul class="task-list">
+<li><label><input type="checkbox" />Add editor reveal/open
+actions.</label></li>
+<li><label><input type="checkbox" />Add reviewed parameter/query
+edits.</label></li>
+<li><label><input type="checkbox" />Add bounded rerun/branch actions
+with audit records.</label></li>
+<li><label><input type="checkbox" />Evaluate VS Code extension/webview
+integration.</label></li>
+</ul>
+<h3 id="phase-4-optional-interactive-execution">Phase 4 — optional
+interactive execution</h3>
+<ul class="task-list">
+<li><label><input type="checkbox" />Select a concrete xterm.js use
+case.</label></li>
+<li><label><input type="checkbox" />Design PTY/auth/audit/lifecycle
+boundaries.</label></li>
+<li><label><input type="checkbox" />Implement only if structured
+operations and editor integration are insufficient.</label></li>
+</ul>
+<h2 id="llm-notes">LLM notes</h2>
+<ul>
+<li>Treat this file as an evolving outline; update decisions and
+checkbox state as work progresses.</li>
+<li>Use <code>cgauv</code>, never <code>cgaud</code>.</li>
+<li>Keep <strong>CGA use</strong> requirements separate from CGA
+implementation details.</li>
+<li>Treat flow scripts as the authoritative mutable workflow
+source.</li>
+<li>Keep generated scripts close to the user’s numbered MRVA
+specification.</li>
+<li>Do not move execution choices into CGA Unified View metadata.</li>
+<li>Do not infer tree semantics from nested UI boxes.</li>
+<li>Do not parse HTML when a normalized JSON/text representation
+exists.</li>
+<li>Retrieve summaries first and details on demand.</li>
+<li>Preserve source/transcript/artifact provenance in
+recommendations.</li>
+<li>Keep existing CGA Workflow State, MRVA System View, replay, DFG, and
+CFG views working.</li>
+<li>Do not introduce an interactive terminal as a convenience-only
+feature.</li>
+<li>Prefer editor-native operations for editing and diagnostics.</li>
+<li>New flow-specific UI requirements should first be expressed as
+additions to a shared flow contract or normalized model.</li>
+<li>Presentation/relevance tags must not change execution
+semantics.</li>
+<li>Script-site tags are valid flow-specific metadata, while component
+metadata provides reusable defaults.</li>
+<li>“Primary” and “detail” affect defaults only; all non-secret
+user-relevant information must remain reachable by links.</li>
+</ul>
+<h2 id="decision-log">Decision log</h2>
+<ul>
+<li>2026-09-29: CGA Unified View version one is live-current-state and
+read-only.</li>
+<li>2026-09-29: Command steps are grouped into contiguous functional
+stages.</li>
+<li>2026-09-29: Detail selection is pinned by click; hover/focus
+provides preview.</li>
+<li>2026-09-29: Terminal pane is transcript-only; interactive xterm.js
+is deferred.</li>
+<li>2026-09-29: Failed attempts are recorded separately and do not
+advance CGAST.</li>
+<li>2026-09-29: Existing views remain supported and linked.</li>
+<li>2026-09-30: Canonical component acronym changed from
+<code>cgaud</code> to <code>cgauv</code>.</li>
+<li>2026-09-30: Flow scripts are the authoritative source of workflow
+intent and the only currently mutable workflow component.</li>
+<li>2026-09-30: CGA Unified View remains a projection; it must not
+replace script semantics.</li>
+<li>2026-09-30: User-relevant details must be linkable and long
+collections must support filtering/search.</li>
+<li>2026-09-30: Relevance metadata will be non-intrusive and
+non-semantic.</li>
+<li>2026-09-30: Tag vocabulary, scope, storage, and pilot application
+precede the searchable CGA use model.</li>
+<li>2026-09-30: Flow scripts may carry concise flow-specific tags;
+reusable defaults remain owned by components and schemas.</li>
+<li>2026-09-30: Phase 1 implemented common tag profiles/canonical
+facets, versioned outline/search/collection schemas,
+<code>cga uv outline/search</code>, and linked searchable
+selected-database/query collections.</li>
+<li>2026-09-30: Logical artifact occurrences retain producer-specific
+tags; content-addressed bytes remain deduplicated.</li>
+<li>2026-09-30: <code>mrva-flow</code> stage grouping moved to
+non-semantic <code>flow-view.json</code>; generic fallback remains for
+unannotated flows.</li>
+<li>2026-09-30: Outline/search hide <code>sensitivity:secret</code> by
+default and report redaction counts; local callers may opt in
+explicitly.</li>
+</ul>
+</body>
+</html>

@@ -1,0 +1,13 @@
+---
+sourceLocationPrefix: /tmp/mrva-db-build/py-six
+baselineLinesOfCode: 0
+unicodeNewlines: false
+columnKind: utf32
+primaryLanguage: python
+creationMetadata:
+  sha: c8e394065cd541a16c040515dc0afb85cf22a7c3
+  cliVersion: 2.23.8
+  creationTime: 2026-07-13T23:47:23.205987308Z
+overlayBaseDatabase: false
+overlayDatabase: false
+finalised: true

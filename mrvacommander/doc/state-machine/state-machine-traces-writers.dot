@@ -1,0 +1,334 @@
+// State Machine Traces: only traces that WRITE to postgres.
+// Traces that both read and write are included in full.
+// Render: dot -Tpdf state-machine-traces-writers.dot -o state-machine-traces-writers.pdf
+//
+// Legend:
+//   Green edge    = postgres READ
+//   Orange edge   = postgres WRITE
+//   Purple edge   = READ + WRITE (atomic transaction)
+//   Blue bold edge = cross-chain interaction (RabbitMQ, wakeChan, Argo pod)
+//   Dashed box    = external system (Argo API, RabbitMQ, artifact store)
+//
+// Included traces: 1 (MRVARequest), 2 (MRVAStatus), 3 (Cancel),
+//                  4 (ConsumeResults), 5 (PoolManager), 6 (agent-commander-argo)
+// Excluded: 7 (DownloadQLDB — no postgres), 8–10 (download — read-only), 11 (dashboard — read-only)
+
+digraph state_machine_writers {
+    rankdir=TB;
+    fontname="Helvetica";
+    node [fontname="Helvetica", fontsize=10];
+    edge [fontname="Helvetica", fontsize=8];
+    compound=true;
+    newrank=true;
+
+    // =========================================================================
+    // Postgres tables
+    // =========================================================================
+    subgraph cluster_tables {
+        label="Postgres Tables";
+        style=dashed;
+        color=gray60;
+        fontsize=12;
+
+        tbl_job_status      [label="job_status\n(session_id, owner, repo, status)",
+                             shape=cylinder, style=filled, fillcolor="#e8e8e8"];
+        tbl_job_info        [label="job_info\n(session_id, owner, repo,\nuser_id, started_at,\ncompleted_at, argo_workflow_id)",
+                             shape=cylinder, style=filled, fillcolor="#e8e8e8"];
+        tbl_analyze_jobs    [label="analyze_jobs\n(session_id, owner, repo, payload)",
+                             shape=cylinder, style=filled, fillcolor="#e8e8e8"];
+        tbl_analyze_results [label="analyze_results\n(session_id, owner, repo, result)",
+                             shape=cylinder, style=filled, fillcolor="#e8e8e8"];
+        tbl_worker_pool     [label="worker_pool\n(worker_id, status,\nheartbeat_at, current_job)",
+                             shape=cylinder, style=filled, fillcolor="#e8e8e8"];
+        tbl_job_repo_map    [label="job_repo_map\n(job_repo_id, owner, repo)",
+                             shape=cylinder, style=filled, fillcolor="#e8e8e8"];
+        tbl_session_seq     [label="session_id_seq\n(sequence)",
+                             shape=cylinder, style=filled, fillcolor="#e8e8e8"];
+    }
+
+    // =========================================================================
+    // TRACE 1: MRVARequest  (HTTP POST → create session)
+    //   Writes: job_status, analyze_jobs, job_repo_map, job_info
+    // =========================================================================
+    subgraph cluster_mrva_request {
+        label="Trace 1: MRVARequest (HTTP POST → create session)";
+        style=filled;
+        fillcolor="#eef6ff";
+        color="#4a90d9";
+        fontsize=11;
+
+        req_entry     [label="MRVARequest\nMRVARequestID", shape=box, style=filled, fillcolor="#a8d8ea"];
+        req_common    [label="MRVARequestCommon", shape=box, style=filled, fillcolor="#a8d8ea"];
+        req_nextid    [label="NextID()", shape=box, style=filled, fillcolor="#a8d8ea"];
+        req_collect   [label="collectRequestInfo\nAndSaveQueryPack", shape=box, style=filled, fillcolor="#a8d8ea"];
+        req_start     [label="startAnalyses\n(per repo)", shape=box, style=filled, fillcolor="#a8d8ea"];
+        req_build     [label="buildSessionInfo\nResponseJson", shape=box, style=filled, fillcolor="#a8d8ea"];
+    }
+
+    req_entry   -> req_common;
+    req_common  -> req_nextid;
+    req_common  -> req_collect;
+    req_common  -> req_start;
+    req_common  -> req_build;
+
+    req_nextid  -> tbl_session_seq  [label="READ\nnextval()", color=green4, fontcolor=green4];
+
+    req_start   -> tbl_job_status   [label="WRITE\nSetStatus(Pending)", color=orangered, fontcolor=orangered];
+    req_start   -> tbl_analyze_jobs [label="WRITE\nAddJob()", color=orangered, fontcolor=orangered];
+    req_start   -> tbl_job_repo_map [label="WRITE\nGetRepoId()\n(upsert)", color=orangered, fontcolor=orangered];
+
+    req_build   -> tbl_analyze_jobs [label="READ\nGetJobList()", color=green4, fontcolor=green4];
+    req_build   -> tbl_job_info     [label="WRITE\nSetJobInfo()\n(user, created_at)", color=orangered, fontcolor=orangered];
+
+    // =========================================================================
+    // TRACE 2: MRVAStatus  (HTTP GET → poll status)
+    //   Writes: job_repo_map (GetRepoId upsert)
+    // =========================================================================
+    subgraph cluster_mrva_status {
+        label="Trace 2: MRVAStatus (HTTP GET → poll status)";
+        style=filled;
+        fillcolor="#f0fff0";
+        color="#5cb85c";
+        fontsize=11;
+
+        stat_entry    [label="MRVAStatus\nMRVAStatusID", shape=box, style=filled, fillcolor="#b8e6b8"];
+        stat_common   [label="MRVAStatusCommon", shape=box, style=filled, fillcolor="#b8e6b8"];
+        stat_submit   [label="submitStatusResponse\n(per repo)", shape=box, style=filled, fillcolor="#b8e6b8"];
+    }
+
+    stat_entry  -> stat_common;
+    stat_common -> stat_submit;
+
+    stat_common -> tbl_analyze_jobs [label="READ\nGetJobList()", color=green4, fontcolor=green4];
+    stat_common -> tbl_job_info     [label="READ\nGetJobInfo()", color=green4, fontcolor=green4];
+
+    stat_submit -> tbl_job_status   [label="READ\nGetSessionStatus()\nGetStatus()", color=green4, fontcolor=green4];
+    stat_submit -> tbl_analyze_results [label="READ\nGetResult()\n(if Succeeded)", color=green4, fontcolor=green4];
+    stat_submit -> tbl_job_repo_map [label="WRITE\nGetRepoId()\n(upsert)", color=orangered, fontcolor=orangered];
+
+    // =========================================================================
+    // TRACE 3: CancelVariantAnalysis  (HTTP POST → cancel session)
+    //   Writes: job_status (CancelSession)
+    // =========================================================================
+    subgraph cluster_cancel {
+        label="Trace 3: CancelVariantAnalysis (HTTP POST → cancel session)";
+        style=filled;
+        fillcolor="#fff5f0";
+        color="#d9534f";
+        fontsize=11;
+
+        cancel_entry  [label="CancelVariant\nAnalysis", shape=box, style=filled, fillcolor="#f0c0b8"];
+        cancel_pool   [label="CancelRunningJobs\nForSession", shape=box, style=filled, fillcolor="#f0c0b8"];
+        cancel_argo   [label="CancelWorkflow\n(Argo API)", shape=box, style="filled,dashed", fillcolor="#f0c0b8"];
+    }
+
+    cancel_entry -> cancel_pool;
+    cancel_pool  -> cancel_argo;
+
+    cancel_entry -> tbl_analyze_jobs [label="READ\nGetJobList()", color=green4, fontcolor=green4];
+    cancel_entry -> tbl_job_info     [label="READ\nGetJobInfo()\n(verify owner)", color=green4, fontcolor=green4];
+    cancel_entry -> tbl_job_status   [label="WRITE\nCancelSession()\nPending/InProg→Canceled", color=orangered, fontcolor=orangered];
+
+    cancel_pool  -> tbl_job_status   [label="READ\nGetRunningJobs()", color=green4, fontcolor=green4];
+    cancel_pool  -> tbl_job_info     [label="READ\nGetJobInfo()\n→ ArgoWorkflowID", color=green4, fontcolor=green4];
+
+    // =========================================================================
+    // TRACE 4: ConsumeResults  (background → process RabbitMQ results)
+    //   Writes: analyze_results, job_status
+    //   No postgres reads (reads from RabbitMQ only)
+    // =========================================================================
+    subgraph cluster_consume {
+        label="Trace 4: ConsumeResults (background → process RabbitMQ results)";
+        style=filled;
+        fillcolor="#fdf5e6";
+        color="#f0ad4e";
+        fontsize=11;
+
+        consume_entry [label="ConsumeResults\n(infinite loop)", shape=diamond, style=filled, fillcolor="#f5deb3"];
+        consume_rmq   [label="Queue.Results()\n(RabbitMQ read)", shape=box, style="filled,dashed", fillcolor="#f5deb3"];
+        consume_wake  [label="TriggerScheduling()\n→ wakeChan", shape=box, style=filled, fillcolor="#f5deb3"];
+    }
+
+    consume_entry -> consume_rmq   [label="blocking\nchannel read"];
+    consume_rmq   -> tbl_analyze_results [label="WRITE\nSetResult()", color=orangered, fontcolor=orangered];
+    consume_rmq   -> tbl_job_status      [label="WRITE\nSetStatus()\n→ Succeeded/Failed", color=orangered, fontcolor=orangered];
+    consume_rmq   -> consume_wake;
+
+    // =========================================================================
+    // TRACE 5: PoolManager.Start() → cycle()  (background, every 15s)
+    //   Writes: job_status, job_info, worker_pool
+    // =========================================================================
+    subgraph cluster_pool {
+        label="Trace 5: PoolManager.Start() → cycle() (server-commander, every 15s)";
+        style=filled;
+        fillcolor="#f5f0ff";
+        color="#8e44ad";
+        fontsize=11;
+
+        pool_start    [label="Start()\nticker / wakeChan", shape=diamond, style=filled, fillcolor="#d7bde2"];
+        pool_cycle    [label="cycle()", shape=box, style=filled, fillcolor="#d7bde2"];
+
+        pool_reap     [label="reapDeadWorkers()", shape=box, style=filled, fillcolor="#d7bde2"];
+        pool_queue    [label="queueJobs()\n(advisory lock 73001)", shape=box, style=filled, fillcolor="#d7bde2"];
+        pool_poll     [label="pollArgoStatuses()\n(advisory lock 73002)", shape=box, style=filled, fillcolor="#d7bde2"];
+
+        pool_submit   [label="submitJobToArgo()\n(per selected job)", shape=box, style=filled, fillcolor="#d7bde2"];
+        pool_argo_sub [label="SubmitWorkflow\n(Argo API)", shape=box, style="filled,dashed", fillcolor="#d7bde2"];
+        pool_reconcile[label="reconcileJobWithArgo()", shape=box, style=filled, fillcolor="#d7bde2"];
+        pool_argo_get [label="GetWorkflowStatus\n(Argo API)", shape=box, style="filled,dashed", fillcolor="#d7bde2"];
+    }
+
+    pool_start    -> pool_cycle;
+    pool_cycle    -> pool_reap;
+    pool_cycle    -> pool_queue;
+    pool_cycle    -> pool_poll;
+
+    pool_queue    -> pool_submit    [label="for each\nselected job"];
+    pool_submit   -> pool_argo_sub;
+
+    pool_poll     -> pool_argo_get  [label="per running\njob"];
+    pool_argo_get -> pool_reconcile [label="if terminal\nstate"];
+
+    // reapDeadWorkers DB ops
+    pool_reap -> tbl_worker_pool [label="READ\nGetStaleWorkers()", color=green4, fontcolor=green4];
+    pool_reap -> tbl_job_status  [label="WRITE\nRequeueWorkerJob()\nInProg→Queued", color=orangered, fontcolor=orangered];
+    pool_reap -> tbl_job_info    [label="WRITE\nRequeueWorkerJob()\nclear worker_id", color=orangered, fontcolor=orangered];
+    pool_reap -> tbl_worker_pool [label="WRITE\nSetWorkerStatus(Exited)", color=orangered, fontcolor=orangered,
+                                  style=dashed];
+
+    // queueJobs DB ops
+    pool_queue -> tbl_worker_pool [label="READ\nCountWorkers\nByStatus(Busy)", color=green4, fontcolor=green4];
+    pool_queue -> tbl_job_status  [label="READ\nGetQueuedJobCount()\nGetPendingJobs()", color=green4, fontcolor=green4];
+    pool_queue -> tbl_job_info    [label="READ\nGetJobInfo()\nGetUserJobCounts()\nGetUserRecentRuntime()", color=green4, fontcolor=green4];
+    pool_queue -> tbl_job_status  [label="WRITE\nTransitionJobs\nToQueued()\nPending→Queued", color=orangered, fontcolor=orangered,
+                                   style=dashed];
+
+    // submitJobToArgo DB ops
+    pool_submit -> tbl_job_info   [label="READ+WRITE\nGetJobInfo()\nSetJobInfo(argo_id,\nstarted_at)", color=purple, fontcolor=purple];
+    pool_submit -> tbl_job_status [label="WRITE\nSetStatus(Failed)\n(on submit error)", color=orangered, fontcolor=orangered,
+                                   style=dotted];
+
+    // pollArgoStatuses DB ops
+    pool_poll -> tbl_job_status   [label="READ\nGetRunningJobs()\nGetJobsByStatus(Queued)", color=green4, fontcolor=green4];
+    pool_poll -> tbl_job_info     [label="READ\nGetJobInfo()\n→ ArgoWorkflowID", color=green4, fontcolor=green4];
+
+    // reconcileJobWithArgo DB ops
+    pool_reconcile -> tbl_job_status [label="READ+WRITE\nGetStatus() then\nSetStatus()\n→ Succeeded/Failed", color=purple, fontcolor=purple];
+    pool_reconcile -> tbl_job_info   [label="WRITE\nSetJobInfo()\ncompleted_at", color=orangered, fontcolor=orangered];
+
+    // =========================================================================
+    // TRACE 6: agent-commander-argo  (worker pod main loop)
+    //   Writes: worker_pool, job_status, job_info
+    // =========================================================================
+    subgraph cluster_agent {
+        label="Trace 6: agent-commander-argo (worker pod main loop)";
+        style=filled;
+        fillcolor="#fff8e7";
+        color="#e67e22";
+        fontsize=11;
+
+        agent_main     [label="main()\nRegisterWorker", shape=box, style=filled, fillcolor="#fad7a0"];
+        agent_heartbeat[label="go Heartbeat()\n(goroutine, every 10s)", shape=diamond, style=filled, fillcolor="#fad7a0"];
+        agent_loop     [label="Worker Loop\n(infinite)", shape=diamond, style=filled, fillcolor="#fad7a0"];
+        agent_check    [label="GetWorkerStatus()", shape=box, style=filled, fillcolor="#fad7a0"];
+        agent_claim    [label="ClaimJob()\n(FOR UPDATE\nSKIP LOCKED)", shape=box, style=filled, fillcolor="#fad7a0"];
+        agent_busy     [label="SetWorkerBusy()", shape=box, style=filled, fillcolor="#fad7a0"];
+        agent_run      [label="RunAnalysisJob()\n(no DB)", shape=box, style="filled,dashed", fillcolor="#fad7a0"];
+        agent_complete [label="CompleteJob()\n(atomic txn)", shape=box, style=filled, fillcolor="#fad7a0"];
+        agent_idle     [label="SetWorkerIdle()", shape=box, style=filled, fillcolor="#fad7a0"];
+        agent_publish  [label="PublishResult\n(RabbitMQ)", shape=box, style="filled,dashed", fillcolor="#fad7a0"];
+    }
+
+    agent_main      -> agent_heartbeat;
+    agent_main      -> agent_loop;
+    agent_loop      -> agent_check;
+    agent_check     -> agent_claim    [label="if Idle"];
+    agent_claim     -> agent_busy     [label="if job\nclaimed"];
+    agent_busy      -> agent_run;
+    agent_run       -> agent_complete;
+    agent_complete  -> agent_publish;
+    agent_publish   -> agent_idle;
+    agent_idle      -> agent_loop     [label="next\niteration"];
+
+    agent_main -> tbl_worker_pool [label="WRITE\nRegisterWorker()\nstatus=Idle", color=orangered, fontcolor=orangered];
+
+    agent_heartbeat -> tbl_worker_pool [label="WRITE\nWorkerHeartbeat()\nheartbeat_at=NOW()", color=orangered, fontcolor=orangered];
+
+    agent_check -> tbl_worker_pool [label="READ\nGetWorkerStatus()", color=green4, fontcolor=green4];
+
+    agent_claim -> tbl_job_status  [label="READ+WRITE\nSELECT Queued\nFOR UPDATE SKIP LOCKED\nthen SET InProgress", color=purple, fontcolor=purple];
+    agent_claim -> tbl_job_info    [label="WRITE\nSET worker_id,\nstarted_at=NOW()", color=orangered, fontcolor=orangered];
+    agent_claim -> tbl_analyze_jobs[label="READ\nSELECT payload", color=green4, fontcolor=green4];
+
+    agent_busy -> tbl_worker_pool [label="WRITE\nstatus=Busy,\ncurrent_job=key", color=orangered, fontcolor=orangered];
+
+    agent_complete -> tbl_job_status [label="WRITE\nSET status=\nSucceeded/Failed", color=orangered, fontcolor=orangered];
+    agent_complete -> tbl_job_info   [label="WRITE\ncompleted_at=NOW()", color=orangered, fontcolor=orangered];
+
+    agent_idle -> tbl_worker_pool [label="WRITE\nstatus=Idle,\njobs_completed++", color=orangered, fontcolor=orangered];
+
+    // =========================================================================
+    // Cross-chain interactions
+    // =========================================================================
+    consume_wake -> pool_start [label="wakeChan\nsignal", style=bold, color=blue, fontcolor=blue];
+    agent_publish -> consume_entry [label="RabbitMQ\nresult message", style=bold, color=blue, fontcolor=blue];
+    pool_argo_sub -> agent_main [label="Argo creates\nworker pod", style=bold, color=blue, fontcolor=blue];
+
+    // =========================================================================
+    // Job status state machine
+    // =========================================================================
+    subgraph cluster_job_fsm {
+        label="Job Status State Machine";
+        style=filled;
+        fillcolor="#f9f9f9";
+        color=gray40;
+        fontsize=11;
+
+        fsm_pending    [label="Pending\n(0)", shape=ellipse, style=filled, fillcolor="#ffffcc"];
+        fsm_queued     [label="Queued\n(6)", shape=ellipse, style=filled, fillcolor="#ccffcc"];
+        fsm_inprog     [label="InProgress\n(1)", shape=ellipse, style=filled, fillcolor="#ccccff"];
+        fsm_succeeded  [label="Succeeded\n(2)", shape=ellipse, style=filled, fillcolor="#ccffcc",
+                        peripheries=2];
+        fsm_failed     [label="Failed\n(3)", shape=ellipse, style=filled, fillcolor="#ffcccc",
+                        peripheries=2];
+        fsm_canceled   [label="Canceled\n(4)", shape=ellipse, style=filled, fillcolor="#ffddcc",
+                        peripheries=2];
+        fsm_timedout   [label="TimedOut\n(5)", shape=ellipse, style=filled, fillcolor="#ffcccc",
+                        peripheries=2];
+    }
+
+    fsm_pending   -> fsm_queued    [label="TransitionJobsToQueued\n(pool queueJobs)"];
+    fsm_queued    -> fsm_inprog    [label="ClaimJob\n(agent worker)"];
+    fsm_inprog    -> fsm_succeeded [label="CompleteJob\n(agent) or\nreconcileJobWithArgo\n(pool)"];
+    fsm_inprog    -> fsm_failed    [label="CompleteJob\n(agent) or\nreconcileJobWithArgo\n(pool)"];
+    fsm_inprog    -> fsm_canceled  [label="CancelSession\n(HTTP cancel)"];
+    fsm_inprog    -> fsm_timedout  [label="timeout"];
+    fsm_pending   -> fsm_canceled  [label="CancelSession\n(HTTP cancel)"];
+    fsm_inprog    -> fsm_queued    [label="RequeueWorkerJob\n(reapDeadWorkers)", style=dashed];
+    fsm_queued    -> fsm_failed    [label="submitJobToArgo\n(on Argo error)", style=dotted];
+
+    // =========================================================================
+    // Worker status state machine
+    // =========================================================================
+    subgraph cluster_worker_fsm {
+        label="Worker Status State Machine";
+        style=filled;
+        fillcolor="#f9f9f9";
+        color=gray40;
+        fontsize=11;
+
+        wfsm_idle      [label="Idle\n(0)", shape=ellipse, style=filled, fillcolor="#ccffcc"];
+        wfsm_busy      [label="Busy\n(1)", shape=ellipse, style=filled, fillcolor="#ccccff"];
+        wfsm_draining  [label="Draining\n(2)", shape=ellipse, style=filled, fillcolor="#ffddcc"];
+        wfsm_exited    [label="Exited\n(3)", shape=ellipse, style=filled, fillcolor="#ffcccc",
+                        peripheries=2];
+    }
+
+    wfsm_idle     -> wfsm_busy     [label="SetWorkerBusy\n(agent claims job)"];
+    wfsm_busy     -> wfsm_idle     [label="SetWorkerIdle\n(agent completes job)"];
+    wfsm_idle     -> wfsm_draining [label="pool manager\nscale-down"];
+    wfsm_busy     -> wfsm_draining [label="pool manager\nscale-down"];
+    wfsm_draining -> wfsm_exited   [label="agent detects\nDraining, exits"];
+    wfsm_idle     -> wfsm_exited   [label="agent shutdown\nor reapDeadWorkers"];
+    wfsm_busy     -> wfsm_exited   [label="reapDeadWorkers\n(stale heartbeat)"];
+}

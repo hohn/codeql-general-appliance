@@ -1,0 +1,1887 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>MRVA Two-Session Timing Diagram (GPT-Optimized Format)</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="../../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../../docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">MRVA Two-Session Timing Diagram (GPT-Optimized
+Format)</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#mrva-two-session-timing-diagram-gpt-optimized-format"
+id="toc-mrva-two-session-timing-diagram-gpt-optimized-format">MRVA
+Two-Session Timing Diagram (GPT-Optimized Format)</a>
+<ul>
+<li><a href="#parameters" id="toc-parameters">Parameters</a></li>
+<li><a href="#sessions" id="toc-sessions">Sessions</a></li>
+<li><a href="#components" id="toc-components">Components</a></li>
+<li><a href="#timeline" id="toc-timeline">Timeline</a>
+<ul>
+<li><a href="#t0-u_1-submits-session-j_1"
+id="toc-t0-u_1-submits-session-j_1">\(t{=}0\) — \(U_1\) Submits Session
+\(J_1\)</a></li>
+<li><a href="#t10-scheduler-poll-cycle-1"
+id="toc-t10-scheduler-poll-cycle-1">\(t{=}10\) — Scheduler Poll Cycle
+1</a></li>
+<li><a href="#t15-u_2-submits-session-j_2"
+id="toc-t15-u_2-submits-session-j_2">\(t{=}15\) — \(U_2\) Submits
+Session \(J_2\)</a></li>
+<li><a href="#t20-scheduler-poll-cycle-2"
+id="toc-t20-scheduler-poll-cycle-2">\(t{=}20\) — Scheduler Poll Cycle
+2</a></li>
+<li><a href="#t30-scheduler-poll-cycle-3"
+id="toc-t30-scheduler-poll-cycle-3">\(t{=}30\) — Scheduler Poll Cycle
+3</a></li>
+<li><a href="#t40-j_1.1-and-j_1.2-complete-scheduler-poll-cycle-4"
+id="toc-t40-j_1.1-and-j_1.2-complete-scheduler-poll-cycle-4">\(t{=}40\)
+— \(J_{1.1}\) and \(J_{1.2}\) Complete; Scheduler Poll Cycle 4</a></li>
+<li><a href="#t50-scheduler-poll-cycle-5"
+id="toc-t50-scheduler-poll-cycle-5">\(t{=}50\) — Scheduler Poll Cycle
+5</a></li>
+<li><a href="#t60-scheduler-poll-cycle-6"
+id="toc-t60-scheduler-poll-cycle-6">\(t{=}60\) — Scheduler Poll Cycle
+6</a></li>
+<li><a href="#t70-j_2.1-and-j_1.3-complete-scheduler-poll-cycle-7"
+id="toc-t70-j_2.1-and-j_1.3-complete-scheduler-poll-cycle-7">\(t{=}70\)
+— \(J_{2.1}\) and \(J_{1.3}\) Complete; Scheduler Poll Cycle 7</a></li>
+<li><a href="#t80-scheduler-poll-cycle-8"
+id="toc-t80-scheduler-poll-cycle-8">\(t{=}80\) — Scheduler Poll Cycle
+8</a></li>
+<li><a href="#t90-scheduler-poll-cycle-9"
+id="toc-t90-scheduler-poll-cycle-9">\(t{=}90\) — Scheduler Poll Cycle
+9</a></li>
+<li><a href="#t100-j_2.2-and-j_2.3-complete-all-jobs-done"
+id="toc-t100-j_2.2-and-j_2.3-complete-all-jobs-done">\(t{=}100\) —
+\(J_{2.2}\) and \(J_{2.3}\) Complete; All Jobs Done</a></li>
+</ul></li>
+<li><a href="#worker-gantt-chart" id="toc-worker-gantt-chart">Worker
+Gantt Chart</a></li>
+<li><a href="#summary-of-fair-scheduling-decisions"
+id="toc-summary-of-fair-scheduling-decisions">Summary of Fair Scheduling
+Decisions</a></li>
+<li><a href="#message-flow-summary-all-messages-in-order"
+id="toc-message-flow-summary-all-messages-in-order">Message Flow Summary
+(all messages in order)</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="mrva-two-session-timing-diagram-gpt-optimized-format">MRVA
+Two-Session Timing Diagram (GPT-Optimized Format)</h1>
+<h2 id="parameters">Parameters</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 29%" />
+<col style="width: 37%" />
+</colgroup>
+<thead>
+<tr>
+<th>Symbol</th>
+<th>Value</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>\(W\)</td>
+<td>2</td>
+<td>max workers</td>
+</tr>
+<tr>
+<td>\(T_{}\)</td>
+<td>10 s</td>
+<td>scheduler poll interval</td>
+</tr>
+<tr>
+<td>\(T_w\)</td>
+<td>3600 s</td>
+<td>runtime window</td>
+</tr>
+<tr>
+<td>job duration</td>
+<td>30 s</td>
+<td>each sub-job</td>
+</tr>
+<tr>
+<td>workers</td>
+<td>\(_1, _2\)</td>
+<td></td>
+</tr>
+<tr>
+<td>\(O\)</td>
+<td>\(O_a, O_b\)</td>
+<td>owner (organization)</td>
+</tr>
+<tr>
+<td>\(R\)</td>
+<td>\(R_1, , R_6\)</td>
+<td>repository</td>
+</tr>
+<tr>
+<td>\(\)</td>
+<td>\(_P, _I, _S\)</td>
+<td>status: Pending, InProgress, Succeeded</td>
+</tr>
+</tbody>
+</table>
+<h2 id="sessions">Sessions</h2>
+<p><strong>\(J_1\)</strong> (user \(U_1\), session_id = 1):</p>
+<table>
+<thead>
+<tr>
+<th>Job</th>
+<th>\(O\)</th>
+<th>\(R\)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>\(J_{1.1}\)</td>
+<td>\(O_a\)</td>
+<td>\(R_1\)</td>
+</tr>
+<tr>
+<td>\(J_{1.2}\)</td>
+<td>\(O_a\)</td>
+<td>\(R_2\)</td>
+</tr>
+<tr>
+<td>\(J_{1.3}\)</td>
+<td>\(O_a\)</td>
+<td>\(R_3\)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>\(J_2\)</strong> (user \(U_2\), session_id = 2):</p>
+<table>
+<thead>
+<tr>
+<th>Job</th>
+<th>\(O\)</th>
+<th>\(R\)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>\(J_{2.1}\)</td>
+<td>\(O_b\)</td>
+<td>\(R_4\)</td>
+</tr>
+<tr>
+<td>\(J_{2.2}\)</td>
+<td>\(O_b\)</td>
+<td>\(R_5\)</td>
+</tr>
+<tr>
+<td>\(J_{2.3}\)</td>
+<td>\(O_b\)</td>
+<td>\(R_6\)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="components">Components</h2>
+<table>
+<thead>
+<tr>
+<th>Symbol</th>
+<th>Component</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>\(C_1\)</td>
+<td>Client for \(U_1\)</td>
+</tr>
+<tr>
+<td>\(C_2\)</td>
+<td>Client for \(U_2\)</td>
+</tr>
+<tr>
+<td>\(S\)</td>
+<td>Server (API coordinator + result consumer)</td>
+</tr>
+<tr>
+<td>DB</td>
+<td>PostgreSQL</td>
+</tr>
+<tr>
+<td>\(_L\)</td>
+<td>Scheduler (leader)</td>
+</tr>
+<tr>
+<td>\(\)</td>
+<td>Argo Workflows</td>
+</tr>
+<tr>
+<td>\(_1\)</td>
+<td>Worker pod 1</td>
+</tr>
+<tr>
+<td>\(_2\)</td>
+<td>Worker pod 2</td>
+</tr>
+<tr>
+<td>MQ</td>
+<td>RabbitMQ “results” queue</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="timeline">Timeline</h2>
+<h3 id="t0-u_1-submits-session-j_1">\(t{=}0\) — \(U_1\) Submits Session
+\(J_1\)</h3>
+<p><strong>Messages:</strong> - \(C_1 S\): submit(\(\), \(\{R_1, R_2,
+R_3\}\), \(U_1\)) - \(S \): INSERT \(J_{1.1}\), \(J_{1.2}\),
+\(J_{1.3}\)</p>
+<p><strong>Server actions:</strong> 1. Generate session_id = 1 via
+<code>SELECT nextval('session_id_seq')</code> 2. Save query pack to
+MinIO 3. For each repo in \(\{R_1, R_2, R_3\}\): - INSERT INTO
+analyze_jobs (session_id, \(O\), \(R\), payload) - INSERT INTO
+job_status (session_id, \(O\), \(R\), \(= _P\)) - INSERT INTO job_info
+(session_id, \(O\), \(R\), payload, user_id = ‘\(U_1\)’, \(t^s\) = NULL,
+\(t^c\) = NULL, \(\) = ’’) - UPSERT INTO job_repo_map (\(O\), \(R\))</p>
+<p><strong>DB State at \(t{=}0\):</strong></p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 22%" />
+<col style="width: 11%" />
+<col style="width: 11%" />
+<col style="width: 20%" />
+</colgroup>
+<thead>
+<tr>
+<th>Table: job_status</th>
+<th>session_id</th>
+<th>\(O\)</th>
+<th>\(R\)</th>
+<th>\(\)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td>1</td>
+<td>\(O_a\)</td>
+<td>\(R_1\)</td>
+<td>\(_P\)</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>\(O_a\)</td>
+<td>\(R_2\)</td>
+<td>\(_P\)</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>\(O_a\)</td>
+<td>\(R_3\)</td>
+<td>\(_P\)</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 17%" />
+<col style="width: 6%" />
+<col style="width: 6%" />
+<col style="width: 12%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 13%" />
+</colgroup>
+<thead>
+<tr>
+<th>Table: job_info</th>
+<th>session_id</th>
+<th>\(O\)</th>
+<th>\(R\)</th>
+<th>user_id</th>
+<th>\(t^s\)</th>
+<th>\(t^c\)</th>
+<th>\(\)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td>1</td>
+<td>\(O_a\)</td>
+<td>\(R_1\)</td>
+<td>\(U_1\)</td>
+<td>NULL</td>
+<td>NULL</td>
+<td>’’</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>\(O_a\)</td>
+<td>\(R_2\)</td>
+<td>\(U_1\)</td>
+<td>NULL</td>
+<td>NULL</td>
+<td>’’</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>\(O_a\)</td>
+<td>\(R_3\)</td>
+<td>\(U_1\)</td>
+<td>NULL</td>
+<td>NULL</td>
+<td>’’</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="t10-scheduler-poll-cycle-1">\(t{=}10\) — Scheduler Poll Cycle
+1</h3>
+<p><strong>Messages:</strong> - \(_L \): SELECT pending, running jobs -
+\( _L\): \(\{J_{1.1}, J_{1.2}, J_{1.3}\}\); \(W_r{=}0\), \(W_a{=}2\),
+pending: 3</p>
+<p><strong>Fair Scheduling Decision:</strong></p>
+<p>Only one user has pending jobs:</p>
+<p>\[(U_1) = (n_r,\; ,\; {-}n_p) = (0,\; 0,\; {-}3)\]</p>
+<p>Allocate \((W_a, n_p) = (2, 3) = 2\) slots: - Pass 1: \(U_1\) gets 1
+slot → \(a_{U_1}{=}1\), remaining = 1 - Pass 2: \(U_1\) gets 1 slot →
+\(a_{U_1}{=}2\), remaining = 0</p>
+<p>Result: \(J_{1.1} _1\), \(J_{1.2} _2\)</p>
+<p><strong>Job Submission:</strong> - \(_L \):
+SubmitWorkflow(\(J_{1.1}\)) → \(_{1.1}\) - \(_1\): CreatePod (execute
+\(J_{1.1}\)) - \(_L \): SubmitWorkflow(\(J_{1.2}\)) → \(_{1.2}\) -
+\(_2\): CreatePod (execute \(J_{1.2}\))</p>
+<p><strong>DB Updates:</strong></p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">UPDATE</span> job_status <span class="kw">SET</span> status<span class="op">=</span><span class="dv">1</span> <span class="kw">WHERE</span> (<span class="dv">1</span>, O_a, R_1);  <span class="co">-- sigma_I</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">UPDATE</span> job_status <span class="kw">SET</span> status<span class="op">=</span><span class="dv">1</span> <span class="kw">WHERE</span> (<span class="dv">1</span>, O_a, R_2);</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">UPDATE</span> job_info <span class="kw">SET</span> started_at<span class="op">=</span><span class="st">&#39;t=10&#39;</span>, argo_workflow_id<span class="op">=</span><span class="st">&#39;omega_1.1&#39;</span> <span class="kw">WHERE</span> (<span class="dv">1</span>, O_a, R_1);</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="kw">UPDATE</span> job_info <span class="kw">SET</span> started_at<span class="op">=</span><span class="st">&#39;t=10&#39;</span>, argo_workflow_id<span class="op">=</span><span class="st">&#39;omega_1.2&#39;</span> <span class="kw">WHERE</span> (<span class="dv">1</span>, O_a, R_2);</span></code></pre></div>
+<p><strong>Argo Status Polling:</strong> - \(_L \):
+GetWorkflowStatus(\(_{1.1}\)) → Pending - \(_L \):
+GetWorkflowStatus(\(_{1.2}\)) → Pending</p>
+<p><strong>DB State at \(t{=}10\):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Table: job_status</th>
+<th>session_id</th>
+<th>\(O\)</th>
+<th>\(R\)</th>
+<th>\(\)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td>1</td>
+<td>\(O_a\)</td>
+<td>\(R_1\)</td>
+<td>\(_I\)</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>\(O_a\)</td>
+<td>\(R_2\)</td>
+<td>\(_I\)</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>\(O_a\)</td>
+<td>\(R_3\)</td>
+<td>\(_P\)</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 17%" />
+<col style="width: 6%" />
+<col style="width: 6%" />
+<col style="width: 12%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 13%" />
+</colgroup>
+<thead>
+<tr>
+<th>Table: job_info</th>
+<th>session_id</th>
+<th>\(O\)</th>
+<th>\(R\)</th>
+<th>user_id</th>
+<th>\(t^s\)</th>
+<th>\(t^c\)</th>
+<th>\(\)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td>1</td>
+<td>\(O_a\)</td>
+<td>\(R_1\)</td>
+<td>\(U_1\)</td>
+<td>\(t{=}10\)</td>
+<td>NULL</td>
+<td>\(_{1.1}\)</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>\(O_a\)</td>
+<td>\(R_2\)</td>
+<td>\(U_1\)</td>
+<td>NULL</td>
+<td>NULL</td>
+<td>\(_{1.2}\)</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>\(O_a\)</td>
+<td>\(R_3\)</td>
+<td>\(U_1\)</td>
+<td>NULL</td>
+<td>NULL</td>
+<td>’’</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Worker</th>
+<th>Job</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>\(_1\)</td>
+<td>\(J_{1.1}\)</td>
+<td>Running</td>
+</tr>
+<tr>
+<td>\(_2\)</td>
+<td>\(J_{1.2}\)</td>
+<td>Running</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="t15-u_2-submits-session-j_2">\(t{=}15\) — \(U_2\) Submits
+Session \(J_2\)</h3>
+<p><strong>Messages:</strong> - \(C_2 S\): submit(\(’\), \(\{R_4, R_5,
+R_6\}\), \(U_2\)) - \(S \): INSERT \(J_{2.1}\), \(J_{2.2}\),
+\(J_{2.3}\)</p>
+<p><strong>Server actions:</strong> identical pattern to \(t{=}0\), with
+session_id = 2, user_id = \(U_2\).</p>
+<p><strong>DB State at \(t{=}15\) (new rows only):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Table: job_status</th>
+<th>session_id</th>
+<th>\(O\)</th>
+<th>\(R\)</th>
+<th>\(\)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td>2</td>
+<td>\(O_b\)</td>
+<td>\(R_4\)</td>
+<td>\(_P\)</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>\(O_b\)</td>
+<td>\(R_5\)</td>
+<td>\(_P\)</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>\(O_b\)</td>
+<td>\(R_6\)</td>
+<td>\(_P\)</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 17%" />
+<col style="width: 6%" />
+<col style="width: 6%" />
+<col style="width: 12%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 13%" />
+</colgroup>
+<thead>
+<tr>
+<th>Table: job_info</th>
+<th>session_id</th>
+<th>\(O\)</th>
+<th>\(R\)</th>
+<th>user_id</th>
+<th>\(t^s\)</th>
+<th>\(t^c\)</th>
+<th>\(\)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td>2</td>
+<td>\(O_b\)</td>
+<td>\(R_4\)</td>
+<td>\(U_2\)</td>
+<td>NULL</td>
+<td>NULL</td>
+<td>’’</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>\(O_b\)</td>
+<td>\(R_5\)</td>
+<td>\(U_2\)</td>
+<td>NULL</td>
+<td>NULL</td>
+<td>’’</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>\(O_b\)</td>
+<td>\(R_6\)</td>
+<td>\(U_2\)</td>
+<td>NULL</td>
+<td>NULL</td>
+<td>’’</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="t20-scheduler-poll-cycle-2">\(t{=}20\) — Scheduler Poll Cycle
+2</h3>
+<p><strong>Messages:</strong> - \(_L \): SELECT running → \(W_r{=}2\),
+\(W_a{=}0\)</p>
+<p><strong>Scheduling:</strong> \(W_a{=}0\), no slots available. Skip
+fair scheduling.</p>
+<p><strong>Argo Status Polling:</strong> - \(_L \):
+GetWorkflowStatus(\(_{1.1}\)) → Running (10 s into 30 s execution) -
+\(_L \): GetWorkflowStatus(\(_{1.2}\)) → Running</p>
+<p>No DB changes. Pending jobs \(\{J_{1.3}, J_{2.1}, J_{2.2},
+J_{2.3}\}\) wait.</p>
+<hr />
+<h3 id="t30-scheduler-poll-cycle-3">\(t{=}30\) — Scheduler Poll Cycle
+3</h3>
+<p>Same as \(t{=}20\). Both workers still executing (20 s into 30 s
+execution).</p>
+<p>\(_L\) polls \(\): \(J_{1.1}\) Running, \(J_{1.2}\) Running.
+\(W_r{=}2\), \(W_a{=}0\), no scheduling.</p>
+<hr />
+<h3 id="t40-j_1.1-and-j_1.2-complete-scheduler-poll-cycle-4">\(t{=}40\)
+— \(J_{1.1}\) and \(J_{1.2}\) Complete; Scheduler Poll Cycle 4</h3>
+<p>This is the most complex event. Three things happen in rapid
+succession:</p>
+<h4 id="step-1-pods-complete-and-publish-results">Step 1: Pods Complete
+and Publish Results</h4>
+<ul>
+<li>\(_1\): execute(\(\), \(R_1\)) completes → \(_{1.1}\)</li>
+<li>\(_1 \): publish(\(_{1.1}\))</li>
+<li>\(_2\): execute(\(\), \(R_2\)) completes → \(_{1.2}\)</li>
+<li>\(_2 \): publish(\(_{1.2}\))</li>
+</ul>
+<h4 id="step-2-server-consumes-results-from-rabbitmq">Step 2: Server
+Consumes Results from RabbitMQ</h4>
+<ul>
+<li>\( S\): consume(\(_{1.1}\))</li>
+<li>\(S \): SetResult(\(J_{1.1}\), \(_{1.1}\)) — INSERT INTO
+analyze_results</li>
+<li>\(S \): SetStatus(\(J_{1.1}\), \(_S\))</li>
+<li>\(S _L\): TriggerScheduling()</li>
+<li>\( S\): consume(\(_{1.2}\))</li>
+<li>\(S \): SetResult(\(J_{1.2}\), \(_{1.2}\))</li>
+<li>\(S \): SetStatus(\(J_{1.2}\), \(_S\))</li>
+<li>\(S _L\): TriggerScheduling()</li>
+</ul>
+<p><strong>DB updates from result consumption:</strong></p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">INSERT</span> <span class="kw">INTO</span> analyze_results (session_id, O, R, result)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">VALUES</span> (<span class="dv">1</span>, <span class="st">&#39;O_a&#39;</span>, <span class="st">&#39;R_1&#39;</span>, <span class="st">&#39;&lt;sarif_json&gt;&#39;</span>);</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">UPDATE</span> job_status <span class="kw">SET</span> status<span class="op">=</span><span class="dv">2</span> <span class="kw">WHERE</span> (<span class="dv">1</span>, O_a, R_1);  <span class="co">-- sigma_S</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="kw">INSERT</span> <span class="kw">INTO</span> analyze_results (session_id, O, R, result)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">VALUES</span> (<span class="dv">1</span>, <span class="st">&#39;O_a&#39;</span>, <span class="st">&#39;R_2&#39;</span>, <span class="st">&#39;&lt;sarif_json&gt;&#39;</span>);</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="kw">UPDATE</span> job_status <span class="kw">SET</span> status<span class="op">=</span><span class="dv">2</span> <span class="kw">WHERE</span> (<span class="dv">1</span>, O_a, R_2);</span></code></pre></div>
+<h4 id="step-3-scheduler-runs-triggered-or-on-poll">Step 3: Scheduler
+Runs (triggered or on poll)</h4>
+<ul>
+<li>\(_L \): SELECT running → \(W_r{=}0\), \(W_a{=}2\) (both now
+\(_S\))</li>
+</ul>
+<p><strong>Fair Scheduling Decision — \(U_2\) prioritized:</strong></p>
+<p>\[(U_1) = (n_r,\; ,\; {-}n_p) = (0,\; 60,\; {-}1)\] \[(U_2) = (n_r,\;
+,\; {-}n_p) = (0,\; 0,\; {-}3)\]</p>
+<p>Priority comparison: first components tie (both 0); second component
+\(_{U_2}{=}0 &lt; _{U_1}{=}60\), so \(U_2\) wins.</p>
+<p>Priority order: \([U_2, U_1]\). \(W_a{=}2\).</p>
+<p>Round-robin allocation: - Pass 1: \(U_2\) gets 1 slot →
+\(a_{U_2}{=}1\); \(U_1\) gets 1 slot → \(a_{U_1}{=}1\); remaining =
+0</p>
+<p>Result: \(J_{2.1} _1\), \(J_{1.3} _2\)</p>
+<p><strong>Note on fairness:</strong> \(U_2\) is prioritized because
+\(U_1\) has already consumed 60 s of compute time (\(60\)) while \(U_2\)
+has consumed 0 s. Even though both have \(n_r{=}0\), the second
+component of \(\) breaks the tie in \(U_2\)’s favor.</p>
+<p><strong>Job Submission:</strong> - \(_L \):
+SubmitWorkflow(\(J_{2.1}\)) → \(_{2.1}\) - \(_1\): CreatePod - \(_L \):
+SubmitWorkflow(\(J_{1.3}\)) → \(_{1.3}\) - \(_2\): CreatePod</p>
+<p><strong>DB updates:</strong></p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">UPDATE</span> job_status <span class="kw">SET</span> status<span class="op">=</span><span class="dv">1</span> <span class="kw">WHERE</span> (<span class="dv">2</span>, O_b, R_4);  <span class="co">-- J_{2.1} sigma_I</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">UPDATE</span> job_status <span class="kw">SET</span> status<span class="op">=</span><span class="dv">1</span> <span class="kw">WHERE</span> (<span class="dv">1</span>, O_a, R_3);  <span class="co">-- J_{1.3} sigma_I</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">UPDATE</span> job_info <span class="kw">SET</span> started_at<span class="op">=</span><span class="st">&#39;t=40&#39;</span>, argo_workflow_id<span class="op">=</span><span class="st">&#39;omega_2.1&#39;</span> <span class="kw">WHERE</span> (<span class="dv">2</span>, O_b, R_4);</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="kw">UPDATE</span> job_info <span class="kw">SET</span> started_at<span class="op">=</span><span class="st">&#39;t=40&#39;</span>, argo_workflow_id<span class="op">=</span><span class="st">&#39;omega_1.3&#39;</span> <span class="kw">WHERE</span> (<span class="dv">1</span>, O_a, R_3);</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co">-- Also set completed_at for finished jobs:</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="kw">UPDATE</span> job_info <span class="kw">SET</span> completed_at<span class="op">=</span><span class="st">&#39;t=40&#39;</span> <span class="kw">WHERE</span> (<span class="dv">1</span>, O_a, R_1);</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="kw">UPDATE</span> job_info <span class="kw">SET</span> completed_at<span class="op">=</span><span class="st">&#39;t=40&#39;</span> <span class="kw">WHERE</span> (<span class="dv">1</span>, O_a, R_2);</span></code></pre></div>
+<p><strong>DB State at \(t{=}40\):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Table: job_status</th>
+<th>session_id</th>
+<th>\(O\)</th>
+<th>\(R\)</th>
+<th>\(\)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td>1</td>
+<td>\(O_a\)</td>
+<td>\(R_1\)</td>
+<td>\(_S\)</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>\(O_a\)</td>
+<td>\(R_2\)</td>
+<td>\(_S\)</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>\(O_a\)</td>
+<td>\(R_3\)</td>
+<td>\(_I\)</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>\(O_b\)</td>
+<td>\(R_4\)</td>
+<td>\(_I\)</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>\(O_b\)</td>
+<td>\(R_5\)</td>
+<td>\(_P\)</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>\(O_b\)</td>
+<td>\(R_6\)</td>
+<td>\(_P\)</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 17%" />
+<col style="width: 6%" />
+<col style="width: 6%" />
+<col style="width: 12%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 13%" />
+</colgroup>
+<thead>
+<tr>
+<th>Table: job_info</th>
+<th>session_id</th>
+<th>\(O\)</th>
+<th>\(R\)</th>
+<th>user_id</th>
+<th>\(t^s\)</th>
+<th>\(t^c\)</th>
+<th>\(\)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td>1</td>
+<td>\(O_a\)</td>
+<td>\(R_1\)</td>
+<td>\(U_1\)</td>
+<td>\(t{=}10\)</td>
+<td>\(t{=}40\)</td>
+<td>\(_{1.1}\)</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>\(O_a\)</td>
+<td>\(R_2\)</td>
+<td>\(U_1\)</td>
+<td>\(t{=}10\)</td>
+<td>\(t{=}40\)</td>
+<td>\(_{1.2}\)</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>\(O_a\)</td>
+<td>\(R_3\)</td>
+<td>\(U_1\)</td>
+<td>\(t{=}40\)</td>
+<td>NULL</td>
+<td>\(_{1.3}\)</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>\(O_b\)</td>
+<td>\(R_4\)</td>
+<td>\(U_2\)</td>
+<td>\(t{=}40\)</td>
+<td>NULL</td>
+<td>\(_{2.1}\)</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>\(O_b\)</td>
+<td>\(R_5\)</td>
+<td>\(U_2\)</td>
+<td>NULL</td>
+<td>NULL</td>
+<td>’’</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>\(O_b\)</td>
+<td>\(R_6\)</td>
+<td>\(U_2\)</td>
+<td>NULL</td>
+<td>NULL</td>
+<td>’’</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Worker</th>
+<th>Job</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>\(_1\)</td>
+<td>\(J_{2.1}\)</td>
+<td>Running</td>
+</tr>
+<tr>
+<td>\(_2\)</td>
+<td>\(J_{1.3}\)</td>
+<td>Running</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="t50-scheduler-poll-cycle-5">\(t{=}50\) — Scheduler Poll Cycle
+5</h3>
+<p>\(_L\): \(W_r{=}2\), \(W_a{=}0\). No slots. Argo status: \(J_{2.1}\)
+Running, \(J_{1.3}\) Running. Pending: \(\{J_{2.2}, J_{2.3}\}\). No
+changes.</p>
+<hr />
+<h3 id="t60-scheduler-poll-cycle-6">\(t{=}60\) — Scheduler Poll Cycle
+6</h3>
+<p>Same as \(t{=}50\). Workers at 20 s into 30 s execution.</p>
+<hr />
+<h3 id="t70-j_2.1-and-j_1.3-complete-scheduler-poll-cycle-7">\(t{=}70\)
+— \(J_{2.1}\) and \(J_{1.3}\) Complete; Scheduler Poll Cycle 7</h3>
+<h4 id="step-1-pods-complete">Step 1: Pods Complete</h4>
+<ul>
+<li>\(_1\): execute(\(’\), \(R_4\)) completes → \(_{2.1}\)</li>
+<li>\(_1 \): publish(\(_{2.1}\))</li>
+<li>\(_2\): execute(\(\), \(R_3\)) completes → \(_{1.3}\)</li>
+<li>\(_2 \): publish(\(_{1.3}\))</li>
+</ul>
+<h4 id="step-2-server-consumes-results">Step 2: Server Consumes
+Results</h4>
+<ul>
+<li>\( S\): consume(\(_{2.1}\))</li>
+<li>\(S \): SetResult + SetStatus(\(J_{2.1}\), \(_S\))</li>
+<li>\(S _L\): TriggerScheduling()</li>
+<li>\( S\): consume(\(_{1.3}\))</li>
+<li>\(S \): SetResult + SetStatus(\(J_{1.3}\), \(_S\))</li>
+<li>\(S _L\): TriggerScheduling()</li>
+</ul>
+<h4 id="step-3-scheduler-runs">Step 3: Scheduler Runs</h4>
+<p>\(W_r{=}0\), \(W_a{=}2\). Pending: \(\{J_{2.2}, J_{2.3}\}\) — only
+\(U_2\).</p>
+<p><strong>Fair Scheduling Decision:</strong></p>
+<p>\[(U_2) = (0,\; 30,\; {-}2)\]</p>
+<p>\(U_1\) has no pending jobs, so not in scheduling consideration.</p>
+<p>Priority order: \([U_2]\). \(W_a{=}2\).</p>
+<p>Allocation: \((W_a, n_p) = (2, 2) = 2\)</p>
+<p>Result: \(J_{2.2} _1\), \(J_{2.3} _2\)</p>
+<p><strong>Job Submission:</strong> - \(_L \):
+SubmitWorkflow(\(J_{2.2}\)) → \(_1\) - \(_L \):
+SubmitWorkflow(\(J_{2.3}\)) → \(_2\)</p>
+<p><strong>DB State at \(t{=}70\):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Table: job_status</th>
+<th>session_id</th>
+<th>\(O\)</th>
+<th>\(R\)</th>
+<th>\(\)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td>1</td>
+<td>\(O_a\)</td>
+<td>\(R_1\)</td>
+<td>\(_S\)</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>\(O_a\)</td>
+<td>\(R_2\)</td>
+<td>\(_S\)</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>\(O_a\)</td>
+<td>\(R_3\)</td>
+<td>\(_S\)</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>\(O_b\)</td>
+<td>\(R_4\)</td>
+<td>\(_S\)</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>\(O_b\)</td>
+<td>\(R_5\)</td>
+<td>\(_I\)</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>\(O_b\)</td>
+<td>\(R_6\)</td>
+<td>\(_I\)</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 17%" />
+<col style="width: 6%" />
+<col style="width: 6%" />
+<col style="width: 12%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 13%" />
+</colgroup>
+<thead>
+<tr>
+<th>Table: job_info</th>
+<th>session_id</th>
+<th>\(O\)</th>
+<th>\(R\)</th>
+<th>user_id</th>
+<th>\(t^s\)</th>
+<th>\(t^c\)</th>
+<th>\(\)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td>1</td>
+<td>\(O_a\)</td>
+<td>\(R_1\)</td>
+<td>\(U_1\)</td>
+<td>\(t{=}10\)</td>
+<td>\(t{=}40\)</td>
+<td>\(_{1.1}\)</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>\(O_a\)</td>
+<td>\(R_2\)</td>
+<td>\(U_1\)</td>
+<td>\(t{=}10\)</td>
+<td>\(t{=}40\)</td>
+<td>\(_{1.2}\)</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>\(O_a\)</td>
+<td>\(R_3\)</td>
+<td>\(U_1\)</td>
+<td>\(t{=}40\)</td>
+<td>\(t{=}70\)</td>
+<td>\(_{1.3}\)</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>\(O_b\)</td>
+<td>\(R_4\)</td>
+<td>\(U_2\)</td>
+<td>\(t{=}40\)</td>
+<td>\(t{=}70\)</td>
+<td>\(_{2.1}\)</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>\(O_b\)</td>
+<td>\(R_5\)</td>
+<td>\(U_2\)</td>
+<td>\(t{=}70\)</td>
+<td>NULL</td>
+<td>\(_{2.2}\)</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>\(O_b\)</td>
+<td>\(R_6\)</td>
+<td>\(U_2\)</td>
+<td>\(t{=}70\)</td>
+<td>NULL</td>
+<td>\(_{2.3}\)</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Worker</th>
+<th>Job</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>\(_1\)</td>
+<td>\(J_{2.2}\)</td>
+<td>Running</td>
+</tr>
+<tr>
+<td>\(_2\)</td>
+<td>\(J_{2.3}\)</td>
+<td>Running</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="t80-scheduler-poll-cycle-8">\(t{=}80\) — Scheduler Poll Cycle
+8</h3>
+<p>\(W_r{=}2\), \(W_a{=}0\). Argo: both Running. No pending jobs. No
+changes.</p>
+<hr />
+<h3 id="t90-scheduler-poll-cycle-9">\(t{=}90\) — Scheduler Poll Cycle
+9</h3>
+<p>Same as \(t{=}80\).</p>
+<hr />
+<h3 id="t100-j_2.2-and-j_2.3-complete-all-jobs-done">\(t{=}100\) —
+\(J_{2.2}\) and \(J_{2.3}\) Complete; All Jobs Done</h3>
+<h4 id="step-1-pods-complete-1">Step 1: Pods Complete</h4>
+<ul>
+<li>\(_1\): execute(\(’\), \(R_5\)) completes → \(_{2.2}\)</li>
+<li>\(_1 \): publish(\(_{2.2}\))</li>
+<li>\(_2\): execute(\(’\), \(R_6\)) completes → \(_{2.3}\)</li>
+<li>\(_2 \): publish(\(_{2.3}\))</li>
+</ul>
+<h4 id="step-2-server-consumes-results-1">Step 2: Server Consumes
+Results</h4>
+<ul>
+<li>\( S\): consume(\(_{2.2}\), \(_{2.3}\))</li>
+<li>\(S \): SetResult + SetStatus → \(_S\)</li>
+</ul>
+<h4 id="step-3-scheduler-runs-1">Step 3: Scheduler Runs</h4>
+<p>\(W_r{=}0\), \(W_a{=}2\). No pending jobs. System idle.</p>
+<p><strong>Final DB State at \(t{=}100\):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Table: job_status</th>
+<th>session_id</th>
+<th>\(O\)</th>
+<th>\(R\)</th>
+<th>\(\)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td>1</td>
+<td>\(O_a\)</td>
+<td>\(R_1\)</td>
+<td>\(_S\)</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>\(O_a\)</td>
+<td>\(R_2\)</td>
+<td>\(_S\)</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>\(O_a\)</td>
+<td>\(R_3\)</td>
+<td>\(_S\)</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>\(O_b\)</td>
+<td>\(R_4\)</td>
+<td>\(_S\)</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>\(O_b\)</td>
+<td>\(R_5\)</td>
+<td>\(_S\)</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>\(O_b\)</td>
+<td>\(R_6\)</td>
+<td>\(_S\)</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 17%" />
+<col style="width: 6%" />
+<col style="width: 6%" />
+<col style="width: 12%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 13%" />
+</colgroup>
+<thead>
+<tr>
+<th>Table: job_info</th>
+<th>session_id</th>
+<th>\(O\)</th>
+<th>\(R\)</th>
+<th>user_id</th>
+<th>\(t^s\)</th>
+<th>\(t^c\)</th>
+<th>\(\)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td>1</td>
+<td>\(O_a\)</td>
+<td>\(R_1\)</td>
+<td>\(U_1\)</td>
+<td>\(t{=}10\)</td>
+<td>\(t{=}40\)</td>
+<td>\(_{1.1}\)</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>\(O_a\)</td>
+<td>\(R_2\)</td>
+<td>\(U_1\)</td>
+<td>\(t{=}10\)</td>
+<td>\(t{=}40\)</td>
+<td>\(_{1.2}\)</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>\(O_a\)</td>
+<td>\(R_3\)</td>
+<td>\(U_1\)</td>
+<td>\(t{=}40\)</td>
+<td>\(t{=}70\)</td>
+<td>\(_{1.3}\)</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>\(O_b\)</td>
+<td>\(R_4\)</td>
+<td>\(U_2\)</td>
+<td>\(t{=}40\)</td>
+<td>\(t{=}70\)</td>
+<td>\(_{2.1}\)</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>\(O_b\)</td>
+<td>\(R_5\)</td>
+<td>\(U_2\)</td>
+<td>\(t{=}70\)</td>
+<td>\(t{=}100\)</td>
+<td>\(_{2.2}\)</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>\(O_b\)</td>
+<td>\(R_6\)</td>
+<td>\(U_2\)</td>
+<td>\(t{=}70\)</td>
+<td>\(t{=}100\)</td>
+<td>\(_{2.3}\)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="worker-gantt-chart">Worker Gantt Chart</h2>
+<pre><code>Time:    0    10   15   20   30   40   50   60   70   80   90   100
+         |    |    |    |    |    |    |    |    |    |    |    |
+alpha_1: .... [===J_1.1(U_1)====] [===J_2.1(U_2)====] [===J_2.2(U_2)====]
+alpha_2: .... [===J_1.2(U_1)====] [===J_1.3(U_1)====] [===J_2.3(U_2)====]
+                   ^                   ^                   ^
+                   |                   |                   |
+              U_2 submits         Fair sched:          Only U_2
+              J_2 at t=15        U_2 prioritized      has pending</code></pre>
+<h2 id="summary-of-fair-scheduling-decisions">Summary of Fair Scheduling
+Decisions</h2>
+<table>
+<colgroup>
+<col style="width: 6%" />
+<col style="width: 5%" />
+<col style="width: 6%" />
+<col style="width: 16%" />
+<col style="width: 16%" />
+<col style="width: 12%" />
+<col style="width: 12%" />
+<col style="width: 9%" />
+<col style="width: 10%" />
+</colgroup>
+<thead>
+<tr>
+<th>Cycle</th>
+<th>Time</th>
+<th>\(W_a\)</th>
+<th>Pending (\(U_1\))</th>
+<th>Pending (\(U_2\))</th>
+<th>\((U_1)\)</th>
+<th>\((U_2)\)</th>
+<th>Priority</th>
+<th>Allocated</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>\(t{=}10\)</td>
+<td>2</td>
+<td>3</td>
+<td>—</td>
+<td>\((0,\; 0,\; {-}3)\)</td>
+<td>—</td>
+<td>\(U_1\)</td>
+<td>\(U_1\): 2 (\(J_{1.1}\), \(J_{1.2}\))</td>
+</tr>
+<tr>
+<td>4</td>
+<td>\(t{=}40\)</td>
+<td>2</td>
+<td>1</td>
+<td>3</td>
+<td>\((0,\; 60,\; {-}1)\)</td>
+<td>\((0,\; 0,\; {-}3)\)</td>
+<td>\(U_2 &gt; U_1\)</td>
+<td>\(U_2\): 1, \(U_1\): 1</td>
+</tr>
+<tr>
+<td>7</td>
+<td>\(t{=}70\)</td>
+<td>2</td>
+<td>0</td>
+<td>2</td>
+<td>—</td>
+<td>\((0,\; 30,\; {-}2)\)</td>
+<td>\(U_2\)</td>
+<td>\(U_2\): 2 (\(J_{2.2}\), \(J_{2.3}\))</td>
+</tr>
+</tbody>
+</table>
+<h2 id="message-flow-summary-all-messages-in-order">Message Flow Summary
+(all messages in order)</h2>
+<table>
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 21%" />
+<col style="width: 21%" />
+<col style="width: 14%" />
+<col style="width: 32%" />
+</colgroup>
+<thead>
+<tr>
+<th>#</th>
+<th>Time</th>
+<th>From</th>
+<th>To</th>
+<th>Message</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>\(t{=}0\)</td>
+<td>\(C_1\)</td>
+<td>\(S\)</td>
+<td>submit(\(\), \(\{R_1, R_2, R_3\}\), \(U_1\))</td>
+</tr>
+<tr>
+<td>2</td>
+<td>\(t{=}0\)</td>
+<td>\(S\)</td>
+<td>DB</td>
+<td>INSERT \(J_{1.1}\), \(J_{1.2}\), \(J_{1.3}\) (\(_P\))</td>
+</tr>
+<tr>
+<td>3</td>
+<td>\(t{=}10\)</td>
+<td>\(_L\)</td>
+<td>DB</td>
+<td>SELECT pending/running jobs</td>
+</tr>
+<tr>
+<td>4</td>
+<td>\(t{=}10\)</td>
+<td>\(_L\)</td>
+<td>\(\)</td>
+<td>SubmitWorkflow(\(J_{1.1}\))</td>
+</tr>
+<tr>
+<td>5</td>
+<td>\(t{=}10\)</td>
+<td>\(\)</td>
+<td>\(_1\)</td>
+<td>CreatePod (execute \(J_{1.1}\))</td>
+</tr>
+<tr>
+<td>6</td>
+<td>\(t{=}10\)</td>
+<td>\(_L\)</td>
+<td>\(\)</td>
+<td>SubmitWorkflow(\(J_{1.2}\))</td>
+</tr>
+<tr>
+<td>7</td>
+<td>\(t{=}10\)</td>
+<td>\(\)</td>
+<td>\(_2\)</td>
+<td>CreatePod (execute \(J_{1.2}\))</td>
+</tr>
+<tr>
+<td>8</td>
+<td>\(t{=}10\)</td>
+<td>\(_L\)</td>
+<td>DB</td>
+<td>UPDATE \(J_{1.1}\), \(J_{1.2}\) → \(_I\)</td>
+</tr>
+<tr>
+<td>9</td>
+<td>\(t{=}10\)</td>
+<td>\(_L\)</td>
+<td>\(\)</td>
+<td>GetWorkflowStatus(\(J_{1.1}\)) → Pending</td>
+</tr>
+<tr>
+<td>10</td>
+<td>\(t{=}10\)</td>
+<td>\(_L\)</td>
+<td>\(\)</td>
+<td>GetWorkflowStatus(\(J_{1.2}\)) → Pending</td>
+</tr>
+<tr>
+<td>11</td>
+<td>\(t{=}15\)</td>
+<td>\(C_2\)</td>
+<td>\(S\)</td>
+<td>submit(\(’\), \(\{R_4, R_5, R_6\}\), \(U_2\))</td>
+</tr>
+<tr>
+<td>12</td>
+<td>\(t{=}15\)</td>
+<td>\(S\)</td>
+<td>DB</td>
+<td>INSERT \(J_{2.1}\), \(J_{2.2}\), \(J_{2.3}\) (\(_P\))</td>
+</tr>
+<tr>
+<td>13</td>
+<td>\(t{=}20\)</td>
+<td>\(_L\)</td>
+<td>DB</td>
+<td>SELECT running → \(W_r{=}2\), \(W_a{=}0\) (skip)</td>
+</tr>
+<tr>
+<td>14</td>
+<td>\(t{=}20\)</td>
+<td>\(_L\)</td>
+<td>\(\)</td>
+<td>GetWorkflowStatus(\(J_{1.1}\)) → Running</td>
+</tr>
+<tr>
+<td>15</td>
+<td>\(t{=}20\)</td>
+<td>\(_L\)</td>
+<td>\(\)</td>
+<td>GetWorkflowStatus(\(J_{1.2}\)) → Running</td>
+</tr>
+<tr>
+<td>16</td>
+<td>\(t{=}30\)</td>
+<td>\(_L\)</td>
+<td>DB</td>
+<td>SELECT running → \(W_r{=}2\), \(W_a{=}0\) (skip)</td>
+</tr>
+<tr>
+<td>17</td>
+<td>\(t{=}30\)</td>
+<td>\(_L\)</td>
+<td>\(\)</td>
+<td>GetWorkflowStatus(\(J_{1.1}\)) → Running</td>
+</tr>
+<tr>
+<td>18</td>
+<td>\(t{=}30\)</td>
+<td>\(_L\)</td>
+<td>\(\)</td>
+<td>GetWorkflowStatus(\(J_{1.2}\)) → Running</td>
+</tr>
+<tr>
+<td>19</td>
+<td>\(t{=}40\)</td>
+<td>\(_1\)</td>
+<td>MQ</td>
+<td>publish(\(_{1.1}\))</td>
+</tr>
+<tr>
+<td>20</td>
+<td>\(t{=}40\)</td>
+<td>\(_2\)</td>
+<td>MQ</td>
+<td>publish(\(_{1.2}\))</td>
+</tr>
+<tr>
+<td>21</td>
+<td>\(t{=}40\)</td>
+<td>MQ</td>
+<td>\(S\)</td>
+<td>consume(\(_{1.1}\))</td>
+</tr>
+<tr>
+<td>22</td>
+<td>\(t{=}40\)</td>
+<td>\(S\)</td>
+<td>DB</td>
+<td>SetResult + SetStatus(\(J_{1.1}\), \(_S\))</td>
+</tr>
+<tr>
+<td>23</td>
+<td>\(t{=}40\)</td>
+<td>\(S\)</td>
+<td>\(_L\)</td>
+<td>TriggerScheduling()</td>
+</tr>
+<tr>
+<td>24</td>
+<td>\(t{=}40\)</td>
+<td>MQ</td>
+<td>\(S\)</td>
+<td>consume(\(_{1.2}\))</td>
+</tr>
+<tr>
+<td>25</td>
+<td>\(t{=}40\)</td>
+<td>\(S\)</td>
+<td>DB</td>
+<td>SetResult + SetStatus(\(J_{1.2}\), \(_S\))</td>
+</tr>
+<tr>
+<td>26</td>
+<td>\(t{=}40\)</td>
+<td>\(_L\)</td>
+<td>DB</td>
+<td>SELECT pending/running → \(W_a{=}2\)</td>
+</tr>
+<tr>
+<td>27</td>
+<td>\(t{=}40\)</td>
+<td>\(_L\)</td>
+<td>\(\)</td>
+<td>SubmitWorkflow(\(J_{2.1}\)) — \(U_2\) prioritized</td>
+</tr>
+<tr>
+<td>28</td>
+<td>\(t{=}40\)</td>
+<td>\(\)</td>
+<td>\(_1\)</td>
+<td>CreatePod (execute \(J_{2.1}\))</td>
+</tr>
+<tr>
+<td>29</td>
+<td>\(t{=}40\)</td>
+<td>\(_L\)</td>
+<td>\(\)</td>
+<td>SubmitWorkflow(\(J_{1.3}\))</td>
+</tr>
+<tr>
+<td>30</td>
+<td>\(t{=}40\)</td>
+<td>\(\)</td>
+<td>\(_2\)</td>
+<td>CreatePod (execute \(J_{1.3}\))</td>
+</tr>
+<tr>
+<td>31</td>
+<td>\(t{=}40\)</td>
+<td>\(_L\)</td>
+<td>DB</td>
+<td>UPDATE \(J_{2.1}\), \(J_{1.3}\) → \(_I\)</td>
+</tr>
+<tr>
+<td>32</td>
+<td>\(t{=}50\)</td>
+<td>\(_L\)</td>
+<td>DB/\(\)</td>
+<td>poll: \(W_r{=}2\), \(W_a{=}0\) (skip)</td>
+</tr>
+<tr>
+<td>33</td>
+<td>\(t{=}60\)</td>
+<td>\(_L\)</td>
+<td>DB/\(\)</td>
+<td>poll: \(W_r{=}2\), \(W_a{=}0\) (skip)</td>
+</tr>
+<tr>
+<td>34</td>
+<td>\(t{=}70\)</td>
+<td>\(_1\)</td>
+<td>MQ</td>
+<td>publish(\(_{2.1}\))</td>
+</tr>
+<tr>
+<td>35</td>
+<td>\(t{=}70\)</td>
+<td>\(_2\)</td>
+<td>MQ</td>
+<td>publish(\(_{1.3}\))</td>
+</tr>
+<tr>
+<td>36</td>
+<td>\(t{=}70\)</td>
+<td>MQ</td>
+<td>\(S\)</td>
+<td>consume(\(_{2.1}\), \(_{1.3}\))</td>
+</tr>
+<tr>
+<td>37</td>
+<td>\(t{=}70\)</td>
+<td>\(S\)</td>
+<td>DB</td>
+<td>SetResult + SetStatus → \(_S\)</td>
+</tr>
+<tr>
+<td>38</td>
+<td>\(t{=}70\)</td>
+<td>\(S\)</td>
+<td>\(_L\)</td>
+<td>TriggerScheduling()</td>
+</tr>
+<tr>
+<td>39</td>
+<td>\(t{=}70\)</td>
+<td>\(_L\)</td>
+<td>DB</td>
+<td>SELECT pending → \(\{J_{2.2}, J_{2.3}\}\), \(W_a{=}2\)</td>
+</tr>
+<tr>
+<td>40</td>
+<td>\(t{=}70\)</td>
+<td>\(_L\)</td>
+<td>\(\)</td>
+<td>SubmitWorkflow(\(J_{2.2}\)), SubmitWorkflow(\(J_{2.3}\))</td>
+</tr>
+<tr>
+<td>41</td>
+<td>\(t{=}70\)</td>
+<td>\(\)</td>
+<td>\(_1\)</td>
+<td>CreatePod (execute \(J_{2.2}\))</td>
+</tr>
+<tr>
+<td>42</td>
+<td>\(t{=}70\)</td>
+<td>\(\)</td>
+<td>\(_2\)</td>
+<td>CreatePod (execute \(J_{2.3}\))</td>
+</tr>
+<tr>
+<td>43</td>
+<td>\(t{=}70\)</td>
+<td>\(_L\)</td>
+<td>DB</td>
+<td>UPDATE \(J_{2.2}\), \(J_{2.3}\) → \(_I\)</td>
+</tr>
+<tr>
+<td>44</td>
+<td>\(t{=}80\)</td>
+<td>\(_L\)</td>
+<td>DB/\(\)</td>
+<td>poll: \(W_r{=}2\), \(W_a{=}0\) (skip)</td>
+</tr>
+<tr>
+<td>45</td>
+<td>\(t{=}90\)</td>
+<td>\(_L\)</td>
+<td>DB/\(\)</td>
+<td>poll: \(W_r{=}2\), \(W_a{=}0\) (skip)</td>
+</tr>
+<tr>
+<td>46</td>
+<td>\(t{=}100\)</td>
+<td>\(_1\)</td>
+<td>MQ</td>
+<td>publish(\(_{2.2}\))</td>
+</tr>
+<tr>
+<td>47</td>
+<td>\(t{=}100\)</td>
+<td>\(_2\)</td>
+<td>MQ</td>
+<td>publish(\(_{2.3}\))</td>
+</tr>
+<tr>
+<td>48</td>
+<td>\(t{=}100\)</td>
+<td>MQ</td>
+<td>\(S\)</td>
+<td>consume(\(_{2.2}\), \(_{2.3}\))</td>
+</tr>
+<tr>
+<td>49</td>
+<td>\(t{=}100\)</td>
+<td>\(S\)</td>
+<td>DB</td>
+<td>SetResult + SetStatus → \(_S\)</td>
+</tr>
+<tr>
+<td>50</td>
+<td>\(t{=}100\)</td>
+<td>\(_L\)</td>
+<td>DB</td>
+<td>All \(_S\), no pending. System idle.</td>
+</tr>
+</tbody>
+</table>
+</body>
+</html>

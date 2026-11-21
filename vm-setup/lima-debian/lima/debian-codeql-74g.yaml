@@ -1,0 +1,59 @@
+# Debian 13 (trixie) CodeQL appliance target for Lima.
+#
+# 74 GiB worker profile. Use this for databases that do not fit the 16 GiB
+# profile before escalating to the 128 GiB profile.
+#
+# Unlike the Void profiles, Debian publishes a Lima-ready cloud image, so this
+# profile boots straight into a persistent guest with working key-based SSH and
+# cloud-init. There is no live-ISO bootstrap or disk-install step.
+#
+# Start:
+#   limactl start --name=debian-codeql-74g-1 ./lima/debian-codeql-74g.yaml
+
+---
+minimumLimaVersion: 2.0.0
+
+vmType: qemu
+nestedVirtualization: true
+arch: aarch64
+cpus: 8
+memory: 74GiB
+disk: 1TiB
+
+ssh:
+   localPort: 65393
+
+images:
+   # yamllint disable rule:line-length
+   - location: https://cloud.debian.org/images/cloud/trixie/20260623-2518/debian-13-genericcloud-arm64-20260623-2518.qcow2
+     arch: aarch64
+     digest: sha512:fd35e5ec7bd31bc3821ba43135574ac42bdf0ded4dc6e3c8a86995e00b4206db60f2a7782bb9d94188f2b302df782d3afb5b13bdeaba25efe8c39bc51cec83a8
+   - location: https://cloud.debian.org/images/cloud/trixie/20260623-2518/debian-13-genericcloud-amd64-20260623-2518.qcow2
+     arch: x86_64
+     digest: sha512:df2bd468b08566c0409a7982d6489d73499ad22f9a28646b538c2f21d08f15040a5e4737952ca209e9ad4488cd00793191791be9f135dee93082c86fcca3300c
+   # Fallback to the latest daily image if the pinned release is pruned.
+   - location: https://cloud.debian.org/images/cloud/trixie/daily/latest/debian-13-genericcloud-arm64-daily.qcow2
+     arch: aarch64
+   - location: https://cloud.debian.org/images/cloud/trixie/daily/latest/debian-13-genericcloud-amd64-daily.qcow2
+     arch: x86_64
+# yamllint enable rule:line-length
+
+mountTypesUnsupported: [9p]
+
+mounts: []
+
+containerd:
+   system: false
+   user: false
+
+provision:
+   - mode: system
+     script: |
+        #!/bin/sh
+        set -eu
+        # Install only the base prerequisites on first boot; the CodeQL bundle
+        # and Java are installed by scripts/provision-debian-codeql.sh after the
+        # repository is synced into the guest.
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get update
+        apt-get install -y --no-install-recommends ca-certificates curl rsync

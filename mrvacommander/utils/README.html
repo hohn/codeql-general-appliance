@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>MRVA Version Bump Utilities</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="../../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../../docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">MRVA Version Bump Utilities</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#mrva-version-bump-utilities"
+id="toc-mrva-version-bump-utilities">MRVA Version Bump Utilities</a>
+<ul>
+<li><a href="#quick-start" id="toc-quick-start">Quick Start</a>
+<ul>
+<li><a href="#create-a-pr-without-ghenterprise-gh"
+id="toc-create-a-pr-without-ghenterprise-gh">Create a PR without
+gh/enterprise-gh</a></li>
+<li><a href="#bump-versions-interactively"
+id="toc-bump-versions-interactively">Bump versions
+interactively</a></li>
+<li><a href="#bump-versions-semi-automated"
+id="toc-bump-versions-semi-automated">Bump versions
+semi-automated</a></li>
+</ul></li>
+<li><a href="#scripts" id="toc-scripts">Scripts</a>
+<ul>
+<li><a href="#pr-creation" id="toc-pr-creation">PR Creation</a></li>
+<li><a href="#version-bumping" id="toc-version-bumping">Version
+Bumping</a></li>
+</ul></li>
+<li><a href="#documentation"
+id="toc-documentation">Documentation</a></li>
+<li><a href="#examples" id="toc-examples">Examples</a>
+<ul>
+<li><a href="#example-1-create-pr-with-browser"
+id="toc-example-1-create-pr-with-browser">Example 1: Create PR with
+Browser</a></li>
+<li><a href="#example-2-create-pr-with-curl-automated"
+id="toc-example-2-create-pr-with-curl-automated">Example 2: Create PR
+with curl (Automated)</a></li>
+<li><a href="#example-3-bump-version-interactively"
+id="toc-example-3-bump-version-interactively">Example 3: Bump Version
+Interactively</a></li>
+<li><a href="#example-4-bump-version-semi-automated"
+id="toc-example-4-bump-version-semi-automated">Example 4: Bump Version
+Semi-Automated</a></li>
+</ul></li>
+<li><a href="#testing" id="toc-testing">Testing</a></li>
+<li><a href="#integration" id="toc-integration">Integration</a>
+<ul>
+<li><a href="#fix-enterprise-gh-404-error"
+id="toc-fix-enterprise-gh-404-error">Fix enterprise-gh 404
+Error</a></li>
+</ul></li>
+<li><a href="#directory-structure"
+id="toc-directory-structure">Directory Structure</a></li>
+<li><a href="#requirements" id="toc-requirements">Requirements</a>
+<ul>
+<li><a href="#all-scripts" id="toc-all-scripts">All Scripts</a></li>
+<li><a href="#browser-method" id="toc-browser-method">Browser
+Method</a></li>
+<li><a href="#curl-method" id="toc-curl-method">curl Method</a></li>
+<li><a href="#version-bump-scripts"
+id="toc-version-bump-scripts">Version Bump Scripts</a></li>
+</ul></li>
+<li><a href="#environment-variables"
+id="toc-environment-variables">Environment Variables</a></li>
+<li><a href="#troubleshooting"
+id="toc-troubleshooting">Troubleshooting</a>
+<ul>
+<li><a href="#not-found-when-creating-pr"
+id="toc-not-found-when-creating-pr">“404 Not Found” when creating
+PR</a></li>
+<li><a href="#unauthorized-with-curl-method"
+id="toc-unauthorized-with-curl-method">“401 Unauthorized” with curl
+method</a></li>
+<li><a href="#validation-failed" id="toc-validation-failed">“422
+Validation Failed”</a></li>
+<li><a href="#version-bump-go-mod-tidy-failed"
+id="toc-version-bump-go-mod-tidy-failed">Version bump “go mod tidy
+failed”</a></li>
+</ul></li>
+<li><a href="#tips" id="toc-tips">Tips</a>
+<ul>
+<li><a href="#secure-token-storage" id="toc-secure-token-storage">Secure
+Token Storage</a></li>
+<li><a href="#quick-pr-from-command-line"
+id="toc-quick-pr-from-command-line">Quick PR from Command Line</a></li>
+</ul></li>
+<li><a href="#which-script-to-use" id="toc-which-script-to-use">Which
+Script to Use?</a>
+<ul>
+<li><a href="#for-pr-creation" id="toc-for-pr-creation">For PR
+Creation</a></li>
+<li><a href="#for-version-bumps" id="toc-for-version-bumps">For Version
+Bumps</a></li>
+</ul></li>
+<li><a href="#support" id="toc-support">Support</a></li>
+<li><a href="#related" id="toc-related">Related</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="mrva-version-bump-utilities">MRVA Version Bump Utilities</h1>
+<p>Utility scripts for bumping MRVA component versions and creating
+PRs.</p>
+<h2 id="quick-start">Quick Start</h2>
+<h3 id="create-a-pr-without-ghenterprise-gh">Create a PR without
+gh/enterprise-gh</h3>
+<p><strong>Method 1: Browser (simplest)</strong></p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">./create-pr-browser.sh</span> PSA-MRVA/server-commander feature-branch main <span class="st">&quot;My PR Title&quot;</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Opens browser with pre-filled PR form</span></span></code></pre></div>
+<p><strong>Method 2: API (fully automated)</strong></p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">GHE_TOKEN</span><span class="op">=</span><span class="st">&#39;your-token-here&#39;</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">./create-pr-with-curl.sh</span> PSA-MRVA/server-commander feature-branch main <span class="st">&quot;My PR Title&quot;</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Creates PR immediately, returns URL</span></span></code></pre></div>
+<h3 id="bump-versions-interactively">Bump versions interactively</h3>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">./bump-version-interactive.sh</span> v0.6.0 main</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Prompts at each step, validates builds</span></span></code></pre></div>
+<h3 id="bump-versions-semi-automated">Bump versions semi-automated</h3>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">./manual-bump-version.sh</span> v0.6.0 main</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Automates tedious parts, confirms major steps</span></span></code></pre></div>
+<h2 id="scripts">Scripts</h2>
+<h3 id="pr-creation">PR Creation</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 28%" />
+<col style="width: 46%" />
+</colgroup>
+<thead>
+<tr>
+<th>Script</th>
+<th>Purpose</th>
+<th>Auth Required</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>create-pr-browser.sh</code></td>
+<td>Opens browser with pre-filled PR</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>create-pr-with-curl.sh</code></td>
+<td>Creates PR via API (fully automated)</td>
+<td>Yes (token)</td>
+</tr>
+<tr>
+<td><code>test-pr-creation.sh</code></td>
+<td>Tests both PR creation methods</td>
+<td>Optional</td>
+</tr>
+</tbody>
+</table>
+<h3 id="version-bumping">Version Bumping</h3>
+<table>
+<colgroup>
+<col style="width: 26%" />
+<col style="width: 30%" />
+<col style="width: 43%" />
+</colgroup>
+<thead>
+<tr>
+<th>Script</th>
+<th>Purpose</th>
+<th>Interaction</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bump-version-interactive.sh</code></td>
+<td>Interactive version bump</td>
+<td>High (prompts)</td>
+</tr>
+<tr>
+<td><code>manual-bump-version.sh</code></td>
+<td>Semi-automated version bump</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td><code>manual-bump-reference.sh</code></td>
+<td>Reference/checklist (don’t run)</td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<h2 id="documentation">Documentation</h2>
+<table>
+<colgroup>
+<col style="width: 40%" />
+<col style="width: 60%" />
+</colgroup>
+<thead>
+<tr>
+<th>File</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CREATE-PR-WITHOUT-GH.md</code></td>
+<td>Complete guide to PR creation methods</td>
+</tr>
+<tr>
+<td><code>fix-bump-script-pr-creation.md</code></td>
+<td>How to fix enterprise-gh 404 error</td>
+</tr>
+<tr>
+<td><code>VERSION-BUMP-SCRIPTS.md</code></td>
+<td>Version bump workflow guide</td>
+</tr>
+</tbody>
+</table>
+<h2 id="examples">Examples</h2>
+<h3 id="example-1-create-pr-with-browser">Example 1: Create PR with
+Browser</h3>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Push your branch first</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> push origin my-feature-branch</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Create PR via browser</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="ex">./create-pr-browser.sh</span> <span class="dt">\</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    PSA-MRVA/server-commander <span class="dt">\</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    my-feature-branch <span class="dt">\</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    main <span class="dt">\</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Add new feature&quot;</span> <span class="dt">\</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;This adds the requested feature with tests&quot;</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Browser opens, click &quot;Create Pull Request&quot;</span></span></code></pre></div>
+<h3 id="example-2-create-pr-with-curl-automated">Example 2: Create PR
+with curl (Automated)</h3>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Get token from: https://github.dev.example.com/settings/tokens</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">GHE_TOKEN</span><span class="op">=</span><span class="st">&#39;ghp_your_token_here&#39;</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Push your branch</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> push origin my-feature-branch</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Create PR automatically</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="ex">./create-pr-with-curl.sh</span> <span class="dt">\</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    PSA-MRVA/server-commander <span class="dt">\</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    my-feature-branch <span class="dt">\</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    main <span class="dt">\</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Add new feature&quot;</span> <span class="dt">\</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;This adds the requested feature with tests&quot;</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="co"># PR created, URL printed</span></span></code></pre></div>
+<h3 id="example-3-bump-version-interactively">Example 3: Bump Version
+Interactively</h3>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">./bump-version-interactive.sh</span> v0.6.0 main</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Prompts:</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co"># ? Ready to proceed? [y/N] y</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="co"># ? Clean and tidy mrvacommander? [y/N] y</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co"># ? Create tag v0.6.0 in mrvacommander? [y/N] y</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co"># ? Push mrvacommander to psa remote? [y/N] y</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="co"># ... continues for each component</span></span></code></pre></div>
+<h3 id="example-4-bump-version-semi-automated">Example 4: Bump Version
+Semi-Automated</h3>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">./manual-bump-version.sh</span> v0.6.0 main</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Shows progress, confirms at major steps:</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co"># - Tag mrvacommander? [y/N]</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="co"># - Commit/tag/push server-commander? [y/N]</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="co"># - Commit/tag/push agent-commander-argo? [y/N]</span></span></code></pre></div>
+<h2 id="testing">Testing</h2>
+<p>Test PR creation methods:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">./test-pr-creation.sh</span> PSA-MRVA/server-commander main</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co"># This will:</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Create a test branch</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Test browser method</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Test curl method (if token set)</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. Clean up test branch</span></span></code></pre></div>
+<h2 id="integration">Integration</h2>
+<h3 id="fix-enterprise-gh-404-error">Fix enterprise-gh 404 Error</h3>
+<p>Replace this in <code>bump-mrvacommander-version.sh</code>:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># OLD (broken):</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="ex">enterprise-gh</span> create-pr <span class="at">--title</span> <span class="st">&quot;</span><span class="va">$PR_TITLE</span><span class="st">&quot;</span> <span class="at">--body</span> <span class="st">&quot;</span><span class="va">$DESCRIPTION</span><span class="st">&quot;</span> ...</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co"># NEW (browser method):</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="ex">./utils/create-pr-browser.sh</span> <span class="dt">\</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;PSA-MRVA/</span><span class="va">$TARGET_DIR</span><span class="st">&quot;</span> <span class="dt">\</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;</span><span class="va">$BRANCH_NAME</span><span class="st">&quot;</span> <span class="dt">\</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;</span><span class="va">$MRVA_BRANCH</span><span class="st">&quot;</span> <span class="dt">\</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;</span><span class="va">$PR_TITLE</span><span class="st">&quot;</span> <span class="dt">\</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;</span><span class="va">$DESCRIPTION</span><span class="st">&quot;</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="co"># OR (curl method):</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">GHE_TOKEN</span><span class="op">=</span><span class="st">&#39;your-token&#39;</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="ex">./utils/create-pr-with-curl.sh</span> <span class="dt">\</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;PSA-MRVA/</span><span class="va">$TARGET_DIR</span><span class="st">&quot;</span> <span class="dt">\</span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;</span><span class="va">$BRANCH_NAME</span><span class="st">&quot;</span> <span class="dt">\</span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;</span><span class="va">$MRVA_BRANCH</span><span class="st">&quot;</span> <span class="dt">\</span></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;</span><span class="va">$PR_TITLE</span><span class="st">&quot;</span> <span class="dt">\</span></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;</span><span class="va">$DESCRIPTION</span><span class="st">&quot;</span></span></code></pre></div>
+<p>See <code>fix-bump-script-pr-creation.md</code> for detailed
+instructions.</p>
+<h2 id="directory-structure">Directory Structure</h2>
+<pre><code>utils/
+├── README.md                          # This file
+├── CREATE-PR-WITHOUT-GH.md            # PR creation guide
+├── VERSION-BUMP-SCRIPTS.md            # Version bump guide
+├── fix-bump-script-pr-creation.md     # Fix enterprise-gh 404 error
+│
+├── create-pr-browser.sh               # Create PR via browser
+├── create-pr-with-curl.sh             # Create PR via API
+├── test-pr-creation.sh                # Test PR creation
+│
+├── bump-version-interactive.sh        # Interactive version bump
+├── manual-bump-version.sh             # Semi-automated bump
+└── manual-bump-reference.sh           # Reference (don&#39;t run)</code></pre>
+<h2 id="requirements">Requirements</h2>
+<h3 id="all-scripts">All Scripts</h3>
+<ul>
+<li>Bash</li>
+<li>Git configured for github</li>
+</ul>
+<h3 id="browser-method">Browser Method</h3>
+<ul>
+<li>No special requirements</li>
+<li>Works on macOS, Linux, Windows</li>
+</ul>
+<h3 id="curl-method">curl Method</h3>
+<ul>
+<li>Personal access token from
+https://github.dev.example.com/settings/tokens</li>
+<li>Token needs <code>repo</code> scope</li>
+<li>Export as: <code>export GHE_TOKEN='your-token'</code></li>
+</ul>
+<h3 id="version-bump-scripts">Version Bump Scripts</h3>
+<ul>
+<li>Go installed</li>
+<li>On VPN</li>
+<li>Access to internal packages</li>
+<li>Repositories cloned locally</li>
+</ul>
+<h2 id="environment-variables">Environment Variables</h2>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># For curl PR creation</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">GHE_TOKEN</span><span class="op">=</span><span class="st">&#39;ghp_your_token_here&#39;</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="co"># For Go module dependencies</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">GOPRIVATE</span><span class="op">=</span><span class="st">&quot;*.dev.example.com&quot;</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">GOPROXY</span><span class="op">=</span><span class="st">&quot;https://goproxy.dev.example.com,direct&quot;</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Optional: Custom GitHub Enterprise URL</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">GHE_URL</span><span class="op">=</span><span class="st">&#39;https://github.dev.example.com&#39;</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">GHE_API_URL</span><span class="op">=</span><span class="st">&#39;https://api.github.dev.example.com&#39;</span></span></code></pre></div>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="not-found-when-creating-pr">“404 Not Found” when creating
+PR</h3>
+<p><strong>Check:</strong> - Repository name is correct (case-sensitive)
+- Branches exist on remote - You pushed the branch:
+<code>git push origin branch-name</code></p>
+<h3 id="unauthorized-with-curl-method">“401 Unauthorized” with curl
+method</h3>
+<p><strong>Check:</strong> - Token is set: <code>echo $GHE_TOKEN</code>
+- Token has <code>repo</code> scope - Token hasn’t expired</p>
+<h3 id="validation-failed">“422 Validation Failed”</h3>
+<p><strong>Common causes:</strong> - PR already exists for this branch -
+No commits between branches - Base branch doesn’t exist</p>
+<h3 id="version-bump-go-mod-tidy-failed">Version bump “go mod tidy
+failed”</h3>
+<p><strong>Check:</strong> - On VPN - GOPRIVATE and GOPROXY set - Run
+<code>go clean -modcache</code> and retry</p>
+<h2 id="tips">Tips</h2>
+<h3 id="secure-token-storage">Secure Token Storage</h3>
+<p><strong>Option 1: Shell profile</strong></p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&#39;export GHE_TOKEN=&quot;your-token&quot;&#39;</span> <span class="op">&gt;&gt;</span> ~/.bashrc</span></code></pre></div>
+<p><strong>Option 2: macOS Keychain</strong></p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Store</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="ex">security</span> add-generic-password <span class="at">-a</span> <span class="va">${USER}</span> <span class="at">-s</span> ghe_token <span class="at">-w</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Retrieve</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">GHE_TOKEN</span><span class="op">=</span><span class="va">$(</span><span class="ex">security</span> find-generic-password <span class="at">-a</span> <span class="va">${USER}</span> <span class="at">-s</span> ghe_token <span class="at">-w</span><span class="va">)</span></span></code></pre></div>
+<p><strong>Option 3: Restricted file</strong></p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&#39;export GHE_TOKEN=&quot;your-token&quot;&#39;</span> <span class="op">&gt;</span> ~/.ghe_token</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 600 ~/.ghe_token</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> ~/.ghe_token</span></code></pre></div>
+<h3 id="quick-pr-from-command-line">Quick PR from Command Line</h3>
+<p>After pushing a branch, git shows:</p>
+<pre><code>remote: Create a pull request for &#39;branch-name&#39; on GitHub by visiting:
+remote:   https://github.dev.example.com/owner/repo/pull/new/branch-name</code></pre>
+<p>Just click that URL - no script needed!</p>
+<h2 id="which-script-to-use">Which Script to Use?</h2>
+<h3 id="for-pr-creation">For PR Creation</h3>
+<p><strong>Use <code>create-pr-browser.sh</code> if:</strong> - ✅
+One-off manual PRs - ✅ Don’t have/want API token - ✅ Want to review
+before creating</p>
+<p><strong>Use <code>create-pr-with-curl.sh</code> if:</strong> - ✅
+Automating in scripts - ✅ Creating many PRs - ✅ Have personal access
+token</p>
+<h3 id="for-version-bumps">For Version Bumps</h3>
+<p><strong>Use <code>bump-version-interactive.sh</code> if:</strong> -
+✅ Learning the process - ✅ Want to see each step - ✅ Need to skip
+certain steps</p>
+<p><strong>Use <code>manual-bump-version.sh</code> if:</strong> - ✅
+Want automation with checkpoints - ✅ Familiar with the process - ✅
+Want to specify version explicitly</p>
+<p><strong>Use <code>manual-bump-reference.sh</code> if:</strong> - ✅
+Want to run commands manually - ✅ Need a reference/checklist - ✅
+Customizing the workflow</p>
+<h2 id="support">Support</h2>
+<p>For questions or issues:</p>
+<ol type="1">
+<li>Check the documentation:
+<ul>
+<li><code>CREATE-PR-WITHOUT-GH.md</code></li>
+<li><code>VERSION-BUMP-SCRIPTS.md</code></li>
+<li><code>fix-bump-script-pr-creation.md</code></li>
+</ul></li>
+<li>Test the scripts:
+<ul>
+<li><code>./test-pr-creation.sh</code></li>
+</ul></li>
+<li>Review the reference:
+<ul>
+<li><code>manual-bump-reference.sh</code> (checklist)</li>
+</ul></li>
+</ol>
+<h2 id="related">Related</h2>
+<ul>
+<li>Parent directory: <code>../</code> contains the original
+<code>bump-mrvacommander-version.sh</code></li>
+<li>Documentation: <code>../VERSION-BUMP-SCRIPTS.md</code> for
+comparison of all methods</li>
+</ul>
+</body>
+</html>

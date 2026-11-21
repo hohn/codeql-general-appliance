@@ -1,0 +1,30 @@
+#!/usr/bin/env python3
+"""cgamr launcher (POSIX bin/ entry point).
+
+Thin executable under bin/ that drives a sibling library package.
+It puts the cgamr project directory (for `import
+cgamr`) and the shared cga/cgalib directory (for `import cga_http`) on sys.path,
+then dispatches to cgamr.cli.
+"""
+
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve()
+PROJECT_DIR = HERE.parent.parent          # cga/cgamr
+CGA_ROOT = PROJECT_DIR.parent             # cga
+
+sys.path.insert(0, str(PROJECT_DIR))              # import cgamr
+sys.path.insert(0, str(CGA_ROOT / "cgalib"))      # import cga_http
+
+from cgamr.cli import main  # noqa: E402
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main(sys.argv[1:]))
+    except BrokenPipeError:
+        try:
+            sys.stdout.close()
+        except Exception:
+            pass
+        raise SystemExit(0)

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Bench notes</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+  </style>
+  <link rel="stylesheet" href="../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Bench notes</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#bench-notes" id="toc-bench-notes">Bench notes</a>
+<ul>
+<li><a href="#experiment-invariants"
+id="toc-experiment-invariants">Experiment invariants</a></li>
+<li><a href="#recovery-and-service-ownership"
+id="toc-recovery-and-service-ownership">Recovery and service
+ownership</a></li>
+<li><a href="#presentation-and-checks"
+id="toc-presentation-and-checks">Presentation and checks</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="bench-notes">Bench notes</h1>
+<p>The <a href="../cga/cgabench/README.md">Bench usage guide</a> owns
+the experiment and interaction contract. Read these notes for
+implementation or recovery work.</p>
+<h2 id="experiment-invariants">Experiment invariants</h2>
+<ul>
+<li>Exactly one input axis varies: queries with fixed databases, or
+databases with fixed queries. S1 is the reference. Humans/LLMs prepare
+D/Q; J/R are derived by running and must not be cloned as inputs.</li>
+<li>Later sessions inherit exactly one accepted fixed input. Copying
+editable query sources is distinct from cloning an accepted Q artifact.
+Fixed inputs must match S1 even when inherited through another
+session.</li>
+<li>Enforce the contract server-side before run/compare. Mode is
+explicit and immutable once sessions exist. Unclassified experiments
+remain readable, but do not silently migrate or grant mutation
+exemptions.</li>
+<li>Running may advance automatically after both ready inputs are
+accepted. Comparison is always explicit; creating/running sessions or
+opening a view must not compute it. Compare completed S1 first and
+preserve immutable evidence and source-session/digest provenance.</li>
+<li>MRVA identities remain <code>owner/repository</code>. Different
+database bytes need a different repository identity, including relevant
+revision, architecture, and build mode; never force-overwrite an
+accepted cached database.</li>
+</ul>
+<h2 id="recovery-and-service-ownership">Recovery and service
+ownership</h2>
+<ul>
+<li><code>advance</code> uses real cgamr/cgasi operations and session
+checkpoints. A failed recorded command may still have completed a
+submission; recover from its checkpoint rather than retrying an
+uncertain submit.</li>
+<li>Submitted inputs are locked; completed results are immutable. Keep
+operational checkpoints and scratch needed for live-session resume.</li>
+<li>Browser mutations dispatch through <code>cga</code> for normal
+recording. Non-workflow use requires an explicit atomic
+<code>--session-file</code>.</li>
+<li><code>serve</code> can manage its own MRVA/archive/MinIO
+infrastructure through cgamx. <code>--no-services</code> leaves that
+infrastructure alone. Bench and mrva-flow assume exclusive use of their
+MRVA ports/database.</li>
+<li><code>cga bench stop</code> stops only the workflow-local viewer and
+its owned editors/assistant terminals, not MRVA or the experiment. It
+verifies process identity; never reclaim an arbitrary port owner.</li>
+<li>Editor ports are deterministic when requested and must not silently
+fall back. <code>cga/cgacc</code> owns native code-server integration.
+Opening an editor must not overwrite existing user instruction
+files.</li>
+<li>Results APIs use frozen SQLite/DuckDB evidence through
+<code>cgasi.store</code>, not mutations. Preserve read-only query limits
+and digest checks.</li>
+</ul>
+<h2 id="presentation-and-checks">Presentation and checks</h2>
+<ul>
+<li>Apple outline and Classic share model, actions, element identities,
+and detail panels. Appearance changes are presentation-only and must
+preserve selection, drafts, and comparison state.</li>
+<li>Selecting a command or opening a panel must not execute it. Keep
+fixed-row Clone and changing-row Edit consistent across UI/CLI/API.</li>
+<li>Browser assets are on existing static routes; refresh is enough for
+static changes. Server policy changes need a viewer restart, preserving
+the original port/editor options and <code>--no-services</code> when
+appropriate.</li>
+<li>Tests:
+<code>cd cga/cgabench &amp;&amp; python3 -m unittest discover -s tests</code>.
+Vendored browser assets use the existing <code>package-lock.json</code>;
+regenerate only when needed with
+<code>npm ci --ignore-scripts &amp;&amp; npm run vendor</code>.</li>
+</ul>
+</body>
+</html>

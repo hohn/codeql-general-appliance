@@ -1,0 +1,63 @@
+{
+  "schema": "cga.flow-view.v1",
+  "id": "mrva-flow",
+  "label": "MRVA flow",
+  "source": "mrva-flow.sh",
+  "stages": [
+    {
+      "id": "infrastructure",
+      "label": "Infrastructure",
+      "match": [
+        {
+          "tool": ["mx", "local-mrva"],
+          "action": ["preflight", "reset", "build", "start"]
+        }
+      ]
+    },
+    {
+      "id": "inputs",
+      "label": "Input preparation",
+      "match": [
+        {
+          "tool": ["dl", "db-lib", "ql", "query-lib"]
+        }
+      ]
+    },
+    {
+      "id": "execution",
+      "label": "MRVA execution",
+      "match": [
+        {
+          "tool": ["mr", "mrva-request"]
+        }
+      ]
+    },
+    {
+      "id": "results",
+      "label": "Result processing and export",
+      "match": [
+        {
+          "tool": ["si", "sarif-ingest"],
+          "action": ["ingest", "tolite", "toduck"]
+        },
+        {
+          "tool": ["ex", "export"]
+        }
+      ]
+    },
+    {
+      "id": "verification",
+      "label": "Verification",
+      "match": [
+        {
+          "tool": ["si", "sarif-ingest"],
+          "action": ["verify"]
+        },
+        {
+          "tool": ["mx", "local-mrva"],
+          "action": ["check", "logs", "stop", "cleanup"]
+        }
+      ]
+    }
+  ]
+}

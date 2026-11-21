@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>run-system-11: observe sysview at scale</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="../../../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../../../docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">run-system-11: observe sysview at scale</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#run-system-11-observe-sysview-at-scale"
+id="toc-run-system-11-observe-sysview-at-scale">run-system-11: observe
+sysview at scale</a>
+<ul>
+<li><a href="#run" id="toc-run">Run</a></li>
+<li><a href="#scale-up-and-compare" id="toc-scale-up-and-compare">Scale
+up and compare</a></li>
+<li><a href="#configuration"
+id="toc-configuration">Configuration</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="run-system-11-observe-sysview-at-scale">run-system-11: observe
+sysview at scale</h1>
+<p>Run the same trivial <code>sample-query/Fprintf.ql</code> over 200+
+distinct C/C++ databases, then repeat that selection across users and
+sessions. This is a debugging observation, not a performance pass/fail
+threshold or an evaluation of the query’s findings. The browser is the
+human observation surface; <code>/sysview/data</code> supplies
+machine-readable measurements.</p>
+<p>The shell driver uses the <strong>CGA dispatcher</strong> for
+database selection/download, query selection/packing,
+submissions/status, infrastructure, and artifact recording.
+<code>observe.py</code> adds only scenario-specific input checks,
+coordination of status polling through <code>cga mr status</code>, and
+endpoint sampling. It does not implement a second MRVA client or
+manually thread workflow state.</p>
+<h2 id="run">Run</h2>
+<p>From the repository root:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="va">run</span><span class="op">=</span>cga/system-tests/run-system-11/run</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Prepare inputs without starting/resetting MRVA. Initial download takes time.</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Progress shows completed/total archives and bytes for the current transfer.</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="va">$run</span> prepare</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co"># These phases reclaim ports and reset shared PostgreSQL state.</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="va">$run</span> preflight reset build start</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Submit one session; every selected database becomes one job.</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="va">$run</span> submit</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Open http://127.0.0.1:8081/sysview in your browser.</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="ex">open</span> http://127.0.0.1:8081/sysview</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="va">$run</span> observe</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="va">$run</span> wait verify</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Stop, retaining state and evidence; reconnect by starting and reopening the URL.</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="va">$run</span> stop</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="va">$run</span> start</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Stop services and remove MRVA runtime state, retaining inputs and observations.</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="va">$run</span> cleanup</span></code></pre></div>
+<p><code>$run all</code> runs preparation through verification and
+leaves MRVA running for inspection. Use it only with a fresh experiment
+root. If inputs are already prepared, use the separate phases above. Do
+not run another MRVA scenario concurrently: different scratch roots do
+not isolate PostgreSQL or service ports. <code>reset</code> does not
+stop services; run <code>preflight</code> first or stop them
+explicitly.</p>
+<p>Preparation can download large archives. It freezes the catalogue
+selection and query pack in a recorded workflow under
+<code>.cga-system-11/analysis</code>, and records archive hashes,
+creation versions, the pack hash, and runtime version in
+<code>.cga-system-11/inputs.json</code>. Archives are staged under
+<code>.cga-system-11/databases</code>, outside the MRVA reset directory.
+Stop/cleanup do not delete these prepared inputs or observation
+reports.</p>
+<p>The default root is the ignored
+<code>&lt;checkout&gt;/.cga-system-11</code> directory, not
+<code>/tmp</code>. On this machine it lives under
+<code>/mnt/common/home/hohn/work-ghp/single-machine-mrva</code>, on the
+larger filesystem. <strong>Plan for at least 50 GiB free before
+preparing a fresh run.</strong> An observed <code>.cga-system-11/</code>
+directory occupied <strong>26 GiB</strong> (<code>du -shx</code>
+reported <code>26G</code>); 16 GiB is not enough for the complete
+experiment. Allow additional space for concurrent workers’ unpacked
+databases, results, logs, and retained observations. The 50 GiB planning
+allowance is not a guaranteed peak bound, especially when increasing
+worker concurrency or retaining multiple runs.</p>
+<p>Preparation and server startup still enforce only a <strong>16 GiB
+free-space headroom check</strong> on each runtime filesystem; passing
+it does not establish that the whole run will fit. <code>TMPDIR</code>
+defaults to <code>$CGA_SYSTEM11_ROOT/tmp</code> so query packing and
+workers’ unpacked databases also stay off <code>/tmp</code>. Explicit
+path overrides are preserved and checked; an explicitly exported
+<code>TMPDIR=/tmp</code> must be changed if that filesystem is too
+small.</p>
+<p>If preparation fails partway, rerun <code>$run prepare</code> with
+the same root and inputs. Completed archives are verified and skipped.
+HTTP transfers with catalogue SHA-256 hashes resume retained
+<code>.part</code> files when the origin supports Range; otherwise the
+current archive restarts, never appends a full response to a partial
+file. Incomplete or mismatched data is not published as a completed ZIP.
+Progress appears immediately through CGA, with per-file byte counts
+during transfers and completed/total archive counts. No service reset is
+needed. Preparation refuses to replace <code>inputs.json</code> once the
+entire input set is frozen.</p>
+<p>The default catalogue is
+<code>cga/cgadl/db-collection.global/metadata.sql</code>. <a
+href="databases.sql"><code>databases.sql</code></a> chooses one snapshot
+per <code>owner/repo</code>, latest by ingestion time with a
+deterministic hash tie-break. MRVA identifies a database by
+<code>owner/repo</code>, so multiple snapshots of that repository must
+not be counted as independent jobs within a submission. The current
+catalogue has 2,923 rows but 230 distinct C/C++ repositories; the
+default baseline therefore has 230 jobs. Selections below 200, duplicate
+identities/content hashes, and archive hash mismatches are errors, not
+skipped observations.</p>
+<p>Database creation versions are intentionally mixed. The runtime is
+recorded, not required to equal each database’s creation version. Actual
+analysis incompatibilities and OOM failures remain visible job outcomes;
+they are not silently excluded from D or counted as successful analyses.
+<code>CODEQL_CLI_PATH</code> selects the runtime and, by default, the
+query-packing CLI. Use the full CodeQL bundle so
+<code>cga ql pack</code> can resolve its pinned library.</p>
+<h2 id="scale-up-and-compare">Scale up and compare</h2>
+<p>Keep the prepared inputs and reset execution state before submitting
+a larger workload:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ensure machine is large enough</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">MRVA_POOL_MAX_WORKERS</span><span class="op">=</span>10</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">MRVA_CODEQL_RAM_MB</span><span class="op">=</span>12288</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="va">run</span><span class="op">=</span>cga/system-tests/run-system-11/run</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="va">$run</span> stop</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="va">$run</span> preflight reset start</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="va">USERS</span><span class="op">=</span>5 <span class="va">SESSIONS</span><span class="op">=</span>2 <span class="va">$run</span> submit</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="va">$run</span> observe</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="va">$run</span> wait verify</span></code></pre></div>
+<p>With 230 selected databases, this creates ten sessions and 2,300
+jobs. <code>workload.tsv</code> records submission names and
+authenticated users before the first submission. A repeated
+<code>submit</code> is rejected; after an interrupted submission,
+inspect <code>cga -C .cga-system-11/analysis mr info</code> rather than
+blindly resubmitting. <code>wait</code> uses the recorded workload, not
+the current <code>USERS</code> or <code>SESSIONS</code> environment.
+<code>verify</code> checks the exact users, distinct session IDs,
+repository sets, pack identity, and <strong>terminal per-repository
+outcomes</strong>. It reports succeeded/failed/canceled/timed-out counts
+and lists unsuccessful jobs. This verifies a completed observation, not
+that every analysis succeeded. It does not download/ingest SARIF.</p>
+<p>MRVA’s aggregate session status <code>succeeded</code> can mean mixed
+completed outcomes; it does not guarantee all individual jobs succeeded.
+Both <code>wait</code> and <code>verify</code> therefore inspect the
+full per-repository response. Missing, duplicate, unexpected, or
+unknown-status jobs are errors. Active jobs keep <code>wait</code>
+polling and cause <code>verify</code> to report that completion has not
+yet been observed.</p>
+<p>The strict log-error gate remains separately available as
+<code>$run check</code> (<code>cga mx check</code>). It can fail on
+recorded analysis failures, including OOMs; it is not automatically run
+by <code>verify</code> or <code>all</code>.</p>
+<p>For full/limited comparisons, reuse the frozen inputs, worker
+settings, and workload shape, stopping/resetting/restarting between
+runs. This scenario does <strong>not</strong> implement limited mode. On
+branches supporting <code>MRVA_DEBUG_SYSVIEW</code>, <code>true</code>
+enables full snapshots; use <code>limited</code> only once that server
+behavior exists. Older servers ignore the variable. An off server’s 403
+is an observation failure, not an empty healthy snapshot.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="va">$run</span> stop</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="va">MRVA_DEBUG_SYSVIEW</span><span class="op">=</span>limited <span class="va">$run</span> preflight reset start</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="va">USERS</span><span class="op">=</span>5 <span class="va">SESSIONS</span><span class="op">=</span>2 <span class="va">$run</span> submit</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="va">$run</span> observe</span></code></pre></div>
+<p>Each <code>observe</code> invocation creates a new JSONL file under
+<code>observations/</code>. It checks the HTML endpoint once, then
+samples the JSON endpoint with a request timeout, recording response
+time including body transfer, payload bytes, Python JSON parsing time,
+server generation label/refresh interval, and shown entity counts. HTTP
+failures and snapshot errors are retained and fail the command;
+successful reports are also recorded with
+<code>cga artifact add</code>.</p>
+<p>Python parsing time is <strong>not browser rendering time</strong>.
+The current generation label is only a time of day, not a reliable
+snapshot-age metric, and the current server does not expose build/query
+duration. Those require later server instrumentation. Use the browser’s
+Performance panel during refreshes to inspect rendering, and manually
+observe scrolling, collapsing, pause/resume, and interaction latency.
+Capture another report after completion for settled-state comparison.
+Leave snapshot dumping off for baseline measurements unless its cost is
+specifically being investigated.</p>
+<h2 id="configuration">Configuration</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CGA_SYSTEM11_ROOT</code></td>
+<td><code>&lt;checkout&gt;/.cga-system-11</code></td>
+<td>Experiment inputs, workflow, reports, and runtime</td>
+</tr>
+<tr>
+<td><code>CGA_TEST_WORKFLOW</code></td>
+<td><code>$CGA_SYSTEM11_ROOT/analysis</code></td>
+<td>Recorded CGA workflow</td>
+</tr>
+<tr>
+<td><code>TMPDIR</code></td>
+<td><code>$CGA_SYSTEM11_ROOT/tmp</code></td>
+<td>Query-pack and worker temporary files</td>
+</tr>
+<tr>
+<td><code>CGA_SYSTEM11_CATALOGUE</code></td>
+<td>Global catalogue above</td>
+<td>Source catalogue</td>
+</tr>
+<tr>
+<td><code>CGA_SYSTEM11_SELECTION_SQL</code></td>
+<td>Local <code>databases.sql</code></td>
+<td>Explicit database selection</td>
+</tr>
+<tr>
+<td><code>USERS</code> / <code>SESSIONS</code></td>
+<td><code>1</code> / <code>1</code></td>
+<td>Users and sessions per user at submission</td>
+</tr>
+<tr>
+<td><code>MRVA_POOL_MAX_WORKERS</code></td>
+<td><code>2</code></td>
+<td>Bound concurrent CodeQL memory use</td>
+</tr>
+<tr>
+<td><code>OBSERVE_SAMPLES</code></td>
+<td><code>60</code></td>
+<td>JSON endpoint samples per report</td>
+</tr>
+<tr>
+<td><code>OBSERVE_INTERVAL</code></td>
+<td><code>1</code></td>
+<td>Seconds between completed samples</td>
+</tr>
+<tr>
+<td><code>OBSERVE_REQUEST_TIMEOUT</code></td>
+<td><code>10</code></td>
+<td>Per-request socket timeout in seconds</td>
+</tr>
+<tr>
+<td><code>POLL_INTERVAL</code></td>
+<td><code>5</code></td>
+<td>Seconds between status-poll cycles</td>
+</tr>
+<tr>
+<td><code>POLL_DEADLINE_SECS</code></td>
+<td><code>14400</code></td>
+<td>Poll deadline; an in-flight CGA request may outlast it</td>
+</tr>
+</tbody>
+</table>
+<p>Existing <code>cga mx</code> environment overrides remain available,
+including ports, PostgreSQL, storage, and runtime paths. Preserve the
+same overrides across separate phase invocations. Preparation is frozen
+once per root; use a new root to intentionally change D or Q.</p>
+</body>
+</html>

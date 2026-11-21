@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Advanced reading guide</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+  </style>
+  <link rel="stylesheet" href="docs/readme-fonts.css" />
+  <link rel="stylesheet" href="docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Advanced reading guide</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#advanced-reading-guide"
+id="toc-advanced-reading-guide">Advanced reading guide</a>
+<ul>
+<li><a href="#how-to-read" id="toc-how-to-read">How to read</a></li>
+<li><a href="#orientation-both" id="toc-orientation-both">Orientation
+[Both]</a></li>
+<li><a href="#reading-paths" id="toc-reading-paths">Reading paths</a>
+<ul>
+<li><a href="#understand-an-end-to-end-analysis-both"
+id="toc-understand-an-end-to-end-analysis-both">Understand an end-to-end
+analysis [Both]</a></li>
+<li><a href="#explore-query-or-database-changes-both"
+id="toc-explore-query-or-database-changes-both">Explore query or
+database changes [Both]</a></li>
+<li><a href="#prepare-databases-and-queries-both"
+id="toc-prepare-databases-and-queries-both">Prepare databases and
+queries [Both]</a></li>
+<li><a href="#investigate-findings-and-supporting-evidence-both"
+id="toc-investigate-findings-and-supporting-evidence-both">Investigate
+findings and supporting evidence [Both]</a></li>
+<li><a href="#inspect-an-existing-experiment-or-workflow-llm"
+id="toc-inspect-an-existing-experiment-or-workflow-llm">Inspect an
+existing experiment or workflow [LLM]</a></li>
+<li><a href="#evolve-a-usage-example-both"
+id="toc-evolve-a-usage-example-both">Evolve a usage example
+[Both]</a></li>
+<li><a href="#change-or-debug-the-supporting-code-both"
+id="toc-change-or-debug-the-supporting-code-both">Change or debug the
+supporting code [Both]</a></li>
+</ul></li>
+<li><a href="#structural-conventions-both"
+id="toc-structural-conventions-both">Structural conventions
+[Both]</a></li>
+<li><a href="#examples-and-fixed-checks-both"
+id="toc-examples-and-fixed-checks-both">Examples and fixed checks
+[Both]</a></li>
+<li><a href="#further-reading-and-maintenance"
+id="toc-further-reading-and-maintenance">Further reading and
+maintenance</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="advanced-reading-guide">Advanced reading guide</h1>
+<p>This guide assumes practical CodeQL experience: databases, query
+packs, SARIF, and reading shell workflows. It is intended for
+experienced humans and LLMs, not as an introduction to CodeQL or CGA.
+Audience markers below do not imply beginner accessibility.</p>
+<p>For a first look and a fixed worked example, start with the <a
+href="docs/cga-overview.html">CGA overview</a>, then use <a
+href="docs/cga-help.html">CGA help</a> for tasks and commands. The <a
+href="INTRODUCTORY-GUIDE.html">introductory guide</a> offers additional
+usage outlines; the <a href="docs/book/index.html">reference manual</a>
+collects detailed material.</p>
+<p>This repository is a science experiment and an evolving prototype,
+not a finished software product. Its purpose is to handle CodeQL
+databases and queries, apply queries to databases, and help humans and
+LLMs investigate the results. The code makes those activities possible;
+usage, examples, and their explanations are equally important. Code and
+examples evolve together.</p>
+<p>Use this guide to choose a small reading path, not to read the
+repository cover to cover. The paths point into existing documentation;
+they are not additional tutorials or instructions to launch
+services.</p>
+<h2 id="how-to-read">How to read</h2>
+<p><strong>[Both]</strong> is useful to humans and LLMs,
+<strong>[Human]</strong> emphasizes explanation and interactive
+exploration, and <strong>[LLM]</strong> emphasizes bounded discovery and
+implementation constraints. These are reading hints, not access
+restrictions.</p>
+<p><strong>Start</strong> means the initial reading for that question.
+<strong>Reference</strong> means follow the link only when the question
+needs that detail. <strong>Stop</strong> identifies what you should
+understand before returning to your experiment or task.</p>
+<p><strong>[LLM]</strong> This is the broader project map, not mandatory
+onboarding. Read the short <a href=".agent-notes/README.md">agent
+core</a> once, then use the <a href="docs/cga-help-llm.org">CGA LLM
+entry guide</a> for CGA work or the core’s matching topic for other
+tasks. Return here only if that focused route and component-local
+investigation cannot establish ownership.</p>
+<p>When that fallback is needed, choose one question below. Read named
+sections, not entire documents or the example catalogue. Follow other
+component links only when evidence crosses their boundary. For an
+existing experiment, inspect its bounded state projection before reading
+implementation code or raw artifacts.</p>
+<h2 id="orientation-both">Orientation [Both]</h2>
+<p>The main activities are:</p>
+<table>
+<colgroup>
+<col style="width: 16%" />
+<col style="width: 58%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>Activity</th>
+<th>What it contributes</th>
+<th>Starting document</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Prepare inputs</td>
+<td>Acquire sources, build and validate CodeQL databases, materialize
+queries, publish catalogues</td>
+<td><a href="cga/README-prep.html">Preparation</a></td>
+</tr>
+<tr>
+<td>Apply queries</td>
+<td>Select databases and query packs, submit MRVA jobs, download
+results</td>
+<td><a href="cga/README.html">CGA</a></td>
+</tr>
+<tr>
+<td>Investigate and compare</td>
+<td>Work with accepted inputs, frozen results, and explicit experiment
+comparisons</td>
+<td><a href="cga/cgabench/README.html">Bench</a></td>
+</tr>
+<tr>
+<td>Retain and explain evidence</td>
+<td>Record workflow steps, provenance, SARIF ingestion, and human/LLM
+exports</td>
+<td><a href="cga/README.html#workflows">CGA workflows</a></td>
+</tr>
+</tbody>
+</table>
+<p>CGA is the command interface joining these activities. MRVA is the
+execution system: a server schedules query evaluations across databases
+and workers return SARIF. Bench provides an experiment/session
+interface. Preparation and analysis exchange artifacts explicitly; they
+do not share one mutable session.</p>
+<h2 id="reading-paths">Reading paths</h2>
+<h3 id="understand-an-end-to-end-analysis-both">Understand an end-to-end
+analysis [Both]</h3>
+<p><strong>Question:</strong> How do selected databases and a query
+become inspectable results?</p>
+<p><strong>Start:</strong> Read the introduction and
+<strong>Flow</strong> in the <a
+href="cga/mrva-flow/README.html#flow">single-user MRVA example</a>, then
+read its <a href="cga/mrva-flow/mrva-flow.sh">driver</a> alongside that
+sequence.</p>
+<p><strong>Reference:</strong> <a href="cga/README.html#state">CGA
+State</a> explains the state passed between operations. Follow only the
+component README for the step you are exploring. Read the example’s
+<strong>Run it</strong> section before actually running it: it manages
+shared infrastructure and leaves services available for inspection.</p>
+<p><strong>Stop:</strong> You can identify database selection, query
+packing, execution, ingestion, and export, and distinguish
+setup/teardown from the analysis.</p>
+<h3 id="explore-query-or-database-changes-both">Explore query or
+database changes [Both]</h3>
+<p><strong>Question:</strong> What changes between sessions, and what
+makes a comparison valid?</p>
+<p><strong>Start:</strong> Read <strong>Experiment purpose and contract
+(humans and LLMs)</strong> and <strong>Session actions</strong> in the
+<a href="cga/cgabench/README.html">Bench guide</a>.</p>
+<p><strong>Reference:</strong> Continue to that guide’s commands and
+human/LLM interfaces for your chosen interaction. Read <a
+href=".agent-notes/bench.md">Bench operational notes</a> only for
+implementation changes, recovery, or viewer lifecycle questions.</p>
+<p><strong>Stop:</strong> You can explain the fixed versus changing
+input, S1 as the reference, the D/Q/J/R cells, and why running a session
+and comparing results are different operations.</p>
+<h3 id="prepare-databases-and-queries-both">Prepare databases and
+queries [Both]</h3>
+<p><strong>Question:</strong> Where do analysis inputs come from, and
+how are they handed over?</p>
+<p><strong>Start:</strong> Read the <a
+href="cga/README-prep.html">preparation introduction</a> and its <a
+href="cga/README-prep.html#explicit-handoff-to-cga">explicit handoff</a>.
+For a concrete worked sequence, read <strong>Componentized
+preparation</strong> in the <a
+href="cga/analysis/CVE-2016-9843/query-030/README.html#componentized-preparation">query-030
+example</a>.</p>
+<p><strong>Reference:</strong> Use the <a
+href="cga/examples/cves/README.html">CVE catalogue</a> to choose another
+case. Read only the relevant preparation command’s README when changing
+source acquisition, database construction, validation, or indexing. <a
+href=".agent-notes/preparation.md">Preparation notes</a> cover campaign
+and storage constraints.</p>
+<p><strong>Stop:</strong> You can locate source/database/query
+provenance and explain which artifacts are explicitly imported into a
+separate analysis workflow.</p>
+<h3 id="investigate-findings-and-supporting-evidence-both">Investigate
+findings and supporting evidence [Both]</h3>
+<p><strong>Question:</strong> What does this result establish, and where
+is its evidence?</p>
+<p><strong>Start:</strong> Read <a
+href="cga/cgasi/README.html#named-ingestion">named ingestion</a> and the
+<a href="cga/cgaex/README.html">export contract</a>. For an actual
+investigation, read the <a
+href="cga/analysis/CVE-2016-9843/README.html">zlib study</a> and choose
+one query checkpoint rather than reading all of them.</p>
+<p><strong>Reference:</strong> The <a
+href="cga/analysis/README.html">analysis evidence index</a> points to
+preserved collection runs; their query-effectiveness reports distinguish
+candidate findings from demonstrated CVE detections. Large evidence
+trees live outside Git; follow their manifests, not a recursive artifact
+dump.</p>
+<p><strong>Stop:</strong> You can trace a finding to its query,
+database, submission, and ingestion, and distinguish successful
+execution, zero findings, and detector effectiveness.</p>
+<h3 id="inspect-an-existing-experiment-or-workflow-llm">Inspect an
+existing experiment or workflow [LLM]</h3>
+<p><strong>Question:</strong> What is already selected or completed,
+without re-reading or rerunning everything?</p>
+<p><strong>Start:</strong> Read <a
+href="cga/README.html#assistant-context">Assistant context</a>. Use
+<code>cga llm context bench</code> for experiment/session state or
+<code>cga llm context unified</code> for the workflow outline, in the
+relevant workspace. These are read-only and do not need a running web
+server.</p>
+<p><strong>Reference:</strong> Follow the returned documentation or
+resource references. <a
+href="cga/README.html#visual-element-identifiers-vids">Visual element
+identifiers</a> explain shared addresses for CLI and UI facts. <a
+href="cga/cgauv/README.html#outline-and-search">Unified outline and
+search</a> provides more targeted discovery.</p>
+<p><strong>Stop:</strong> You know the current inputs, completed work,
+and unresolved step. Open full source, state, or result artifacts only
+to answer a specific remaining question.</p>
+<h3 id="evolve-a-usage-example-both">Evolve a usage example [Both]</h3>
+<p><strong>Question:</strong> How should a new or changed experiment
+express its operations?</p>
+<p><strong>Start:</strong> Read the <a
+href="cga/cgawf/FLOW-SCRIPT-GUIDE.html">flow script guide</a>, then choose
+the closest <a href="#examples-and-fixed-checks-both">example
+below</a>.</p>
+<p><strong>Reference:</strong> Read <a
+href="cga/README.html#workflows">CGA Workflows</a> and <a
+href="cga/README.html#state">State</a> when changing recording or
+composition. <a href=".agent-notes/cga.md">CGA notes</a> describe
+non-obvious integration constraints.</p>
+<p><strong>Stop:</strong> Each meaningful operation and experimental
+choice is visible, with explicit inputs, outputs, lifecycle, and
+provenance. Change supporting code and usage documentation together when
+the example needs new behavior.</p>
+<h3 id="change-or-debug-the-supporting-code-both">Change or debug the
+supporting code [Both]</h3>
+<p><strong>Question:</strong> Which implementation owns the behavior
+observed in the example?</p>
+<p><strong>Start:</strong> Locate the example’s failing or changing
+operation first. Use <a href="cga/README.html#layout">CGA Layout</a> for
+command ownership or the root README’s <a
+href="README.html#mrva-component-map">MRVA component map</a> for server,
+worker, scheduling, and storage behavior.</p>
+<p><strong>Reference:</strong> Read only the matching agent topic: <a
+href=".agent-notes/mrva-runtime.md">runtime</a>, <a
+href=".agent-notes/cga.md">CGA</a>, <a
+href=".agent-notes/bench.md">Bench</a>, <a
+href=".agent-notes/preparation.md">preparation</a>, or <a
+href=".agent-notes/views.md">views</a>. Read <a
+href=".agent-notes/system-tests.md">system-test notes</a> before using
+an e2e driver, and <a href=".agent-notes/environment.md">environment
+notes</a> before host setup.</p>
+<p><strong>Stop:</strong> You have identified the owning operation,
+state contract, and smallest relevant check. Read another subsystem only
+if the evidence crosses that boundary; retain a usable example alongside
+implementation changes.</p>
+<h2 id="structural-conventions-both">Structural conventions [Both]</h2>
+<table>
+<colgroup>
+<col style="width: 65%" />
+<col style="width: 34%" />
+</colgroup>
+<thead>
+<tr>
+<th>Convention</th>
+<th>Where to learn the details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Use the top-level <code>cga</code> dispatcher for recorded
+workflows; direct component binaries remain JSON-in/JSON-out
+filters</td>
+<td><a href="cga/README.html#state">Commands and state</a></td>
+</tr>
+<tr>
+<td><code>.cga/</code> holds workflow metadata/history and local
+runtime/scratch; the configured content-addressed store holds
+objects</td>
+<td><a href="cga/README.html#workflows">Workflows</a></td>
+</tr>
+<tr>
+<td>Many Python components use <code>bin/</code>, a same-name package,
+and <code>tests/</code>; some preparation services use
+<code>bin/lib/doc/share</code> instead</td>
+<td><a href="cga/README.html#layout">CGA layout</a>, <a
+href="cga/cgactl/README.html">controller</a></td>
+</tr>
+<tr>
+<td>Server and worker are separate Go modules using the sibling
+<code>mrvacommander</code> shared module; other utilities may have their
+own modules</td>
+<td><a href="README.html#mrva-component-map">MRVA component map</a></td>
+</tr>
+<tr>
+<td>PostgreSQL holds operational state and references, not large
+database/source/result blobs</td>
+<td><a href=".agent-notes/mrva-runtime.md#storage">Runtime storage
+notes</a></td>
+</tr>
+<tr>
+<td>Operator overrides survive defaults; lifecycle ownership and
+setup/analysis boundaries stay explicit</td>
+<td><a href=".agent-notes/README.md#essential-invariants">Agent
+core</a></td>
+</tr>
+<tr>
+<td>Usage documentation stays near examples/components; the book links
+canonical Markdown through symlinks</td>
+<td><a href=".agent-notes/documentation.md">Documentation notes</a></td>
+</tr>
+</tbody>
+</table>
+<h2 id="examples-and-fixed-checks-both">Examples and fixed checks
+[Both]</h2>
+<p>Everything here is prototype material. “Starting example” means a
+useful entry point today, not production readiness. Keep earlier
+examples when they offer a different experimental shape or could be
+expanded.</p>
+<p><strong>Examples leave room for experimentation. E2e tests are a
+special case of examples with fixed inputs and assertions that test the
+code.</strong> Passing a fixed check does not by itself demonstrate that
+a scientific detector is effective.</p>
+<table>
+<colgroup>
+<col style="width: 22%" />
+<col style="width: 12%" />
+<col style="width: 65%" />
+</colgroup>
+<thead>
+<tr>
+<th>Material</th>
+<th>Role</th>
+<th>What to read it for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="cga/mrva-flow/README.html">mrva-flow</a></td>
+<td>Starting example</td>
+<td>One single-user recorded analysis with visible lifecycle and result
+exports</td>
+</tr>
+<tr>
+<td><a href="cga/cgabench/README.html">Bench</a></td>
+<td>Interactive experiment interface</td>
+<td>Session-based query/database variation and explicit comparisons</td>
+</tr>
+<tr>
+<td><a
+href="cga/analysis/CVE-2016-9843/query-030/README.html">query-030</a></td>
+<td>Focused worked example</td>
+<td>Explicit preparation, validation, handoff, and analysis across
+architecture/toolchain inputs</td>
+</tr>
+<tr>
+<td><a href="cga/sample-05/README.html">sample-05</a></td>
+<td>Earlier example, retained</td>
+<td>Manually stepped two-user selection, status, download, and
+ingestion</td>
+</tr>
+<tr>
+<td><a href="cga/sample-05-i/README.html">sample-05-i</a></td>
+<td>Earlier example, retained</td>
+<td>The two-user sequence with CGA-owned standalone infrastructure</td>
+</tr>
+<tr>
+<td><a href="cga/examples/cves/README.html">CVE examples</a></td>
+<td>Experimental input collection</td>
+<td>Individual cases, source versions, and associated queries; choose a
+case rather than reading the catalogue recursively</td>
+</tr>
+<tr>
+<td><a
+href="cga/system-tests/README.html#sample-workflow">run-system-02</a></td>
+<td>Fixed e2e check</td>
+<td>Standalone server/worker execution and verification</td>
+</tr>
+<tr>
+<td><a
+href="cga/system-tests/run-system-09/README.html">run-system-09</a></td>
+<td>Fixed e2e check</td>
+<td>Preparation-to-export handoff with a small controlled finding
+expectation</td>
+</tr>
+<tr>
+<td><a
+href="cga/system-tests/run-system-10/README.html">run-system-10</a></td>
+<td>Collection-scale e2e check</td>
+<td>Execution over the promoted collection; pair with <a
+href="cga/analysis/run-system-10-2026-08-24/query-effectiveness/README.html">effectiveness
+evidence</a> when interpreting findings</td>
+</tr>
+<tr>
+<td><a
+href="cga/system-tests/run-system-11/README.html">run-system-11</a></td>
+<td>Scale observation</td>
+<td>Sysview behavior over 200+ distinct C/C++ databases and
+multi-user/session workloads; CGA-based phases and endpoint
+measurements</td>
+</tr>
+</tbody>
+</table>
+<h2 id="further-reading-and-maintenance">Further reading and
+maintenance</h2>
+<p><strong>[Human]</strong> The <a href="docs/README.html">project
+book</a> assembles component and usage documentation for browsing. <a
+href="notes/README.html">Conceptual notes</a> form a separate book;
+consult them for a specific idea rather than as required onboarding. <a
+href="INSTALL.html">Installation</a> and <a
+href="REMOTE-CONNECTION.html">remote access</a> are references for running
+experiments, not prerequisites for understanding them.</p>
+<p><strong>[Both]</strong> Keep this guide a routing layer. Put detailed
+usage beside the example, implementation contracts beside the component,
+and non-obvious operational constraints in the relevant agent topic.
+Update these links when an example or command changes. Remove
+out-of-date documentation rather than creating a documentation archive;
+Git retains earlier versions. Preserve the examples themselves for
+further experimentation.</p>
+</body>
+</html>

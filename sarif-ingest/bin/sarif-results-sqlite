@@ -1,0 +1,157 @@
+#!/usr/bin/env python3
+"""Extract problem / path-problem SARIF results into a SQLite table.
+
+Adapted from sarif-result-comparison/bin/sarif-results-sqlite: this variant
+ingests a single SARIF file and drops the bmf/bmn-specific `build_mode` column.
+"""
+import argparse
+import json
+import sqlite3
+from contextlib import closing
+from pathlib import Path
+
+
+KEEP_KINDS = {"problem", "path-problem"}
+
+
+def rule_maps(run):
+    rules = run.get("tool", {}).get("driver", {}).get("rules", [])
+    by_id = {rule.get("id"): rule for rule in rules if rule.get("id")}
+    return rules, by_id
+
+
+def rule_for_result(result, rules, rules_by_id):
+    rule_id = result.get("ruleId")
+    if rule_id in rules_by_id:
+        return rules_by_id[rule_id]
+
+    rule_index = result.get("ruleIndex")
+    if isinstance(rule_index, int) and 0 <= rule_index < len(rules):
+        return rules[rule_index]
+
+    return {}
+
+
+def result_location(result):
+    locations = result.get("locations") or []
+    if not locations:
+        return None, None, None
+
+    physical = locations[0].get("physicalLocation", {})
+    artifact = physical.get("artifactLocation", {})
+    region = physical.get("region", {})
+
+    return artifact.get("uri"), region.get("startLine"), region.get("startColumn")
+
+
+def iter_rows(sarif_path, user):
+    sarif = json.loads(sarif_path.read_text(encoding="utf-8"))
+
+    for run in sarif.get("runs", []):
+        rules, rules_by_id = rule_maps(run)
+
+        for result in run.get("results", []):
+            rule = rule_for_result(result, rules, rules_by_id)
+            properties = rule.get("properties", {})
+            kind = result.get("kind") or properties.get("kind")
+
+            if kind not in KEEP_KINDS:
+                continue
+
+            uri, start_line, start_column = result_location(result)
+            rule_id = result.get("ruleId") or rule.get("id")
+            rule_name = properties.get("name") or rule.get("name")
+
+            yield (
+                user,
+                sarif_path.name,
+                kind,
+                rule_id,
+                rule_name,
+                uri,
+                start_line,
+                start_column,
+                json.dumps(result, sort_keys=True, separators=(",", ":")),
+            )
+
+
+def write_db(out_path, sarif_path, user=""):
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with closing(sqlite3.connect(out_path)) as conn:
+        conn.execute("drop table if exists sarif_results")
+        conn.execute(
+            """
+            create table sarif_results (
+              user text not null,
+              file_name text not null,
+              kind text not null,
+              rule_id text,
+              rule_name text,
+              uri text,
+              start_line integer,
+              start_column integer,
+              result_json text not null
+            )
+            """
+        )
+
+        conn.executemany(
+            """
+            insert into sarif_results (
+              user,
+              file_name,
+              kind,
+              rule_id,
+              rule_name,
+              uri,
+              start_line,
+              start_column,
+              result_json
+            )
+            values (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            iter_rows(sarif_path, user),
+        )
+
+        conn.execute("create index idx_sarif_results_user on sarif_results(user)")
+        conn.execute("create index idx_sarif_results_kind on sarif_results(kind)")
+        conn.execute("create index idx_sarif_results_rule on sarif_results(rule_id)")
+        conn.execute(
+            "create index idx_sarif_results_location "
+            "on sarif_results(uri, start_line, start_column)"
+        )
+        conn.commit()
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Extract problem / path-problem SARIF results into a SQLite table."
+    )
+    parser.add_argument("sarif", type=Path, help="input SARIF file")
+    parser.add_argument(
+        "-o",
+        "--output",
+        type=Path,
+        required=True,
+        help="output SQLite database path",
+    )
+    parser.add_argument(
+        "--user",
+        default="",
+        help="user identity stored with every ingested result",
+    )
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+    if not args.sarif.is_file():
+        raise SystemExit(f"error: SARIF input not found: {args.sarif}")
+
+    write_db(args.output, args.sarif, args.user)
+    print(args.output)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,322 @@
+/* Opt-in reference-page companion to the standalone CGA overview. */
+:root {
+  color-scheme: light;
+  --ink: #181818;
+  --muted: #626262;
+  --line: #dedede;
+  --panel: #f7f7f8;
+  --blue: #e8f3fe;
+  --focus: #0169cc;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink);
+  background: #fff;
+  font-synthesis: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  max-width: 66rem;
+  margin: 0 0 0 18rem;
+  padding: 64px clamp(24px, 4vw, 64px) 96px;
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: inherit;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+/* The Markdown title below the TOC retains its existing section anchor. */
+#title-block-header {
+  display: none;
+}
+
+a {
+  color: inherit;
+  text-underline-offset: 4px;
+}
+
+a:visited {
+  color: inherit;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 4px;
+}
+
+[id] {
+  scroll-margin-top: 32px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 400;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+h1 {
+  margin: 0 0 32px;
+  font-size: clamp(36px, 4.5vw, 60px);
+  letter-spacing: -0.045em;
+}
+
+h2 {
+  margin: 64px 0 20px;
+  padding-top: 32px;
+  border-top: 1px solid var(--line);
+  font-size: clamp(28px, 3vw, 38px);
+  letter-spacing: -0.035em;
+}
+
+h3 {
+  margin: 36px 0 16px;
+  font-size: 25px;
+  letter-spacing: -0.025em;
+}
+
+h4,
+h5,
+h6 {
+  margin: 28px 0 12px;
+}
+
+p {
+  margin: 0 0 16px;
+}
+
+li + li {
+  margin-top: 6px;
+}
+
+code,
+kbd,
+samp,
+pre {
+  font-family: var(--mono);
+}
+
+code,
+kbd,
+samp {
+  padding: 0.12em 0.3em;
+  border-radius: 4px;
+  font-size: 0.88em;
+  background: var(--panel);
+  overflow-wrap: anywhere;
+}
+
+pre {
+  max-width: 100%;
+  margin: 24px 0;
+  padding: 20px 24px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  font-size: 1rem;
+  line-height: 1.55;
+  background: var(--panel);
+}
+
+pre code {
+  padding: 0;
+  border-radius: 0;
+  font-size: 0.85rem;
+  white-space: inherit;
+  overflow-wrap: normal;
+  background: transparent;
+}
+
+div.sourceCode {
+  margin: 24px 0;
+  overflow: visible;
+}
+
+div.sourceCode pre {
+  margin: 0;
+  overflow-x: auto;
+  background: var(--panel);
+}
+
+pre.sourceCode span {
+  color: inherit;
+  font-weight: 400;
+  font-style: normal;
+}
+
+blockquote {
+  margin: 24px 0;
+  padding: 4px 0 4px 24px;
+  border-left: 2px solid var(--line);
+  color: var(--muted);
+}
+
+blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin: 24px 0;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.9375rem;
+}
+
+th,
+td {
+  min-width: 9rem;
+  max-width: 32rem;
+  padding: 12px 16px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  font-weight: 400;
+  color: var(--muted);
+  background: var(--panel);
+}
+
+tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+hr {
+  height: 0;
+  margin: 48px 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+  background: transparent;
+}
+
+#TOC {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: 18rem;
+  padding: 36px 24px;
+  overflow-y: auto;
+  border-right: 1px solid var(--line);
+  font-size: 0.875rem;
+  color: var(--muted);
+  background: #fff;
+}
+
+#TOC ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#TOC ul ul {
+  margin-top: 16px;
+  padding-left: 12px;
+  border-left: 1px solid var(--line);
+}
+
+#TOC li + li {
+  margin-top: 6px;
+}
+
+#TOC a {
+  display: block;
+  padding: 5px 8px;
+  border-radius: 6px;
+  text-decoration: none;
+}
+
+#TOC a:hover {
+  color: var(--ink);
+  background: var(--blue);
+}
+
+#TOC > ul > li > a {
+  font-size: 1rem;
+  line-height: 1.3;
+  color: var(--ink);
+}
+
+@media (max-width: 900px) {
+  body {
+    margin: 0 auto;
+    padding: 32px 24px 64px;
+  }
+
+  #TOC {
+    position: static;
+    width: auto;
+    margin: 0 0 48px;
+    padding: 0 0 24px;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+  }
+}
+
+@media print {
+  :root {
+    font-size: 10pt;
+  }
+
+  body {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    color: #000;
+  }
+
+  #TOC {
+    position: static;
+    width: auto;
+    margin: 0 0 32px;
+    padding: 0 0 16px;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  a {
+    text-decoration: none;
+  }
+
+  pre {
+    white-space: pre-wrap;
+    break-inside: avoid;
+  }
+
+  pre code {
+    overflow-wrap: anywhere;
+  }
+
+  table {
+    display: table;
+    table-layout: fixed;
+    font-size: 9pt;
+  }
+
+  th,
+  td {
+    min-width: 0;
+    max-width: none;
+    padding: 8px;
+  }
+}

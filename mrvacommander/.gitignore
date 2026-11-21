@@ -1,0 +1,92 @@
+# Files created by agents at run-time 
+cmd/server/var/
+
+# vscode project dir
+.vscode/
+
+# idea project dir
+.idea/
+
+# Compiled binary
+cmd/server/server
+cmd/agent/agent
+
+# host storage for container
+qpstore-data/
+dbstore-data/
+postgres-data/
+
+# Scratch space
+scratch/
+
+# If you prefer the allow list template instead of the deny list, see community template:
+# https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
+#
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories (remove the comment below to include it)
+# vendor/
+
+# Go workspace file
+go.work
+go.work.sum
+
+# env file
+.env
+/artifactstore-data/.minio.sys
+/qldbminio/qldb
+.ipynb_checkpoints/
+venv/
+venv-*/
+*.egg-info
+__pycache__
+README.html
+ChangeLog
+notes/*.html
+
+# Make timestamp files
+mk.*
+demo/containers/dbsdata/data/
+demo/containers/dbsdata/tmp.dbsdata_backup.tar
+
+# Generated large artifacts. Keep payloads in external storage, not Git.
+client/containers/hepc/codeql-dbs/**/*.zip
+cmd/server/codeql/dbs/**/*.zip
+demo/containers/dbsdata/dbsdata_backup.tar
+tools/request_body_*.blob
+tools/request_*.curl
+
+client/qldbtools/db-collection-py-1/
+*.aux
+*.log
+*.synctex.gz
+mrva-overview-argo-scheduler.toc
+mrva-overview-rabbitmq.fdb_latexmk
+mrva-overview-rabbitmq.fls
+mrva-overview-rabbitmq.log
+
+.DS_Store
+.claude/
+doc/.DS_Store
+doc/mrva-overview-argo-scheduler.fdb_latexmk
+doc/mrva-overview-argo-scheduler.fls
+doc/timing-diagram-tikz.aux
+doc/timing-diagram-tikz.log
+doc/timing-diagram-tikz.synctex.gz
+doc/_region_.tex
+doc/execution-loop-pseudo-code.html
+doc/mrva-overview-argo-pool.toc
+doc/mrva-overview-rabbitmq.toc
+doc/prv_timing-diagram-generated.fmt
+doc/timing-diagram-gpt-math.html

@@ -1,0 +1,46 @@
+body {
+  font-weight: 400;
+  margin-left: 19rem;
+}
+
+body:not(:has(#TOC)) {
+  margin-left: auto;
+}
+
+code,
+kbd,
+samp {
+  font-family: "CMU Typewriter Text", monospace;
+  /* Match Synonym Regular's 0.478em x-height to CMU's 0.431em. */
+  font-size: 1.109em;
+}
+
+pre {
+  font-family: "CMU Typewriter Text", monospace;
+  font-size: 1em;
+}
+
+#TOC {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 17rem;
+  padding: 1rem;
+  box-sizing: border-box;
+  overflow-y: auto;
+  border-right: 1px solid #ddd;
+  background: inherit;
+}
+
+@media print, (max-width: 700px) {
+  body {
+    margin-left: auto;
+  }
+
+  #TOC {
+    position: static;
+    width: auto;
+    border-right: none;
+  }
+}

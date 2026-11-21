@@ -1,0 +1,1202 @@
+\documentclass[11pt]{article}
+
+% Load the geometry package to set margins
+\usepackage[lmargin=2cm,rmargin=2cm,tmargin=1.8cm,bmargin=1.8cm]{geometry}
+
+% increase nesting depth
+
+\usepackage{enumitem}
+\setlistdepth{9}
+%
+\renewlist{itemize}{itemize}{9}
+\setlist[itemize,1]{label=\textbullet}
+\setlist[itemize,2]{label=--}
+\setlist[itemize,3]{label=*}
+\setlist[itemize,4]{label=•}
+\setlist[itemize,5]{label=–}
+\setlist[itemize,6]{label=>}
+\setlist[itemize,7]{label=»}
+\setlist[itemize,8]{label=›}
+\setlist[itemize,9]{label=·}
+%
+\renewlist{enumerate}{enumerate}{9}
+\setlist[enumerate,1]{label=\arabic*.,ref=\arabic*}
+\setlist[enumerate,2]{label=\alph*.),ref=\theenumi\alph*}
+\setlist[enumerate,3]{label=\roman*.),ref=\theenumii\roman*}
+\setlist[enumerate,4]{label=\Alph*.),ref=\theenumiii\Alph*}
+\setlist[enumerate,5]{label=\Roman*.),ref=\theenumiv\Roman*}
+\setlist[enumerate,6]{label=\arabic*),ref=\theenumv\arabic*}
+\setlist[enumerate,7]{label=\alph*),ref=\theenumvi\alph*}
+\setlist[enumerate,8]{label=\roman*),ref=\theenumvii\roman*}
+\setlist[enumerate,9]{label=\Alph*),ref=\theenumviii\Alph*}
+
+
+% Load CM Bright for math
+\usepackage{amsmath}  % Standard math package
+\usepackage{amssymb}  % Additional math symbols
+\usepackage{cmbright} % Sans-serif math font that complements Fira Sans
+
+\usepackage{fourier}
+
+% Font configuration
+% \usepackage{bera}
+% or
+% Load Fira Sans for text
+\usepackage{fontspec}
+\setmainfont{Fira Sans}  % System-installed Fira Sans
+\renewcommand{\familydefault}{\sfdefault}  % Set sans-serif as default
+
+% pseudo-code with math
+\usepackage{listings}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{colortbl}
+\usepackage{booktabs}
+% Set TT font
+% \usepackage{inconsolata}
+% or
+\setmonofont{IBMPlexMono-Light}
+% Define custom settings for listings
+\lstset{
+  language=Python,
+  basicstyle=\ttfamily\small,        % Monospaced font
+  commentstyle=\itshape\color{gray}, % Italic and gray for comments
+  keywordstyle=\color{blue},         % Keywords in blue
+  stringstyle=\color{red},           % Strings in red
+  mathescape=true,                   % Enable math in comments
+  breaklines=true,                   % Break long lines
+  numbers=left,                      % Add line numbers
+  numberstyle=\tiny\color{gray},     % Style for line numbers
+  frame=single,                      % Add a frame around the code
+  escapeinside={(*@}{@*)},           % Allow LaTeX commands (e.g. hyperlinks)
+}
+
+\usepackage{newfloat}  % Allows creating custom float types
+
+% Define 'listing' as a floating environment
+\DeclareFloatingEnvironment[
+fileext=lol,
+listname=List of Listings,
+name=Listing
+]{listing}
+
+% To prevent floats from moving past a section boundary but still allow some floating:
+\usepackage{placeins}
+% used with \FloatBarrier
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+% Title, Author, and Date (or Report Number)
+\title{MRVA for CodeQL:\\Worker Pool Architecture}
+\author{Michael Hohn}
+\date{Technical Report 20260311}
+
+\hypersetup{
+  pdfauthor={Michael Hohn},
+  pdftitle={MRVA for CodeQL: Worker Pool Architecture},
+  pdfkeywords={CodeQL, MRVA, Argo Workflows, Worker Pool, Postgres MVCC},
+  pdfsubject={},
+  pdfcreator={Claude Code},
+  pdflang={English}}
+
+% Tiny clickable circle linking to Go source code.
+% Usage: \gomark{pkg/pool/pool.go}{120}
+% Opens vscode at that file and line.
+\newcommand{\reporoot}{/Users/mhohn5/c/example/psa-mrva/mrvacommander}
+% \newcommand{\gomark}[2]{\href{vscode://file\reporoot/#1:#2}{\textcolor{blue!60}{$\circ$}}}
+\newcommand{\gomark}[2]{\href{vscode://file\reporoot/#1:#2}{\textcolor{gray!90}{$\blacklozenge$}}}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+\section{Worker Pool Motivation}
+
+The current Argo Workflows architecture creates a new Kubernetes pod $\omega_i$ for
+each job $J_i$. This incurs container startup overhead per job: image pull, process
+initialization, CodeQL CLI setup, and credential exchange. For large job batches, this
+overhead dominates execution time.
+
+The worker pool $P_\omega$ addresses this by maintaining a set of long-lived worker
+pods that re-use already-running containers. Workers request new jobs upon completing
+their current work instead of exiting. Key design goals:
+
+\begin{itemize}
+\item \textbf{Container re-use}: Workers persist across jobs, eliminating per-job
+  startup cost.
+\item \textbf{No leader election}: PostgreSQL MVCC replaces leader election for
+  coordination. Workers claim jobs directly via atomic SQL operations.
+\item \textbf{Adaptive scaling}: Fast ramp-up when work arrives, slow decay to zero
+  workers when idle.
+\item \textbf{Minimal scheduler change}: The server-side scheduler main loop remains
+  essentially unchanged; the pool is an added component.
+\item \textbf{All state in PostgreSQL}: Worker registration, job claiming, heartbeats,
+  and scaling decisions use the database as the single source of truth.
+\end{itemize}
+
+\subsection{Architectural Change Summary}
+
+The worker pool $P_\omega$ replaces the per-job Argo workflow submission with a
+pool of persistent workers:
+
+\begin{center}
+\begin{tabular}{p{4cm}|p{5cm}|p{5cm}}
+\toprule
+\textbf{Aspect} & \textbf{Current (Per-Job Pods)} & \textbf{New (Worker Pool)} \\
+\midrule
+Worker Lifecycle & New pod per job $J_i$ & Long-lived pod, multiple jobs \\
+Startup Cost & Per job ($\sim$30--60s) & Once per worker \\
+Job Assignment & Scheduler $\to$ Argo submit & Worker claims from Postgres \\
+Coordination & Leader-elected scheduler & Postgres MVCC \\
+Scaling & Fixed $W$ max concurrent & Adaptive: $W_{min}$ to $W_{max}$ \\
+Idle Behavior & Pod exits & Worker polls, exits after $T_{idle}$ \\
+\midrule
+Flow Notation & $\Sigma_L \xrightarrow{\text{submit}} \Omega \to \omega_i$ &
+  $\omega_k \xleftarrow{\text{claim}} D$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Component Responsibilities}
+
+The pool $P_\omega$ touches three codebases:
+
+\begin{center}
+\begin{tabular}{p{4cm}p{4cm}p{6cm}}
+\toprule
+\textbf{Component} & \textbf{Repository} & \textbf{Role in Pool} \\
+\midrule
+Shared library & \texttt{mrvacommander/} & Pool interface types, Postgres queries for
+  job claiming, worker registration, heartbeat, scaling metrics \\
+Agent & \texttt{agent-commander-argo/} & Worker loop: claim $\to$ execute $\to$
+  complete $\to$ claim next \\
+Server & \texttt{server-commander/} & Pool manager: monitor load, scale
+  workers up/down via Argo API \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Symbols and Notation}
+\label{sec:symbols-notation}
+
+We extend the notation from the Argo Scheduler specification with pool-specific
+symbols.
+
+\begin{center}
+  \begin{longtable}{p{4cm}p{2.5cm}p{7.5cm}}
+    \toprule
+    \textbf{Concept} & \textbf{Symbol} & \textbf{Description} \\
+    \midrule
+    \endfirsthead
+
+    \toprule
+    \textbf{Concept} & \textbf{Symbol} & \textbf{Description} \\
+    \midrule
+    \endhead
+
+    \midrule
+    \endfoot
+
+    \bottomrule
+    \endlastfoot
+
+    \multicolumn{3}{l}{\textit{Inherited Symbols (unchanged)}} \\
+    Client & $C$ & Source of query submission \\
+    Server & $S$ & Central API coordinator \\
+    Database & $D$ & PostgreSQL database storing all state \\
+    Query Suite & $\mathcal{Q}$ & Collection of queries submitted by client \\
+    Repository List & $\mathcal{R}$ & Collection of repositories \\
+    Job Specification & $J_i$ & Job identifier: $(s, o, r)$ \\
+    Job Status & $\sigma_i$ & Pending, Queued, InProgress, Succeeded, Failed \\
+    User & $u \in U$ & Individual user identified by JWT \\
+    Priority Function & $\pi(u)$ & User priority for fair scheduling \\
+    Max Workers & $W$ & Maximum concurrent jobs (inherited, now $= W_{max}$) \\
+    \midrule
+
+    \multicolumn{3}{l}{\textit{Worker Pool}} \\
+    Worker Pool & $P_\omega$ & Set of active worker pods \\
+    Worker & $\omega_k$ & $k$-th worker pod in the pool \\
+    Worker Status & $\varsigma_k$ & Idle, Busy, Draining, Exited \\
+    Worker Count & $|P_\omega|$ & Number of active workers \\
+    \midrule
+
+    \multicolumn{3}{l}{\textit{Scaling Parameters}} \\
+    Min Workers & $W_{min}$ & Minimum pool size (default: 0) \\
+    Max Workers & $W_{max}$ & Maximum pool size (default: 10) \\
+    Active Workers & $W_{active}$ & Currently running workers: $|P_\omega|$ \\
+    Idle Workers & $W_{idle}$ & Workers not executing a job \\
+    Ramp Factor & $\lambda$ & Scale-up multiplier (default: 2) \\
+    Decay Rate & $\gamma$ & Workers removed per decay interval (default: 1) \\
+    \midrule
+
+    \multicolumn{3}{l}{\textit{Timing}} \\
+    Idle Timeout & $T_{idle}$ & Time before idle worker exits (default: 300s) \\
+    Heartbeat Interval & $T_{hb}$ & Worker heartbeat period (default: 10s) \\
+    Heartbeat Expiry & $T_{hb}^{exp}$ & Dead worker threshold (default: 30s) \\
+    Scale Check Interval & $T_{scale}$ & Pool size evaluation period (default: 15s) \\
+    Decay Interval & $T_{decay}$ & Minimum time between scale-down steps (default: 60s) \\
+    Claim Poll Interval & $T_{claim}$ & Worker job-claim polling period (default: 2s) \\
+    \midrule
+
+    \multicolumn{3}{l}{\textit{Fairness (embedded in SQL)}} \\
+    Running Count & $n_u^r$ & Running jobs for user $u$ \\
+    Pending Count & $n_u^p$ & Pending/queued jobs for user $u$ \\
+    Recent Runtime & $\tau_u$ & Recent runtime for user $u$ \\
+    Runtime Window & $T_w$ & Time window for $\tau_u$ (default: 3600s) \\
+
+  \end{longtable}
+\end{center}
+
+
+\section{Database Schema Extensions}
+\label{sec:db-schema}
+
+\subsection{Extended \texttt{job\_info} Table}
+
+The \texttt{job\_info} table gains a \texttt{worker\_id} column and a new
+\texttt{Queued} status:
+
+\begin{center}
+\begin{longtable}{p{4.5cm}p{2.5cm}p{7cm}}
+\toprule
+\textbf{Column} & \textbf{Type} & \textbf{Description} (Symbol) \\
+\midrule
+\endfirsthead
+
+\toprule
+\textbf{Column} & \textbf{Type} & \textbf{Description} (Symbol) \\
+\midrule
+\endhead
+
+\midrule
+\endfoot
+
+\bottomrule
+\endlastfoot
+
+\multicolumn{3}{l}{\textit{Existing columns (unchanged)}} \\
+\texttt{session\_id} & INTEGER & Session identifier \\
+\texttt{owner} & TEXT & Repository owner \\
+\texttt{repo} & TEXT & Repository name \\
+\texttt{payload} & JSONB & Job metadata \\
+\texttt{user\_id} & TEXT & User from JWT ($u_i$) \\
+\texttt{started\_at} & TIMESTAMP & Start time ($t_i^s$) \\
+\texttt{completed\_at} & TIMESTAMP & Completion time ($t_i^c$) \\
+\texttt{argo\_workflow\_id} & TEXT & Argo metadata ($\omega_i^{id}$) \\
+\hline
+\multicolumn{3}{l}{\textit{New column}} \\
+\texttt{worker\_id} & TEXT & Claiming worker ($\omega_k$), NULL if unclaimed \\
+\end{longtable}
+\end{center}
+
+Index addition:
+\begin{itemize}
+\item \texttt{idx\_job\_info\_status\_created} on \texttt{(status, created\_at)} where
+  \texttt{status IN ('Pending', 'Queued')}
+\end{itemize}
+
+\subsection{New \texttt{worker\_pool} Table}
+
+The \texttt{worker\_pool} table tracks active workers:
+
+\begin{center}
+\begin{tabular}{p{4.5cm}p{2.5cm}p{7cm}}
+\toprule
+\textbf{Column} & \textbf{Type} & \textbf{Description} \\
+\midrule
+\texttt{worker\_id} & TEXT & Worker identifier (PRIMARY KEY) \\
+\texttt{status} & TEXT & Idle, Busy, Draining, Exited ($\varsigma_k$) \\
+\texttt{registered\_at} & TIMESTAMP & When worker joined pool \\
+\texttt{heartbeat\_at} & TIMESTAMP & Last heartbeat \\
+\texttt{current\_job} & TEXT & Current job key, NULL if idle \\
+\texttt{jobs\_completed} & INTEGER & Total jobs completed by this worker \\
+\texttt{argo\_pod\_name} & TEXT & Kubernetes pod name \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+
+\section{Job Lifecycle with Worker Pool}
+
+Every job follows an extended state transition:
+
+\begin{equation}
+\sigma_i: \text{Pending}
+  \xrightarrow{\text{scheduler}}  \text{Queued}
+  \xrightarrow{\omega_k\text{ claims}} \text{InProgress}
+  \to \{\text{Succeeded}, \text{Failed}\}
+\end{equation}
+
+\begin{itemize}
+\item \textbf{Pending}: Server has stored the job. The scheduler has not yet
+  evaluated it.
+\item \textbf{Queued}: The scheduler's fair-scheduling pass has selected this job as
+  eligible for execution. Workers may claim it.
+\item \textbf{InProgress}: A worker $\omega_k$ has atomically claimed the job via
+  Postgres \texttt{FOR UPDATE SKIP LOCKED}.
+\item \textbf{Succeeded / Failed}: Terminal states, unchanged from current
+  architecture.
+\end{itemize}
+
+The \texttt{Queued} status decouples fair scheduling from job execution: the scheduler
+controls \emph{which} jobs become available; workers control \emph{when} they execute.
+
+
+\section{Fair Scheduling via Postgres MVCC}
+\label{sec:fair-scheduling}
+
+Fair scheduling is preserved without leader election by splitting it into two
+operations, both using Postgres as the coordination mechanism.
+
+\subsection{Step 1: Server Queues Jobs (Fair Selection)}
+
+The server (or any server replica) periodically runs the fair-scheduling algorithm and
+transitions selected jobs from \texttt{Pending} to \texttt{Queued}. To prevent
+concurrent server replicas from both computing available capacity from the same
+snapshot and over-allocating, the procedure acquires a Postgres advisory lock.
+
+\textbf{Why advisory lock, not leader election}: A Postgres advisory lock
+(\texttt{pg\_try\_advisory\_lock}) is a single atomic call with no infrastructure
+overhead -- no heartbeat table, no expiration tracking, no instance registration. It
+is released automatically when the transaction (or session) ends, including on
+crashes. This is qualitatively different from the leader election protocol it
+replaces, which required a dedicated \texttt{scheduler\_lock} table, periodic
+heartbeat renewal, and explicit expiration logic.
+
+\begin{algorithm}[H]
+\caption{Fair Job Queueing (Server-Side)}
+\begin{algorithmic}[1]
+\Procedure{QueueJobs}{$W_{max}, T_w$}
+
+  \State \Comment{Advisory lock prevents concurrent replicas from over-allocating}
+  \State $\text{locked} \gets D.\text{Query}(\texttt{SELECT pg\_try\_advisory\_lock(}
+    \textit{queue\_lock\_id}\texttt{)})$
+  \If{\textbf{not} $\text{locked}$}
+    \State \Return
+    \Comment{Another replica is already queueing; skip this cycle}
+  \EndIf
+
+  \State \Comment{--- All reads and writes below are inside the advisory lock ---}
+
+  \State \Comment{Calculate available capacity}
+  \State $W_{busy} \gets D.\text{CountWorkers}(\varsigma = \text{Busy})$
+  \State $J_{queued} \gets D.\text{CountJobs}(\sigma = \text{Queued})$
+  \State $W_a \gets W_{max} - W_{busy} - J_{queued}$
+  \Comment{Slots not busy and not already queued}
+
+  \If{$W_a \leq 0$}
+    \State $D.\text{Query}(\texttt{SELECT pg\_advisory\_unlock(}\textit{queue\_lock\_id}\texttt{)})$
+    \State \Return
+  \EndIf
+
+  \State $J_{pending} \gets D.\text{GetJobs}(\sigma = \text{Pending})$
+  \If{$|J_{pending}| = 0$}
+    \State $D.\text{Query}(\texttt{SELECT pg\_advisory\_unlock(}\textit{queue\_lock\_id}\texttt{)})$
+    \State \Return
+  \EndIf
+
+  \State \Comment{Compute per-user fairness metrics}
+  \State $U_{pending} \gets \{u_i : J_i \in J_{pending}\}$
+
+  \ForAll{$u \in U_{pending}$}
+    \State $n_u^r \gets D.\text{CountJobs}(u, \text{InProgress})$
+    \State $n_u^p \gets D.\text{CountJobs}(u, \text{Pending})$
+    \State $\tau_u \gets D.\text{SumRecentRuntime}(u, T_w)$
+  \EndFor
+
+  \State $\text{sorted} \gets \text{Sort}(U_{pending}, \text{key} = (n_u^r, \tau_u, -n_u^p))$
+  \State $\text{allocations} \gets \text{AllocateSlots}(\text{sorted}, W_a)$
+  \Comment{Round-robin, same as before}
+
+  \State \Comment{Transition selected jobs to Queued}
+  \ForAll{$u \in \text{sorted}$}
+    \State $\text{jobs} \gets D.\text{GetJobs}(u, \text{Pending}, \text{limit} = \text{allocations}[u])$
+    \ForAll{$J_i \in \text{jobs}$}
+      \State $D.\text{UpdateJob}(J_i, \sigma_i = \text{Queued})$
+    \EndFor
+  \EndFor
+
+  \State $D.\text{Query}(\texttt{SELECT pg\_advisory\_unlock(}\textit{queue\_lock\_id}\texttt{)})$
+
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Step 2: Worker Claims Job (Atomic, No Leader)}
+
+Workers claim the next available \texttt{Queued} job using a single atomic SQL
+statement. PostgreSQL row-level locking (\texttt{FOR UPDATE SKIP LOCKED}) ensures
+that concurrent workers never claim the same job.
+
+\begin{algorithm}[H]
+\caption{Atomic Job Claim (Worker-Side)}
+\begin{algorithmic}[1]
+\Procedure{ClaimJob}{$\omega_k$}
+
+  \State \textbf{Execute atomic SQL:}
+  \State \quad \texttt{UPDATE job\_info}
+  \State \quad \texttt{SET status = 'InProgress',}
+  \State \quad \quad \texttt{worker\_id = }$\omega_k$\texttt{,}
+  \State \quad \quad \texttt{started\_at = NOW()}
+  \State \quad \texttt{WHERE (session\_id, owner, repo) = (}
+  \State \quad \quad \texttt{SELECT session\_id, owner, repo}
+  \State \quad \quad \texttt{FROM job\_info}
+  \State \quad \quad \texttt{WHERE status = 'Queued'}
+  \State \quad \quad \texttt{ORDER BY created\_at}
+  \State \quad \quad \texttt{LIMIT 1}
+  \State \quad \quad \texttt{FOR UPDATE SKIP LOCKED}
+  \State \quad \texttt{)}
+  \State \quad \texttt{RETURNING *}
+
+  \State \Return claimed job $J_i$ or $\emptyset$
+
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+\textbf{Key property}: No leader election is needed. Postgres MVCC and
+\texttt{SKIP LOCKED} provide serializable job claiming. Multiple workers calling
+\texttt{ClaimJob} concurrently will each get a distinct job (or $\emptyset$ if none
+are available).
+
+\subsection{Fairness Preservation}
+
+The fair scheduling priority $\pi(u) = (n_u^r, \tau_u, -n_u^p)$ is enforced in
+Step~1 when the server selects which jobs to transition to \texttt{Queued}. Workers
+in Step~2 then claim in FIFO order within the queued set. This preserves the
+round-robin allocation from the current scheduler while removing the need for a
+single leader to push jobs.
+
+
+\section{Worker Pool Scaling}
+\label{sec:scaling}
+
+The pool manager (part of the server) adjusts $|P_\omega|$ based on workload.
+Scaling uses Argo Workflows to create/delete worker pods, but workers are long-lived
+and process multiple jobs.
+
+\subsection{Scaling Policy}
+
+\begin{equation}
+W_{target} = \begin{cases}
+  \min\bigl(W_{max},\; \max(\lambda \cdot W_{active},\; 1)\bigr)
+    & \text{if } |J_{pending}| + |J_{queued}| > 0 \text{ and } W_{active} < W_{max} \\[6pt]
+  \max\bigl(W_{min},\; W_{active} - \gamma\bigr)
+    & \text{if } |J_{pending}| + |J_{queued}| = 0 \text{ and } t_{all\_idle} > T_{idle} \\[6pt]
+  W_{active}
+    & \text{otherwise}
+\end{cases}
+\end{equation}
+
+where:
+\begin{itemize}
+\item $\lambda = 2$: ramp-up doubles workers each scaling interval (fast ramp)
+\item $\gamma = 1$: decay removes one worker per decay interval (slow decay)
+\item $t_{all\_idle}$: duration since all workers became idle
+\end{itemize}
+
+\subsection{Ramp-Up Sequence Example}
+
+Starting from $W_{active} = 0$ with 100 pending jobs and $W_{max} = 16$:
+
+\begin{center}
+\begin{tabular}{cccc}
+\toprule
+\textbf{Interval} & $W_{active}$ & $W_{target}$ & \textbf{Workers Started} \\
+\midrule
+$t_0$ & 0 & 1 & 1 \\
+$t_0 + T_{scale}$ & 1 & 2 & 1 \\
+$t_0 + 2T_{scale}$ & 2 & 4 & 2 \\
+$t_0 + 3T_{scale}$ & 4 & 8 & 4 \\
+$t_0 + 4T_{scale}$ & 8 & 16 & 8 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Decay Sequence Example}
+
+From $W_{active} = 10$, no pending jobs, $W_{min} = 0$, $\gamma = 1$:
+
+After $T_{idle}$ elapses with no work, one worker is marked \texttt{Draining} every
+$T_{decay}$ seconds. Draining workers finish their current job (if any) and exit.
+Full drain: $10 \times T_{decay}$ seconds.
+
+
+\subsection{Pool Manager Algorithm}
+
+\begin{algorithm}[H]
+\caption{Pool Scaling (Server-Side)}
+\begin{algorithmic}[1]
+\Procedure{AdjustPool}{$P_\omega, W_{min}, W_{max}, \lambda, \gamma$}
+
+  \State \Comment{------ Reap Dead Workers ------}
+  \ForAll{$\omega_k \in P_\omega$}
+    \If{$t_{now} - \omega_k.\text{heartbeat\_at} > T_{hb}^{exp}$}
+      \State $D.\text{UpdateWorker}(\omega_k, \varsigma_k = \text{Exited})$
+      \State Requeue any job held by $\omega_k$: $\sigma_i \gets \text{Queued}$
+    \EndIf
+  \EndFor
+
+  \State $W_{active} \gets D.\text{CountWorkers}(\varsigma \in \{\text{Idle}, \text{Busy}\})$
+
+  \State \Comment{------ Scale Up ------}
+  \State $J_{pending} \gets D.\text{CountJobs}(\sigma = \text{Pending})$
+  \State $J_{queued} \gets D.\text{CountJobs}(\sigma = \text{Queued})$
+  \State $\text{demand} \gets J_{pending} + J_{queued}$
+
+  \If{$\text{demand} > 0$ \textbf{and} $W_{active} < W_{max}$}
+    \State $W_{target} \gets \min(W_{max},\; \max(\lambda \cdot W_{active},\; 1))$
+    \State $\Delta \gets W_{target} - W_{active}$
+    \For{$i = 1$ \textbf{to} $\Delta$}
+      \State $\omega_{new} \gets \Omega.\text{CreateWorkerPod}()$
+      \Comment{Submit long-lived worker via Argo}
+      \State $D.\text{RegisterWorker}(\omega_{new}, \varsigma = \text{Idle})$
+    \EndFor
+  \EndIf
+
+  \State \Comment{------ Scale Down (slow decay) ------}
+  \If{$\text{demand} = 0$ \textbf{and} $W_{active} > W_{min}$}
+    \If{all workers idle for $> T_{idle}$}
+      \State $n_{drain} \gets \min(\gamma, \; W_{active} - W_{min})$
+      \State Select $n_{drain}$ idle workers
+      \ForAll{selected $\omega_k$}
+        \State $D.\text{UpdateWorker}(\omega_k, \varsigma_k = \text{Draining})$
+        \Comment{Worker will exit on next poll}
+      \EndFor
+    \EndIf
+  \EndIf
+
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+
+\section{Worker Lifecycle}
+\label{sec:worker-lifecycle}
+
+Each worker $\omega_k$ runs a simple loop: register, claim, execute, repeat.
+
+\subsection{Worker State Machine}
+
+\begin{equation}
+\varsigma_k: \text{Idle}
+  \underset{\text{job completes}}{\overset{\text{claim job}}{\rightleftarrows}}
+  \text{Busy}
+  \qquad
+  \text{Idle} \xrightarrow{T_{idle}\text{ or Draining}} \text{Exited}
+\end{equation}
+
+\begin{itemize}
+\item \textbf{Idle}: Registered, polling for jobs. Sends heartbeats.
+\item \textbf{Busy}: Executing a claimed job $J_i$. Sends heartbeats.
+\item \textbf{Draining}: Pool manager has requested shutdown. Worker finishes current
+  job (if any), then exits.
+\item \textbf{Exited}: Worker has terminated. Pool manager may clean up.
+\end{itemize}
+
+
+\section{Full Round-Trip Representation}
+\label{sec:full-round-trip}
+
+The complete round-trip with the worker pool:
+
+\begin{equation}
+\begin{split}
+C &\xrightarrow{(\mathcal{Q}, \mathcal{R}, u)} S \\
+S &\xrightarrow{\forall \mathcal{R}_i: (J_i, u_i, \sigma_i=\text{Pending})} D \\
+S &\xrightarrow[\text{fair schedule}]{\pi(u), W_a} D: \sigma_i \gets \text{Queued}
+  \quad \text{(selected jobs)} \\
+\omega_k &\xleftarrow[\text{claim}]{\texttt{FOR UPDATE SKIP LOCKED}} D:
+  \sigma_i \gets \text{InProgress} \\
+\omega_k &\xrightarrow{\text{execute}(\mathcal{Q}, \mathcal{R}_i)}
+  \mathcal{R}_i^{\mathcal{Q}} \\
+\omega_k &\xrightarrow{\text{store results}} \text{MinIO} \\
+\omega_k &\xrightarrow{\sigma_i = \text{Succeeded}} D \\
+\omega_k &\xleftarrow{\text{claim next}} D
+  \quad \text{(worker stays alive)} \\
+S &\xrightarrow{\mathcal{R}_i^{\mathcal{Q}}} C
+\end{split}
+\end{equation}
+
+Detailed explanation:
+\begin{enumerate}
+\item $C \to S$: Client submits query suite $\mathcal{Q}$, repository list
+  $\mathcal{R}$, and user $u$ to server.
+\item $S \to D$: Server creates jobs $J_i$ for each repository with
+  $\sigma_i = \text{Pending}$.
+\item $S \to D$: Server runs fair scheduling, transitions selected jobs to
+  $\sigma_i = \text{Queued}$.
+\item $\omega_k \leftarrow D$: Worker atomically claims a queued job using
+  \texttt{FOR UPDATE SKIP LOCKED}.
+\item $\omega_k$: Worker executes queries and generates results.
+\item $\omega_k \to \text{MinIO}$: Worker stores results.
+\item $\omega_k \to D$: Worker marks job as Succeeded.
+\item $\omega_k \leftarrow D$: Worker claims \emph{next} job (no exit/restart).
+\item $S \to C$: Server forwards results to client.
+\end{enumerate}
+
+
+\section{Properties and Invariants}
+
+\subsection{Capacity Constraint}
+
+At all times:
+\begin{equation}
+|\{i : \sigma_i = \text{InProgress}\}| + |\{i : \sigma_i = \text{Queued}\}| \leq W_{max}
+\end{equation}
+
+This is enforced by the server's \textsc{QueueJobs} procedure.
+
+\subsection{Claim Exclusivity}
+
+No two workers claim the same job:
+\begin{equation}
+\forall J_i: |\{\omega_k : \omega_k.\text{current\_job} = J_i\}| \leq 1
+\end{equation}
+
+This is enforced by Postgres row-level locking (\texttt{FOR UPDATE SKIP LOCKED}).
+
+\subsection{Worker Liveness}
+
+A worker $\omega_k$ is considered alive if and only if:
+\begin{equation}
+t_{now} - \omega_k.\text{heartbeat\_at} < T_{hb}^{exp}
+\end{equation}
+
+Dead workers (violating this) have their jobs requeued by the pool manager.
+
+\subsection{Scaling Bounds}
+
+The pool size is always bounded:
+\begin{equation}
+W_{min} \leq |P_\omega| \leq W_{max}
+\end{equation}
+
+\subsection{Fairness Preservation}
+
+The priority ordering $\pi(u) = (n_u^r, \tau_u, -n_u^p)$ is applied identically to
+the current scheduler. The only change is that selected jobs transition to
+\texttt{Queued} instead of being submitted to Argo directly.
+
+
+\section{Configuration Parameters}
+
+\begin{center}
+\begin{longtable}{p{3.5cm}p{1.5cm}p{2cm}p{7cm}}
+\toprule
+\textbf{Parameter} & \textbf{Symbol} & \textbf{Default} & \textbf{Description} \\
+\midrule
+\endfirsthead
+
+\toprule
+\textbf{Parameter} & \textbf{Symbol} & \textbf{Default} & \textbf{Description} \\
+\midrule
+\endhead
+
+\midrule
+\endfoot
+
+\bottomrule
+\endlastfoot
+
+Min Workers & $W_{min}$ & 0 & Minimum pool size; set $> 0$ for always-warm pool \\
+Max Workers & $W_{max}$ & 10 & Maximum concurrent workers \\
+Ramp Factor & $\lambda$ & 2 & Multiplicative scale-up factor \\
+Decay Rate & $\gamma$ & 1 & Workers removed per decay step \\
+Idle Timeout & $T_{idle}$ & 300s & Idle duration before worker becomes eligible for
+  removal \\
+Heartbeat Interval & $T_{hb}$ & 10s & Worker heartbeat frequency \\
+Heartbeat Expiry & $T_{hb}^{exp}$ & 30s & Time after which a silent worker is
+  considered dead \\
+Scale Check & $T_{scale}$ & 15s & Pool size evaluation frequency \\
+Decay Interval & $T_{decay}$ & 60s & Minimum time between scale-down steps \\
+Claim Poll & $T_{claim}$ & 2s & Worker job-claim polling frequency \\
+Runtime Window & $T_w$ & 3600s & Window for $\tau_u$ calculation \\
+\end{longtable}
+\end{center}
+
+Environment variables (proposed):
+\begin{itemize}
+\item \texttt{MRVA\_POOL\_MIN\_WORKERS} -- Sets $W_{min}$
+\item \texttt{MRVA\_POOL\_MAX\_WORKERS} -- Sets $W_{max}$
+\item \texttt{MRVA\_POOL\_RAMP\_FACTOR} -- Sets $\lambda$
+\item \texttt{MRVA\_POOL\_DECAY\_RATE} -- Sets $\gamma$
+\item \texttt{MRVA\_POOL\_IDLE\_TIMEOUT\_SECONDS} -- Sets $T_{idle}$
+\item \texttt{MRVA\_POOL\_HEARTBEAT\_SECONDS} -- Sets $T_{hb}$
+\item \texttt{MRVA\_POOL\_SCALE\_CHECK\_SECONDS} -- Sets $T_{scale}$
+\item \texttt{MRVA\_POOL\_CLAIM\_POLL\_SECONDS} -- Sets $T_{claim}$
+\end{itemize}
+
+
+\newpage
+\section{Execution Loop in Pseudo-Code}
+
+\noindent\textbf{Listing: Server-Side Pool Manager and Fair Queueing}
+
+\begin{lstlisting}[language=Python]
+# Server-side: Pool manager and fair job queueing
+# Replaces per-job Argo submission with pool scaling + job queueing
+
+# Initialization (*@\gomark{pkg/pool/pool.go}{26}@*)
+$D$ = PostgresDB()
+$S$ = Server()
+$\Omega$ = ArgoWorkflows()  # Used to create/delete worker pods
+$P_\omega$ = set()  # Worker pool (tracked in Postgres)
+$W_{min}$ = 0
+$W_{max}$ = 10
+$\lambda$ = 2  # Ramp factor
+$\gamma$ = 1  # Decay rate
+$T_w$ = 3600  # Runtime window
+
+# Client submits queries (*@\gomark{pkg/server/server.go}{1019}@*)
+$C$ submits ($\mathcal{Q}$, $\mathcal{R}$, $u$) to $S$
+
+# Server stores jobs in database (*@\gomark{pkg/server/server.go}{26}@*)
+for $\mathcal{R}_i$ in $\mathcal{R}$:
+    $J_i$ = JobSpec(session_id, owner, repo)
+    $D$.store_job($J_i$, user=$u$, status="Pending", payload=$\mathcal{Q}$)
+
+# Server main loop (no leader election needed) (*@\gomark{pkg/pool/pool.go}{120}@*)
+while True:
+    # --- Reap dead workers --- (*@\gomark{pkg/pool/pool.go}{342}@*)
+    for $\omega_k$ in $D$.get_workers():
+        if $t_{now}$ - $\omega_k$.heartbeat_at > $T_{hb}^{exp}$:
+            $D$.update_worker($\omega_k$, status="Exited")
+            if $\omega_k$.current_job is not None:
+                $D$.update_job($\omega_k$.current_job, status="Queued",
+                              worker_id=None)
+
+    # --- Fair scheduling: Pending $\to$ Queued --- (*@\gomark{pkg/pool/pool.go}{210}@*)
+    # Advisory lock prevents concurrent replicas from over-allocating
+    if $D$.query("SELECT pg_try_advisory_lock(queue_lock_id)"):
+
+        $W_{busy}$ = $D$.count_workers(status="Busy")
+        $J_{queued}$ = $D$.count_jobs(status="Queued")
+        $W_a$ = $W_{max}$ - $W_{busy}$ - $J_{queued}$
+
+        if $W_a$ > 0:
+            $J_{pending}$ = $D$.get_jobs(status="Pending")
+            $U_{pending}$ = {$u_i$ for $J_i$ in $J_{pending}$}
+
+            # Calculate fairness metrics
+            for $u$ in $U_{pending}$:
+                $n_u^r$ = $D$.count_jobs(user=$u$, status="InProgress")
+                $n_u^p$ = $D$.count_jobs(user=$u$, status="Pending")
+                $\tau_u$ = $D$.sum_recent_runtime(user=$u$, window=$T_w$)
+
+            sorted_users = sorted($U_{pending}$, (*@\gomark{pkg/pool/pool.go}{541}@*)
+                                  key=lambda u: ($n_u^r$, $\tau_u$, -$n_u^p$))
+            allocations = allocate_slots(sorted_users, $W_a$)
+
+            for $u$ in sorted_users:
+                jobs = $D$.get_jobs(user=$u$, status="Pending",
+                                  limit=allocations[$u$])
+                for $J_i$ in jobs:
+                    $D$.update_job($J_i$, status="Queued")
+
+            # --- Submit queued jobs to Argo --- (*@\gomark{pkg/pool/pool.go}{309}@*)
+            # Each job spawns a worker pod (no --job flag in pool mode);
+            # the worker claims jobs from Postgres via ClaimJob.
+            for $J_i$ in newly_queued:
+                uid = $\Omega$.submit_workflow($J_i$) (*@\gomark{pkg/scheduler/argo\_client.go}{502}@*)
+                $D$.update_job_info($J_i$, argo_workflow_id=uid,
+                                   started_at=$t_{now}$)
+
+        $D$.query("SELECT pg_advisory_unlock(queue_lock_id)")
+
+    # --- Pool scaling (implicit) ---
+    # Worker creation is integrated into Argo submission above:
+    # one workflow per queued job, capped by $W_a$.
+    # Workers self-exit on idle timeout; no explicit scale-down step.
+
+    # --- Reconcile Postgres with Argo ground truth --- (*@\gomark{pkg/pool/pool.go}{370}@*)
+    # Advisory-locked; only one replica polls at a time
+    if $D$.query("SELECT pg_try_advisory_lock(argo_lock_id)"):
+        for $J_i$ in $D$.get_jobs(status in ["InProgress", "Queued"]):
+            if $J_i$.argo_workflow_id is not None:
+                phase = $\Omega$.get_workflow_status($J_i$.argo_workflow_id)
+                if phase in ["Succeeded", "Failed", "Error"]:
+                    $D$.update_job($J_i$, status=map_phase(phase),
+                                  completed_at=$t_{now}$)
+        $D$.query("SELECT pg_advisory_unlock(argo_lock_id)")
+
+    # --- Result delivery (separate goroutine) --- (*@\gomark{pkg/server/server.go}{1144}@*)
+    # Agents publish results to RabbitMQ after CompleteJob;
+    # server reads from queue, stores to state, triggers scheduling.
+
+    sleep($T_{scale}$)
+\end{lstlisting}
+
+\FloatBarrier
+\newpage
+
+\noindent\textbf{Listing: Worker Execution Loop (Inside Long-Lived Pod)}
+
+\begin{lstlisting}[language=Python]
+# Worker execution loop inside a long-lived Argo pod
+# Worker persists across jobs: claim $\to$ execute $\to$ complete $\to$ claim next
+
+# Initialization
+$\omega_k$ = generate_worker_id()
+$D$ = PostgresDB()
+MinIO = MinIOClient(env["MRVA_BCS_ENDPOINT"], env["MRVA_BUCKET"], ...)
+HEPC = HEPCClient(env["MRVA_HEPC_ENDPOINT"])
+codeql_cli = env["CODEQL_CLI_PATH"]
+
+# Register with pool (*@\gomark{pkg/state/state\_postgres.go}{938}@*)
+$D$.register_worker($\omega_k$, status="Idle")
+$t_{idle\_start}$ = $t_{now}$
+
+# Main worker loop
+while True:
+    # Check if pool manager wants us to drain (*@\gomark{pkg/state/state\_postgres.go}{978}@*)
+    $\varsigma_k$ = $D$.get_worker_status($\omega_k$)
+    if $\varsigma_k$ == "Draining":
+        $D$.update_worker($\omega_k$, status="Exited")
+        exit(0)
+
+    # Heartbeat (*@\gomark{pkg/state/state\_postgres.go}{959}@*)
+    $D$.update_worker($\omega_k$, heartbeat_at=$t_{now}$)
+
+    # Attempt to claim a job (atomic, via Postgres SKIP LOCKED) (*@\gomark{pkg/state/state\_postgres.go}{1027}@*)
+    $J_i$ = claim_job($\omega_k$)  # Returns None if no queued jobs
+
+    if $J_i$ is None:
+        # No work available
+        if $t_{now}$ - $t_{idle\_start}$ > $T_{idle}$:
+            # Self-exit after idle timeout
+            $D$.update_worker($\omega_k$, status="Exited")
+            exit(0)
+        sleep($T_{claim}$)
+        continue
+
+    # --- Got a job: execute it --- (*@\gomark{pkg/agent/agent.go}{88}@*)
+    $t_{idle\_start}$ = $t_{now}$  # Reset idle timer
+    $D$.update_worker($\omega_k$, status="Busy", current_job=$J_i$)
+
+    # Fetch query pack from MinIO (*@\gomark{pkg/agent/agent.go}{105}@*)
+    $\mathcal{Q}$ = MinIO.get($J_i$.query_pack_location)
+    extract_query_pack($\mathcal{Q}$, "/tmp/queries")
+
+    # Fetch CodeQL database from HEPC (*@\gomark{pkg/agent/agent.go}{125}@*)
+    db_url = HEPC.get_database_url($J_i$.owner, $J_i$.repo, $J_i$.language)
+    $DB_i$ = download_and_extract(db_url, "/tmp/databases")
+
+    # Execute CodeQL queries (*@\gomark{pkg/codeql/codeql.go}{126}@*)
+    $\mathcal{R}_i^{\mathcal{Q}}$ = set()
+    for $\mathcal{Q}_j$ in $\mathcal{Q}$:
+        results = run_command([
+            codeql_cli, "database", "analyze",
+            $DB_i$, "/tmp/queries",
+            "--format=sarif-latest",
+            "--output=/tmp/results.sarif"
+        ])
+        for result in parse_sarif("/tmp/results.sarif"):
+            $\mathcal{R}_i^{\mathcal{Q}}$.add(result)
+
+    # Store results to MinIO (*@\gomark{pkg/agent/agent.go}{159}@*)
+    results_loc = f"{$J_i$.session_id}/{$J_i$.owner}/{$J_i$.repo}/results.json"
+    MinIO.put(results_loc, $\mathcal{R}_i^{\mathcal{Q}}$)
+
+    # Mark job complete (Postgres) (*@\gomark{pkg/state/state\_postgres.go}{1096}@*)
+    $D$.update_job($J_i$, status="Succeeded", completed_at=$t_{now}$)
+    $D$.update_worker($\omega_k$, status="Idle", current_job=None,
+                     jobs_completed=$\omega_k$.jobs_completed + 1)
+
+    # Publish result to RabbitMQ for server ConsumeResults()
+    RabbitMQ.publish_result($J_i$, $\mathcal{R}_i^{\mathcal{Q}}$)
+
+    # Continue loop: claim next job (no exit!)
+\end{lstlisting}
+
+\FloatBarrier
+\newpage
+
+\noindent\textbf{Listing: Atomic Job Claim via Postgres}
+\gomark{pkg/state/state\_postgres.go}{1027}
+
+\begin{lstlisting}[language=SQL, numbers=none, mathescape=false]
+-- Worker claims next available queued job (inside a transaction).
+-- FOR UPDATE SKIP LOCKED ensures no double-claiming.
+-- Multiple workers calling concurrently each get a distinct job.
+
+BEGIN;
+
+-- Step 1: atomically select and lock a queued job
+SELECT session_id, owner, repo
+FROM job_status
+WHERE status = 'Queued'
+ORDER BY session_id, owner, repo
+LIMIT 1
+FOR UPDATE SKIP LOCKED;
+
+-- Step 2: transition the job to InProgress
+UPDATE job_status
+SET status = 'InProgress'
+WHERE session_id = $1 AND owner = $2 AND repo = $3;
+
+-- Step 3: record worker assignment and start time
+UPDATE job_info
+SET worker_id = $4, started_at = NOW()
+WHERE session_id = $1 AND owner = $2 AND repo = $3;
+
+COMMIT;
+\end{lstlisting}
+
+
+\newpage
+\section{Execution Loop in Pseudo-Code, algorithmic}
+
+\noindent\textbf{Algorithm: Server-side pool management and fair job queueing}
+
+\begin{algorithmic}[1]
+    \Procedure{ServerPoolLoop}{$W_{min}, W_{max}, \lambda, \gamma, T_w$}
+
+      \State \Comment{------ Initialization ------}
+      \gomark{pkg/pool/pool.go}{26}
+      \State $D \gets$ PostgreSQL database
+      \State $S \gets$ Server (API coordinator)
+      \State $\Omega \gets$ Argo Workflows (for pod lifecycle only)
+      \State MinIO $\gets$ Object storage
+      \State HEPC $\gets$ CodeQL database server
+
+      \While{\textbf{not} stopped}
+
+        \State \Comment{====== Reap Dead Workers ======}
+        \gomark{pkg/pool/pool.go}{342}
+        \ForAll{$\omega_k : t_{now} - \omega_k.\text{heartbeat\_at} > T_{hb}^{exp}$}
+          \State $D.\text{UpdateWorker}(\omega_k, \varsigma_k = \text{Exited})$
+          \If{$\omega_k.\text{current\_job} = J_i \neq \text{NULL}$}
+            \State $D.\text{UpdateJob}(J_i, \sigma_i = \text{Queued}, \text{worker\_id} = \text{NULL})$
+            \Comment{Requeue}
+          \EndIf
+        \EndFor
+
+        \State \Comment{====== Fair Scheduling: Pending $\to$ Queued ======}
+        \gomark{pkg/pool/pool.go}{210}
+        \State $\text{locked} \gets D.\texttt{pg\_try\_advisory\_lock}(\textit{queue\_lock\_id})$
+        \Comment{Prevent concurrent over-allocation}
+        \If{$\text{locked}$}
+          \State $W_{busy} \gets D.\text{CountWorkers}(\varsigma = \text{Busy})$
+          \State $J_{queued\_count} \gets D.\text{CountJobs}(\sigma = \text{Queued})$
+          \State $W_a \gets W_{max} - W_{busy} - J_{queued\_count}$
+
+          \If{$W_a > 0$}
+            \State $J_{pending} \gets D.\text{GetJobs}(\sigma = \text{Pending})$
+            \State $U_{pending} \gets \{u_i : J_i \in J_{pending}\}$
+
+            \ForAll{$u \in U_{pending}$}
+              \State $n_u^r \gets D.\text{CountJobs}(u, \text{InProgress})$
+              \State $n_u^p \gets D.\text{CountJobs}(u, \text{Pending})$
+              \State $\tau_u \gets D.\text{SumRecentRuntime}(u, T_w)$
+            \EndFor
+
+            \State $\text{sorted} \gets \text{Sort}(U_{pending}, \text{key} = (n_u^r, \tau_u, -n_u^p))$
+            \gomark{pkg/pool/pool.go}{541}
+            \State $\text{alloc} \gets \text{AllocateSlots}(\text{sorted}, W_a)$
+            \Comment{Round-robin}
+
+            \ForAll{$u \in \text{sorted}$}
+              \State $\text{jobs} \gets D.\text{GetJobs}(u, \text{Pending}, \text{limit} = \text{alloc}[u])$
+              \ForAll{$J_i \in \text{jobs}$}
+                \State $D.\text{UpdateJob}(J_i, \sigma_i = \text{Queued})$
+                \Comment{Available for workers}
+              \EndFor
+            \EndFor
+
+            \State \Comment{------ Submit to Argo ------}
+            \gomark{pkg/pool/pool.go}{309}
+            \ForAll{$J_i \in \text{newly queued}$}
+              \State $\text{uid} \gets \Omega.\text{SubmitWorkflow}(J_i)$
+              \gomark{pkg/scheduler/argo\_client.go}{502}
+              \Comment{Pool mode: no \texttt{--job} flag}
+              \State $D.\text{SetJobInfo}(J_i, \text{argo\_workflow\_id} = \text{uid},
+                \text{started\_at} = t_{now})$
+            \EndFor
+          \EndIf
+          \State $D.\texttt{pg\_advisory\_unlock}(\textit{queue\_lock\_id})$
+        \EndIf
+
+        \State \Comment{====== Pool Scaling (implicit) ======}
+        \State \Comment{Worker creation is integrated into Argo submission above;}
+        \State \Comment{one workflow per queued job, capped by $W_a$.}
+        \State \Comment{Workers self-exit on idle timeout.}
+
+        \State \Comment{====== Reconcile with Argo Ground Truth ======}
+        \gomark{pkg/pool/pool.go}{370}
+        \State $\text{locked} \gets D.\texttt{pg\_try\_advisory\_lock}(\textit{argo\_lock\_id})$
+        \If{$\text{locked}$}
+          \ForAll{$J_i : \sigma_i \in \{\text{InProgress}, \text{Queued}\}$
+            and $J_i.\text{argo\_workflow\_id} \neq \text{NULL}$}
+            \State $\text{phase} \gets \Omega.\text{GetWorkflowStatus}(J_i.\text{argo\_workflow\_id})$
+            \If{$\text{phase} \in \{\text{Succeeded}, \text{Failed}, \text{Error}\}$}
+              \State $D.\text{UpdateJob}(J_i, \sigma_i = \text{MapPhase}(\text{phase}),
+                t_i^c = t_{now})$
+            \EndIf
+          \EndFor
+          \State $D.\texttt{pg\_advisory\_unlock}(\textit{argo\_lock\_id})$
+        \EndIf
+
+        \State \Comment{====== Result Delivery (separate goroutine) ======}
+        \gomark{pkg/server/server.go}{1144}
+        \State \Comment{Agents publish results to RabbitMQ after CompleteJob;}
+        \State \Comment{server reads from queue, stores to state, triggers scheduling.}
+
+        \State Sleep($T_{scale}$)
+      \EndWhile
+
+    \EndProcedure
+\end{algorithmic}
+
+\vspace{1em}
+
+\noindent\textbf{Algorithm: Worker execution loop inside long-lived pod}
+
+\begin{algorithmic}[1]
+    \Procedure{WorkerLoop}{$\omega_k$, env\_vars}
+
+      \State \Comment{------ Initialization ------}
+      \State $D \gets$ PostgreSQL database
+      \State MinIO $\gets$ \text{MinIOClient}(\text{env})
+      \State HEPC $\gets$ \text{HEPCClient}(\text{env})
+      \State $D.\text{RegisterWorker}(\omega_k, \varsigma_k = \text{Idle})$
+      \gomark{pkg/state/state\_postgres.go}{938}
+      \State $t_{idle\_start} \gets t_{now}$
+
+      \While{\textbf{true}}
+
+        \State \Comment{------ Check for Drain Signal ------}
+        \gomark{pkg/state/state\_postgres.go}{978}
+        \State $\varsigma_k \gets D.\text{GetWorkerStatus}(\omega_k)$
+        \If{$\varsigma_k = \text{Draining}$}
+          \State $D.\text{UpdateWorker}(\omega_k, \varsigma_k = \text{Exited})$
+          \State \textbf{exit}(0)
+        \EndIf
+
+        \State \Comment{------ Heartbeat ------}
+        \gomark{pkg/state/state\_postgres.go}{959}
+        \State $D.\text{Heartbeat}(\omega_k, t_{now})$
+
+        \State \Comment{------ Claim Job (atomic via Postgres MVCC) ------}
+        \gomark{pkg/state/state\_postgres.go}{1027}
+        \State $J_i \gets \text{ClaimJob}(\omega_k)$
+        \Comment{\texttt{FOR UPDATE SKIP LOCKED}}
+
+        \If{$J_i = \emptyset$}
+          \If{$t_{now} - t_{idle\_start} > T_{idle}$}
+            \State $D.\text{UpdateWorker}(\omega_k, \varsigma_k = \text{Exited})$
+            \State \textbf{exit}(0) \Comment{Self-exit after idle timeout}
+          \EndIf
+          \State Sleep($T_{claim}$)
+          \State \textbf{continue}
+        \EndIf
+
+        \State \Comment{------ Execute Job ------}
+        \gomark{pkg/agent/agent.go}{88}
+        \State $t_{idle\_start} \gets t_{now}$ \Comment{Reset idle timer}
+        \State $D.\text{UpdateWorker}(\omega_k, \varsigma_k = \text{Busy},
+          \text{current\_job} = J_i)$
+
+        \State $\mathcal{Q} \gets \text{MinIO}.\text{Get}(J_i.\text{query\_pack\_location})$
+        \Comment{Fetch query pack}
+        \State $DB_i \gets \text{HEPC}.\text{FetchDatabase}(J_i.\text{owner},
+          J_i.\text{repo})$
+        \Comment{Fetch CodeQL DB}
+
+        \State $\mathcal{R}_i^{\mathcal{Q}} \gets \emptyset$
+        \ForAll{$\mathcal{Q}_j \in \mathcal{Q}$}
+          \State Run CodeQL CLI: \texttt{database analyze} $DB_i$ with $\mathcal{Q}_j$
+          \gomark{pkg/codeql/codeql.go}{126}
+          \State $\mathcal{R}_i^{\mathcal{Q}} \gets \mathcal{R}_i^{\mathcal{Q}} \cup
+            \text{results}$
+        \EndFor
+
+        \State \Comment{------ Store Results and Complete ------}
+        \gomark{pkg/state/state\_postgres.go}{1096}
+        \State $\text{MinIO}.\text{Put}(\text{BuildPath}(J_i), \mathcal{R}_i^{\mathcal{Q}})$
+        \State $D.\text{UpdateJob}(J_i, \sigma_i = \text{Succeeded}, t_i^c = t_{now})$
+        \State $D.\text{UpdateWorker}(\omega_k, \varsigma_k = \text{Idle},
+          \text{current\_job} = \text{NULL})$
+        \State $\text{RabbitMQ}.\text{PublishResult}(J_i, \mathcal{R}_i^{\mathcal{Q}})$
+        \Comment{For server ConsumeResults}
+
+        \State \Comment{Loop continues: claim next job without exit}
+      \EndWhile
+
+    \EndProcedure
+\end{algorithmic}
+
+
+\section{Implementation Notes}
+
+\subsection{Code Locations (Proposed)}
+
+\begin{itemize}
+\item \textbf{Shared (mrvacommander/)}:
+  \begin{itemize}
+  \item Pool interface types and Postgres queries:
+    \texttt{pkg/pool/pool.go}
+  \item Job claim SQL (\texttt{FOR UPDATE SKIP LOCKED}):
+    \texttt{pkg/state/state\_postgres.go} (extend)
+  \item Worker registration and heartbeat:
+    \texttt{pkg/state/state\_postgres.go} (extend)
+  \item Database migration:
+    \texttt{db\_schema\_changes/pool/}
+  \end{itemize}
+
+\item \textbf{Agent (agent-commander-argo/)}:
+  \begin{itemize}
+  \item Worker loop (claim $\to$ execute $\to$ complete $\to$ claim):
+    replace current single-job entrypoint
+  \item Heartbeat goroutine
+  \item Drain signal handling
+  \end{itemize}
+
+\item \textbf{Server (server-commander/)}:
+  \begin{itemize}
+  \item Pool manager goroutine: scaling decisions, worker reaping
+  \item Fair queueing (Pending $\to$ Queued): adapt from current scheduler
+  \item Result delivery loop: unchanged
+  \end{itemize}
+\end{itemize}
+
+\subsection{Migration Path}
+
+The worker pool replaces the existing scheduler and per-job pods outright.
+Keeping the old paths alongside would risk jobs being processed by both systems
+or, worse, silently working by accident and masking integration issues.
+
+\begin{enumerate}
+\item Add \texttt{worker\_id} column and \texttt{Queued} status to \texttt{job\_info}.
+\item Replace the existing leader-elected scheduler with the pool manager
+  (fair queueing via advisory lock, pool scaling). Remove the
+  \texttt{scheduler\_lock} table and leader election code.
+\item Replace the single-job agent entrypoint with the worker loop
+  (claim $\to$ execute $\to$ complete $\to$ claim). Remove the per-job Argo
+  workflow submission path (\texttt{SubmitWorkflow} per $J_i$).
+\item Remove the Argo workflow status polling loop (workers now mark their own
+  jobs as Succeeded/Failed directly in Postgres).
+\end{enumerate}
+
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: LaTeX
+%%% TeX-master: t
+%%% TeX-engine: luatex
+%%% TeX-command-extra-options: "-synctex=1 -shell-escape -interaction=nonstopmode"
+%%% End:

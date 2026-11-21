@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>cga preparation &mdash; CodeQL appliance preparation</title>
+    <link rel="stylesheet" href="cga-prep.css" />
+  </head>
+  <body>
+    <div id="cga-header" class="cga-frag">
+      <div class="cga-header-line">
+        <span class="cga-title">cga preparation &mdash; CodeQL appliance preparation</span>
+        <span class="cga-sub">preparation view</span>
+      </div>
+    </div>
+
+    <div id="cga-flow-preparation" class="cga-flow">
+      <div
+        class="cga-slot cga-box"
+        data-comp="cgacv"
+        data-route="/overview"
+      ></div>
+      <div class="cga-arrow">&rarr;</div>
+      <div
+        class="cga-multiply"
+        title="vulnerable, patched, and most-recent variants"
+      >
+        &times; variants
+      </div>
+      <div class="cga-arrow">&rarr;</div>
+      <div
+        class="cga-slot cga-box"
+        data-comp="cgasp"
+        data-route="/overview"
+      ></div>
+      <div class="cga-arrow">&rarr;</div>
+      <div
+        class="cga-slot cga-box"
+        data-comp="cgadb"
+        data-route="/overview"
+      ></div>
+      <div class="cga-arrow">&rarr;</div>
+      <div
+        class="cga-slot cga-box"
+        data-comp="cgaqg"
+        data-route="/overview"
+      ></div>
+    </div>
+
+    <div id="cga-detail-bar">
+      preparation detail &mdash; <span id="cga-detail-which">cgacv</span>
+      <span class="cga-hint">(click any box above to show its detail)</span>
+      <button id="cga-reload" title="re-fetch all fragments">reload</button>
+    </div>
+    <div id="cga-detail" class="cga-slot"></div>
+
+    <script src="cga-prep-config.js"></script>
+    <script src="cga-prep.js"></script>
+  </body>
+</html>

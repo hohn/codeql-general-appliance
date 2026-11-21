@@ -1,0 +1,729 @@
+\documentclass[11pt,letterpaper]{article}
+
+\usepackage[letterpaper,margin=0.85in]{geometry}
+\usepackage{fontspec}
+\usepackage{amsmath}
+\usepackage{unicode-math}
+\usepackage{microtype}
+\usepackage{titlesec}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+
+\setmainfont{Libertinus Serif}
+\setsansfont{Fira Sans}[Scale=MatchLowercase]
+\setmonofont{Fira Mono}[Scale=MatchLowercase]
+\setmathfont{Libertinus Math}
+
+\titleformat{\subsection}
+  {\sffamily\Large\bfseries}{}{0pt}{}
+\titleformat{\subsubsection}
+  {\sffamily\large\bfseries}{}{0pt}{}
+
+\definecolor{human}{HTML}{175CD3}
+\definecolor{llm}{HTML}{067647}
+\definecolor{muted}{HTML}{667085}
+\definecolor{rule}{HTML}{D0D5DD}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+
+\newcommand{\SessionTitle}[1]{\def\sessiontitle{#1}}
+\newcommand{\SessionDate}[1]{\def\sessiondate{#1}}
+\newcommand{\SessionGoal}[1]{\def\sessiongoal{#1}}
+
+\SessionTitle{Session 001}
+\SessionDate{\today}
+\SessionGoal{State the objective for this human--LLM session.}
+
+\newcommand{\SessionHeader}{%
+  {\sffamily\Huge\bfseries \sessiontitle\par}
+  \vspace{0.25em}
+  {\sffamily\color{muted}\sessiondate\par}
+  \vspace{0.8em}
+  {\sffamily\bfseries Goal}\par
+  \sessiongoal
+  \vspace{0.6em}
+  {\color{rule}\hrule}
+  \vspace{0.8em}
+}
+
+\begin{document}
+
+\SessionHeader
+
+% === TURN 001 | HUMAN | BEGIN ===
+\subsection*{\color{human}Turn 001 --- Human}
+
+The MRVA test sequence is predefined:
+
+\[
+  \text{setup}
+  \longrightarrow \text{pick database}
+  \longrightarrow \text{pick query}
+  \longrightarrow \text{submit job}
+  \longrightarrow \text{collect results}.
+\]
+
+Interactive use requires:
+
+\noindent\textbullet\ manual database creation or selection;
+
+\noindent\textbullet\ manual query development and refinement.
+
+Thus, two of the original steps become multi-step activities. How should this
+change be represented:
+
+\noindent\textbullet\ in the script;
+
+\noindent\textbullet\ in the UI;
+
+\noindent\textbullet\ for LLM assistance?
+
+% === TURN 001 | HUMAN | END ===
+
+% === TURN 002 | LLM | BEGIN ===
+\subsection*{\color{llm}Turn 002 --- LLM}
+
+Yes. I would preserve the five-step semantic sequence and change the
+cardinality of two steps, rather than turning the whole system into a longer
+sequence.
+
+Let the artifact-producing portion of the sequence be
+
+\[
+  S = D \longrightarrow Q \longrightarrow J \longrightarrow R,
+\]
+
+where setup precedes \(S\). In the predefined test,
+
+\[
+  D = \operatorname{pick\text{-}db},
+  \qquad
+  Q = \operatorname{pick\text{-}query}.
+\]
+
+Interactive use changes those two selections into workspaces or refinement
+loops:
+
+\[
+  D^{*} \longrightarrow Q^{*} \longrightarrow J \longrightarrow R,
+\]
+
+with
+
+\[
+  D^{*}
+  =
+  \bigl(
+    \text{create}
+    \mid \text{choose}
+    \mid \text{inspect}
+    \mid \text{repair}
+  \bigr)^{*}
+  \longrightarrow D,
+\]
+
+and
+
+\[
+  Q^{*}
+  =
+  \bigl(
+    \text{create}
+    \mid \text{edit}
+    \mid \text{run}
+    \mid \text{inspect}
+  \bigr)^{*}
+  \longrightarrow Q.
+\]
+
+The important invariant is that both loops eventually produce exactly the same
+objects consumed by the predefined test:
+
+\[
+  D^{*} \longrightarrow D,
+  \qquad
+  Q^{*} \longrightarrow Q.
+\]
+
+Therefore, I would not change the downstream MRVA model.
+
+\subsubsection*{Script}
+
+The script should reflect artifact production, not every interactive
+operation:
+
+\begin{verbatim}
+setup
+db           -> D
+query        -> Q
+submit D Q   -> J
+collect J    -> R
+\end{verbatim}
+
+The database and query stages each have two possible realizations:
+
+\begin{verbatim}
+db:
+    predefined -> choose existing D
+    interactive -> work ... -> D
+
+query:
+    predefined -> choose existing Q
+    interactive -> work ... -> Q
+\end{verbatim}
+
+This is cleaner than promoting \texttt{create-db}, \texttt{edit-query},
+\texttt{test-query}, and similar operations to peers of \texttt{submit}.
+Those are operations inside a stage.
+
+\subsubsection*{UI}
+
+The UI can distinguish pipeline stages from stage internals:
+
+\begin{verbatim}
+[ setup ] -> [ database ] -> [ query ] -> [ submit ] -> [ results ]
+                  |              |
+                  v              v
+             DB workspace   Query workspace
+             ------------   ---------------
+             choose         choose
+             create         edit
+             build          run locally
+             inspect        inspect results
+             repair         refine
+                  |              |
+                  +-> D           +-> Q
+\end{verbatim}
+
+This fits the existing top-view model: the top-level bar does not grow.
+Selecting the database or query stage exposes its richer internal state
+machine.
+
+Thus,
+
+\[
+  \text{pipeline topology}
+  \neq
+  \text{interaction topology}.
+\]
+
+The pipeline remains simple; complexity is encapsulated inside its stages.
+
+\subsubsection*{LLM assistance}
+
+This representation is also useful for an LLM because the stage boundary is
+explicit:
+
+\[
+  \text{goal: produce a valid } D,
+  \qquad
+  \text{then produce a satisfactory } Q.
+\]
+
+The LLM does not need a prescribed workflow. It observes the current stage
+state and acts until the stage's output predicate holds:
+
+\[
+  P_D(D) = \mathrm{ready},
+  \qquad
+  P_Q(Q,D) = \mathrm{ready}.
+\]
+
+For example, query development naturally becomes
+
+\[
+\begin{aligned}
+  Q_0
+  &\longrightarrow \operatorname{run}(Q_0,D)
+   \longrightarrow \operatorname{inspect}(R_0) \\
+  &\longrightarrow Q_1
+   \longrightarrow \operatorname{run}(Q_1,D)
+   \longrightarrow \operatorname{inspect}(R_1) \\
+  &\longrightarrow \cdots
+   \longrightarrow Q_n,
+\end{aligned}
+\]
+
+followed by
+
+\[
+  Q_n \xrightarrow{\mathrm{accept}} Q.
+\]
+
+This is closer to what an LLM is good at than encoding a fixed
+\texttt{develop-query} workflow. The loop need not exist as an explicit
+workflow; it is repeated state transformation under a goal predicate.
+
+I would use one abstraction consistently across all three representations:
+
+\[
+  \text{stage}
+  =
+  \text{arbitrary work}
+  \longrightarrow
+  \text{artifact satisfying an exit predicate}.
+\]
+
+The predefined test is the degenerate case in which the arbitrary work has one
+operation:
+
+\[
+  D^{*} = \operatorname{pick}(D),
+  \qquad
+  Q^{*} = \operatorname{pick}(Q),
+\]
+
+while interactive CGA exposes the full \(D^{*}\) and \(Q^{*}\) spaces.
+
+This preserves the useful property that the predefined test and the
+interactive system are structurally the same system, rather than a ``test
+workflow'' and a separate ``real workflow.''
+
+% === TURN 002 | LLM | END ===
+
+% === TURN 003 | HUMAN | BEGIN ===
+\subsection*{\color{human}Turn 003 --- Human}
+
+That is very good. There is one additional repetition: \(S\) itself.
+
+\[
+  S_1 = D_1^{*} \longrightarrow \cdots,
+  \qquad
+  S_2 = D_2^{*} \longrightarrow \cdots,
+  \qquad
+  \ldots
+\]
+
+The repeated sessions are followed by comparison across the \(R_i\).
+
+% === TURN 003 | HUMAN | END ===
+
+% === TURN 004 | LLM | BEGIN ===
+\subsection*{\color{llm}Turn 004 --- LLM}
+
+Yes. That makes the structure cleaner: there are three nested levels of
+iteration, not a longer pipeline.
+
+For each session,
+
+\[
+  S_i
+  =
+  D_i^{*}
+  \longrightarrow Q_i^{*}
+  \longrightarrow J_i
+  \longrightarrow R_i,
+\]
+
+with
+
+\[
+  D_i^{*} \longrightarrow D_i,
+  \qquad
+  Q_i^{*}(D_i) \longrightarrow Q_i.
+\]
+
+The experiment is then
+
+\[
+  E
+  =
+  \{S_1,S_2,\ldots,S_n\}
+  \longrightarrow
+  C(R_1,R_2,\ldots,R_n),
+\]
+
+where \(C\) is comparison or evaluation.
+
+The complete topology is approximately:
+
+\begin{verbatim}
+Experiment E
+
+    S1: D1* -> Q1* -> J1 -> R1 --+
+                                   |
+    S2: D2* -> Q2* -> J2 -> R2 --+--> C(R1,...,Rn)
+                                   |
+     ...                           |
+                                   |
+    Sn: Dn* -> Qn* -> Jn -> Rn --+
+\end{verbatim}
+
+The three repetitions have different meanings:
+
+\[
+\begin{aligned}
+  D_i^{*} &: \text{construction and refinement of a database}, \\
+  Q_i^{*} &: \text{construction and refinement of a query}, \\
+  S^{*}   &: \text{production of comparable observations}.
+\end{aligned}
+\]
+
+I would therefore resist representing all three as generic loops.
+
+\subsubsection*{Script}
+
+The natural script abstraction becomes:
+
+\begin{verbatim}
+experiment
+    session S1
+        db      -> D1
+        query   -> Q1
+        submit  -> J1
+        collect -> R1
+
+    session S2
+        db      -> D2
+        query   -> Q2
+        submit  -> J2
+        collect -> R2
+
+    compare R1 R2 ...
+\end{verbatim}
+
+The session is now a first-class object, matching the existing MRVA session
+concept. More formally,
+
+\[
+  S_i = (D_i,Q_i,J_i,R_i).
+\]
+
+Comparison can therefore operate on sessions rather than manually assembled
+result sets:
+
+\[
+  C(S_1,\ldots,S_n),
+  \qquad
+  R(S_i) = R_i.
+\]
+
+This becomes useful when comparison depends on provenance---query version,
+database, timestamps, or configuration---rather than only SARIF.
+
+\subsubsection*{UI}
+
+The highest-level UI object should perhaps be the experiment rather than the
+pipeline:
+
+\begin{verbatim}
+Experiment
+|
++-- S1
+|   +-- database
+|   +-- query
+|   +-- job
+|   `-- results
+|
++-- S2
+|   +-- database
+|   +-- query
+|   +-- job
+|   `-- results
+|
++-- ...
+|
+`-- comparison
+\end{verbatim}
+
+Selecting \(S_i\) reveals the existing horizontal pipeline:
+
+\[
+  D_i \longrightarrow Q_i \longrightarrow J_i \longrightarrow R_i.
+\]
+
+Selecting the database or query opens its refinement space. The UI therefore
+has three scales:
+
+\[
+  E
+  \supset
+  S_i
+  \supset
+  \{D_i^{*},Q_i^{*},J_i,R_i\}.
+\]
+
+This is close to the observation that both the UI and the underlying flow are
+trees.
+
+\subsubsection*{LLM assistance}
+
+The hierarchy gives the LLM three clean goals:
+
+\[
+\begin{aligned}
+  \text{local goal}      &: \text{produce } D_i \text{ or } Q_i, \\
+  \text{session goal}    &: \text{produce } R_i, \\
+  \text{experiment goal} &: \text{produce } C(R_1,\ldots,R_n).
+\end{aligned}
+\]
+
+The LLM need not be told which level of iteration it is performing; the
+current goal and state determine that. For example,
+
+\[
+  Q_i^{0} \longrightarrow Q_i^{1} \longrightarrow Q_i^{2}
+\]
+
+is refinement within \(S_i\), whereas
+
+\[
+  S_i \longrightarrow S_{i+1}
+\]
+
+means preserving the previous observation and constructing another
+observation for comparison.
+
+This distinction gives a clean immutability boundary:
+
+\[
+  S_i\ \mathrm{complete}
+  \quad\Longrightarrow\quad
+  S_i\ \text{is evidence, not workspace}.
+\]
+
+If the query changes afterward, do not mutate \(S_i\):
+
+\[
+  Q_i \longrightarrow Q'
+  \quad\Longrightarrow\quad
+  S_{i+1} = (D',Q',J',R').
+\]
+
+The interactive process becomes an accumulating experiment:
+
+\[
+  E_k = \{S_1,\ldots,S_k\},
+  \qquad
+  E_k \subset E_{k+1}.
+\]
+
+That fits the immutable, accumulating-state model already established for CGA.
+
+% === TURN 004 | LLM | END ===
+
+% === TURN 005 | HUMAN | BEGIN ===
+\subsection*{\color{human}Turn 005 --- Human}
+
+The structure is great. Do you have suggestions for UI interaction? One option
+is to try \(S_i\), then pause when incomplete user input is required.
+
+% === TURN 005 | HUMAN | END ===
+
+% === TURN 006 | LLM | BEGIN ===
+\subsection*{\color{llm}Turn 006 --- LLM}
+
+Yes. ``Run \(S_i\) until blocked'' is probably the right primitive. It gives
+one interaction model for scripted, manual, and LLM-driven use.
+
+Define execution as
+
+\[
+  \operatorname{advance}(S_i)
+  \longrightarrow
+  \begin{cases}
+    \operatorname{advance}(S_i'),
+      & \text{an automatic step is possible}, \\
+    \operatorname{wait}(S_i,q),
+      & \text{input is required}, \\
+    \operatorname{done}(S_i,R_i),
+      & \text{the session is complete}.
+  \end{cases}
+\]
+
+The UI is not navigating a wizard; it is displaying the current state of an
+executing \(S_i\).
+
+\subsubsection*{Interaction}
+
+Suppose a new session begins:
+
+\begin{verbatim}
+S3
+
+  database    [ ]
+  query       [ ]
+  submit      [ ]
+  results     [ ]
+\end{verbatim}
+
+Advancing immediately reaches database selection:
+
+\begin{verbatim}
+S3
+
+  database    [?]  [ choose | create ]
+  query       [ ]
+  submit      [ ]
+  results     [ ]
+\end{verbatim}
+
+If the user chooses \texttt{create}, that node expands into its workspace.
+When \(D_3\) becomes valid:
+
+\begin{verbatim}
+  database    [x] D3
+  query       [?]  [ choose | develop ]
+  submit      [ ]
+  results     [ ]
+\end{verbatim}
+
+Developing a query similarly expands the query workspace:
+
+\begin{verbatim}
+  database    [x] D3
+  query       [...]
+      Q0 -> run -> inspect
+      Q1 -> run -> inspect
+      Q2
+               [ accept ]
+  submit      [ ]
+  results     [ ]
+\end{verbatim}
+
+Acceptance establishes
+
+\[
+  Q_3 := Q_2,
+\]
+
+and execution resumes automatically:
+
+\begin{verbatim}
+  database    [x] D3
+  query       [x] Q3
+  submit      [...]
+  results     [ ]
+\end{verbatim}
+
+Pause and resume should therefore be implicit:
+
+\[
+  \mathrm{blocked} \equiv \mathrm{paused},
+  \qquad
+  \text{required input supplied}
+  \Longrightarrow
+  \operatorname{advance}.
+\]
+
+\subsubsection*{Do not distinguish human and LLM input}
+
+A blocked state should describe the missing information, not who should supply
+it:
+
+\[
+  B = (S_i,\ \text{requirement},\ \text{available actions}).
+\]
+
+For example,
+
+\[
+  B_Q
+  =
+  \bigl(
+    S_3,\,
+    \text{need accepted query},\,
+    \{\text{choose},\text{edit},\text{run},\text{accept}\}
+  \bigr).
+\]
+
+Then:
+
+\begin{verbatim}
+                 +-- human
+                 |
+S_i -> BLOCKED --+-- LLM
+                 |
+                 `-- script
+                       |
+                       v
+                    state'
+                       |
+                       v
+                    advance
+\end{verbatim}
+
+LLM assistance becomes an alternative producer of state transitions, rather
+than a special LLM mode.
+
+\subsubsection*{UI consequence}
+
+Keep the top-level UI stable:
+
+\begin{verbatim}
+Experiment E
+----------------------------------------
+
+S1   [x]   D1 -> Q1 -> J1 -> R1
+S2   [x]   D2 -> Q2 -> J2 -> R2
+S3   [?]   D3 -> Q3 ...
+S4   [ ]
+
+----------------------------------------
+Compare: S1 S2
+\end{verbatim}
+
+Selecting \(S_3\) reveals its pipeline. Selecting the blocked node reveals its
+workspace. This gives three zoom levels without three UI paradigms:
+
+\[
+  E
+  \xrightarrow{\text{select }S_i}
+  S_i
+  \xrightarrow{\text{select stage}}
+  \text{workspace}.
+\]
+
+Make the current blockage visually dominant. The user should not need to ask
+what to do next:
+
+\[
+  \operatorname{next}(E)
+  =
+  \text{first unresolved requirement of the active } S_i.
+\]
+
+\subsubsection*{Do not force session completion}
+
+The user may discover while developing \(Q_i\) that another experiment is
+useful. Permit
+
+\[
+  S_i : \mathrm{blocked/incomplete}
+\]
+
+while creating \(S_{i+1}\). Then \(E\) is genuinely a collection of
+independent sessions:
+
+\[
+  E
+  =
+  \left\{
+    S_i
+    \,\middle|\,
+    \operatorname{state}(S_i)
+    \in
+    \{\mathrm{incomplete},\mathrm{running},\mathrm{complete}\}
+  \right\}.
+\]
+
+That is better than a wizard. The default interaction can still advance until
+blocked, but blockage does not capture the UI; it identifies the currently
+unresolved edge.
+
+The central UI operation can therefore be stated literally as
+
+\[
+  \operatorname{advance}(S_i)
+  \quad
+  \text{until blocked or complete}.
+\]
+
+Everything else---manual work, LLM assistance, and scripts---is machinery for
+resolving the block.
+
+% === TURN 006 | LLM | END ===
+
+
+\end{document}

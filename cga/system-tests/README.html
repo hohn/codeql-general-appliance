@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>System tests / sample workflows</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="../../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../../docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">System tests / sample workflows</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#system-tests-sample-workflows"
+id="toc-system-tests-sample-workflows">System tests / sample
+workflows</a>
+<ul>
+<li><a href="#cga-client-operations" id="toc-cga-client-operations">CGA
+client operations</a></li>
+<li><a href="#configuration-for-sample-workflow"
+id="toc-configuration-for-sample-workflow">Configuration for sample
+workflow</a>
+<ul>
+<li><a href="#server-and-inputs" id="toc-server-and-inputs">Server and
+inputs</a></li>
+<li><a href="#postgresql" id="toc-postgresql">PostgreSQL</a></li>
+<li><a href="#artifact-storage" id="toc-artifact-storage">Artifact
+storage</a></li>
+<li><a href="#codeql-database-server"
+id="toc-codeql-database-server">CodeQL database server</a></li>
+<li><a href="#worker-pool-and-scheduling"
+id="toc-worker-pool-and-scheduling">Worker pool and scheduling</a></li>
+<li><a href="#sysview-dump-affects-the-server"
+id="toc-sysview-dump-affects-the-server">sysview dump (affects the
+server)</a></li>
+</ul></li>
+<li><a href="#sample-workflow" id="toc-sample-workflow">Sample
+workflow</a></li>
+<li><a href="#replayable-sample-workflow"
+id="toc-replayable-sample-workflow">Replayable sample workflow</a></li>
+<li><a href="#for-run-system-03" id="toc-for-run-system-03">For
+run-system-03</a></li>
+<li><a href="#for-run-system-04" id="toc-for-run-system-04">For
+run-system-04</a></li>
+<li><a href="#for-run-system-05" id="toc-for-run-system-05">For
+run-system-05</a></li>
+<li><a href="#state-inspection-samples"
+id="toc-state-inspection-samples">State inspection samples</a>
+<ul>
+<li><a href="#test-runner-variables-and-locations"
+id="toc-test-runner-variables-and-locations">Test Runner Variables and
+Locations</a></li>
+<li><a href="#object-storage-minio-via-mc"
+id="toc-object-storage-minio-via-mc">Object storage (MinIO) via
+<code>mc</code></a></li>
+<li><a href="#postgresql-via-psql-or-pgcli"
+id="toc-postgresql-via-psql-or-pgcli">PostgreSQL via <code>psql</code>
+(or <code>pgcli</code>)</a></li>
+</ul></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="system-tests-sample-workflows">System tests / sample
+workflows</h1>
+<p>This directory holds the phase-based drivers that bring the whole
+single-machine MRVA stack up, submit work, and verify it end-to-end:</p>
+<ul>
+<li><code>run-system-02</code> — two users, one shared query pack
+(alice: 3 jobs, bob: 5 jobs = 8 jobs). The canonical driver.</li>
+<li><code>run-system-03</code> — one user, three sessions, three packs
+(<code>*-multisession-*</code>), storage=minio.</li>
+<li><code>run-system-04</code> — per-language packs variant.</li>
+<li><code>run-system-09/</code> — one-CVE complete CGA preparation
+through CGA export.</li>
+<li><code>run-system-10/</code> — collection-scale CGA analysis of every
+complete, successfully promoted six-database CVE group.</li>
+<li><a href="run-system-11/README.html"><code>run-system-11/</code></a> —
+sysview observation over 200+ distinct C/C++ databases, with
+configurable users/sessions for thousands of jobs, using the CGA
+dispatcher.</li>
+</ul>
+<p>The earlier drivers source <code>standalone-multi-agent-lib.sh</code>
+for configuration and helpers
+(<code>query-standalone-multi-agent-e2e.sh</code>,
+<code>cleanup-standalone-multi-agent-e2e.sh</code>). Run them from this
+directory. Scenario 11 uses <code>cga mx</code> directly and can run
+from the repository root; see its local guide before launching shared
+infrastructure. The standalone query and cleanup helpers accept
+<code>--help</code> without contacting services; unknown arguments are
+rejected before any lifecycle actions.</p>
+<h2 id="cga-client-operations">CGA client operations</h2>
+<p>The drivers use CGA for query indexing/selection/packing, MRVA
+submissions, status checks, and result downloads. Prepared packs and
+repository lists are explicit inputs to <code>cga mr submit</code>; the
+databases remain in the configured HTTP database store. There is no
+database-upload operation on submission.</p>
+<p>Each scenario records client operations in
+<code>$CGA_TEST_WORKFLOW/.cga/</code> (default
+<code>$MRVA_WORK_DIR/workflow/.cga/</code>). The workflow survives
+separate phase invocations; <code>reset</code> clears the default
+workflow with the work directory. Do not reuse an old overridden
+workflow after resetting the server database. <code>cga mr submit</code>
+refuses duplicate names. Use
+<code>cga -C "$CGA_TEST_WORKFLOW" state show</code> or
+<code>tree show</code> to inspect it.</p>
+<p>Phases stay separate so the failover/idle/restart scenarios can
+intervene between submission, polling, and download.
+<code>run-system-08</code> deliberately sends concurrent raw HTTP
+submissions, then records them with <code>cga mr attach</code>:
+recording both submissions directly through one workflow would serialize
+them. SQL assertions and endpoint-specific observations remain in the
+harness.</p>
+<p>Scenarios <code>09</code> and <code>10</code> use separate recorded
+preparation and analysis workflows. Their JSON session files are
+exported snapshots used by assertions and dashboards, not manually
+threaded component state; see their local READMEs for workflow locations
+and collection prerequisites.</p>
+<h2 id="configuration-for-sample-workflow">Configuration for sample
+workflow</h2>
+<p>The harness reads its configuration from
+<code>standalone-multi-agent-lib.sh</code> (sourced by every
+<code>run-system-*</code> script and by the query/cleanup helpers).
+Every value below is an environment variable of the form
+<code>${VAR:-default}</code>, so it can be overridden by exporting it
+before invoking a runner, e.g.
+<code>PORT=9091 ./run-system-02 all</code>. Go computes matching
+defaults on its own when a variable is unset, so the harness stays fully
+in control.</p>
+<p><code>run-system-03</code> additionally exports its own work dir /
+logs / state (the <code>*-multisession-*</code> variants) and sets
+<code>MRVA_STANDALONE_STORAGE=minio</code> before sourcing the library;
+everything else it inherits from the table below.</p>
+<h3 id="server-and-inputs">Server and inputs</h3>
+<table>
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 26%" />
+<col style="width: 54%" />
+</colgroup>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PORT</code></td>
+<td><code>8081</code></td>
+<td>TCP port the Go server listens on (also exported as
+<code>SERVER_PORT</code>).</td>
+</tr>
+<tr>
+<td><code>CONTROLLER_OWNER</code></td>
+<td><code>octo</code></td>
+<td>Controller-repo owner used in the submission URLs.</td>
+</tr>
+<tr>
+<td><code>CONTROLLER_REPO</code></td>
+<td><code>ctl</code></td>
+<td>Controller-repo name used in the submission URLs.</td>
+</tr>
+<tr>
+<td><code>SAMPLE_DB_ROOT</code></td>
+<td><code>$REPO_ROOT/sample-dbs</code></td>
+<td>Root holding the sample CodeQL DBs, laid out
+<code>&lt;language&gt;/&lt;owner&gt;/&lt;repo&gt;</code>.</td>
+</tr>
+<tr>
+<td><code>QUERY_PATH</code></td>
+<td><code>$REPO_ROOT/sample-query/Fprintf.ql</code></td>
+<td>Query bundled into the pack (run-system-02’s single shared
+pack).</td>
+</tr>
+<tr>
+<td><code>LANGUAGE</code></td>
+<td><code>cpp</code></td>
+<td>CodeQL language the query pack targets.</td>
+</tr>
+<tr>
+<td><code>POLL_INTERVAL</code></td>
+<td><code>3</code></td>
+<td>Seconds between job-status polls while waiting for completion.</td>
+</tr>
+<tr>
+<td><code>POLL_DEADLINE_SECS</code></td>
+<td><code>600</code></td>
+<td>Maximum seconds to wait for all jobs to reach a terminal state.</td>
+</tr>
+<tr>
+<td><code>CODEQL_JAVA_HOME</code></td>
+<td><code>/usr</code></td>
+<td>JDK for the CodeQL CLI (its bundled JRE can’t exec on arm64).</td>
+</tr>
+<tr>
+<td><code>CODEQL_CLI_PATH</code></td>
+<td><code>$(command -v codeql)</code></td>
+<td>CodeQL binary used to build packs and analyze DBs.</td>
+</tr>
+<tr>
+<td><code>MRVA_ENVSIM_AGENT_BINARY</code></td>
+<td><code>$REPO_ROOT/agent-commander-argo/mrvaagent</code></td>
+<td>Agent binary the server fork/execs per worker.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="postgresql">PostgreSQL</h3>
+<table>
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 12%" />
+<col style="width: 65%" />
+</colgroup>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>POSTGRES_DB</code></td>
+<td><code>mrvadev</code></td>
+<td>Database name (bootstrapped by the harness if absent).</td>
+</tr>
+<tr>
+<td><code>POSTGRES_HOST</code></td>
+<td><code>localhost</code></td>
+<td>Postgres host.</td>
+</tr>
+<tr>
+<td><code>POSTGRES_PORT</code></td>
+<td><code>5432</code></td>
+<td>Postgres TCP port.</td>
+</tr>
+<tr>
+<td><code>POSTGRES_USER</code></td>
+<td><code>$USER</code></td>
+<td>Login role (created with <code>CREATEDB</code> if it does not
+exist).</td>
+</tr>
+<tr>
+<td><code>POSTGRES_PASSWORD</code></td>
+<td><code>mrva</code></td>
+<td>Password for the login role (scram auth over TCP).</td>
+</tr>
+</tbody>
+</table>
+<h3 id="artifact-storage">Artifact storage</h3>
+<table>
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 16%" />
+<col style="width: 68%" />
+</colgroup>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MRVA_STANDALONE_STORAGE</code></td>
+<td><code>filesystem</code></td>
+<td>Artifact backend: <code>minio</code> or <code>filesystem</code>.
+run-system-03 sets <code>minio</code>.</td>
+</tr>
+<tr>
+<td><code>MRVA_WORK_DIR</code></td>
+<td><code>/tmp/mrva-standalone-multi</code></td>
+<td>Root for <code>artifacts/</code>, <code>qldbs/</code>, and
+<code>minio-data/</code>. Wiped by
+<code>reset</code>/<code>cleanup</code>.</td>
+</tr>
+<tr>
+<td><code>MINIO_PORT</code></td>
+<td><code>9000</code></td>
+<td>Port the local MinIO server listens on (only used when
+storage=minio).</td>
+</tr>
+<tr>
+<td><code>MRVA_MINIO_ENDPOINT</code></td>
+<td><code>localhost:9000</code></td>
+<td>MinIO endpoint the server/agent connect to.</td>
+</tr>
+<tr>
+<td><code>MRVA_MINIO_ACCESS_KEY</code></td>
+<td><code>minioadmin</code></td>
+<td>MinIO access key (also MinIO’s root user when the harness starts
+it).</td>
+</tr>
+<tr>
+<td><code>MRVA_MINIO_SECRET_KEY</code></td>
+<td><code>minioadmin</code></td>
+<td>MinIO secret key (also MinIO’s root password).</td>
+</tr>
+<tr>
+<td><code>MINIO_BUCKET</code></td>
+<td><code>mrvabucket</code></td>
+<td>Bucket holding packs and results.</td>
+</tr>
+<tr>
+<td><code>MINIO_DATA_DIR</code></td>
+<td><code>$MRVA_WORK_DIR/minio-data</code></td>
+<td>On-disk object data dir for the local MinIO server.</td>
+</tr>
+<tr>
+<td><code>MINIO_BIN</code></td>
+<td><code>minio</code></td>
+<td>MinIO <strong>server</strong> binary. Must be the community AGPLv3
+build; the enterprise AIStor build denies S3 without a license.</td>
+</tr>
+</tbody>
+</table>
+<p>MinIO’s log and PID file are harness bookkeeping (not read by the
+server) — see <a href="#test-runner-variables-and-locations">test runner
+Variables and locations</a>.</p>
+<h3 id="codeql-database-server">CodeQL database server</h3>
+<p>The server/agent no longer read CodeQL DBs from a shared on-disk
+<code>qldbs</code> directory. Instead the harness owns the DB zips and
+serves them over HTTP; the server/agent fetch each DB via the
+<code>HttpCodeQLDatabaseStore</code> (selected in
+<code>deploy.InitStandaloneDatabaseStore</code> when
+<code>MRVA_DB_SERVER_URL</code> is set). This keeps all
+server/agent-owned state out of harness-writable directories.</p>
+<table>
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 17%" />
+<col style="width: 67%" />
+</colgroup>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DB_SERVER_PORT</code></td>
+<td><code>9080</code></td>
+<td>Port the harness <code>python3 -m http.server</code> serves DB zips
+on.</td>
+</tr>
+<tr>
+<td><code>MRVA_DB_SERVER_URL</code></td>
+<td><code>http://127.0.0.1:9080</code></td>
+<td>Base URL the server/agent fetch DBs from. When set, selects the HTTP
+DB store over filesystem.</td>
+</tr>
+<tr>
+<td><code>MRVA_DB_SERVE_DIR</code></td>
+<td><code>$MRVA_WORK_DIR/db-serve</code></td>
+<td>Harness-owned dir served at the base URL, laid out
+<code>&lt;language&gt;/&lt;owner&gt;/&lt;repo&gt;/..._db.zip</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>Each DB is fetched at
+<code>&lt;MRVA_DB_SERVER_URL&gt;/&lt;owner&gt;/&lt;repo&gt;/&lt;owner&gt;_&lt;repo&gt;_db.zip</code>
+(HEAD to probe availability, GET to download). The DB server’s log and
+PID file are harness bookkeeping — see <a
+href="#test-runner-variables-and-locations">test runner Variables and
+locations</a>.</p>
+<h3 id="worker-pool-and-scheduling">Worker pool and scheduling</h3>
+<table>
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 21%" />
+<col style="width: 53%" />
+</colgroup>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MRVA_CODEQL_THREADS</code></td>
+<td><code>2</code></td>
+<td>Cores per worker; also passed to CodeQL as its thread count.</td>
+</tr>
+<tr>
+<td><code>MRVA_POOL_MAX_WORKERS</code></td>
+<td><code>(nproc-1)/threads</code> (min 1)</td>
+<td>Max concurrent worker subprocesses.</td>
+</tr>
+<tr>
+<td><code>MRVA_POOL_SCALE_CHECK_SECONDS</code></td>
+<td><code>2</code></td>
+<td>Pool-manager scale-check interval (backstop when a wake is
+missed).</td>
+</tr>
+<tr>
+<td><code>MRVA_POOL_CLAIM_POLL_SECONDS</code></td>
+<td><code>2</code></td>
+<td>Interval at which an idle worker polls Postgres for a job to
+claim.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="sysview-dump-affects-the-server">sysview dump (affects the
+server)</h3>
+<p>Only these two variables reach the server/agent; everything else in
+the old “transient files” list is harness-only bookkeeping, documented
+under <a href="#test-runner-variables-and-locations">test runner
+Variables and locations</a> below.</p>
+<table>
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 12%" />
+<col style="width: 65%" />
+</colgroup>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MRVA_DBG_DUMP_SYSVIEW</code></td>
+<td>(empty = off)</td>
+<td>When set, <code>phase_start</code> passes
+<code>--dbg-dump-sysview</code> to the server.</td>
+</tr>
+<tr>
+<td><code>MRVA_SYSVIEW_DUMP_PATH</code></td>
+<td><code>sysview-dump</code></td>
+<td>Where the server appends sysview snapshots; removed by
+<code>stop</code>/<code>cleanup</code>.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="sample-workflow">Sample workflow</h2>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> ~/work-ghp/single-machine-mrva/cga/system-tests</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Help: list all phases (this is also the no-argument default).</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="ex">./run-system-02</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Clean up any leftovers from a previous run (stops the server, drops the</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co"># MRVA tables, wipes the work dir).</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="ex">./run-system-02</span> cleanup</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Optionally watch progress live while a run is in flight.</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="ex">chromium-browser</span> http://localhost:8081/sysview</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Full end-to-end test: preflight, reset, stage CodeQL DBs, build, start the</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="co"># server, submit two users&#39; sessions (alice: 3 jobs, bob: 5 jobs = 8 jobs),</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="co"># poll to completion, and verify. Leaves the server running and Postgres</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="co"># populated for inspection.</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="ex">./run-system-02</span> all</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Optional: SARIF ingestion (not part of `all`; SARIF processing is not MRVA</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="co"># core, but fits at the tail of a full run once artifacts exist). Run the</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="co"># three phases individually...</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="ex">./run-system-02</span> copy_sarif   <span class="co"># collect result SARIF into data-large/, shaped</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>                             <span class="co"># like the sysview page:</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>                             <span class="co">#   user-&lt;name&gt;/session-&lt;id&gt;/job-&lt;num&gt;/...</span></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="ex">./run-system-02</span> tolite       <span class="co"># each SARIF -&gt; a per-job SQLite database</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a><span class="ex">./run-system-02</span> toduck       <span class="co"># all SQLite -&gt; one cumulative DuckDB</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a><span class="co"># ...or all three at once:</span></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a><span class="ex">./run-system-02</span> ingest-all</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a><span class="co"># Optional: predefined result queries over the ingested databases.</span></span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a><span class="ex">../../sarif-ingest/bin/srfi</span> <span class="at">-h</span></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a><span class="ex">../../sarif-ingest/bin/srfi</span> showprob data-large/all.duckdb   <span class="co"># kind:problem</span></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a><span class="ex">../../sarif-ingest/bin/srfi</span> showpath data-large/all.duckdb   <span class="co"># kind:path-problem</span></span></code></pre></div>
+<p>Other useful subcommands: <code>./run-system-02 where</code> (show
+the pipeline with a pointer at the current step, non-destructive) and
+<code>./run-system-02 query</code> (dump the Postgres state). The
+SARIF-ingest tool lives in <code>../../sarif-ingest/</code>; see
+<code>../../sarif-ingest/notes/sarif-ingest.org</code> for details.</p>
+<h2 id="replayable-sample-workflow">Replayable sample workflow</h2>
+<p>The <code>/sysview</code> dashboard above is real-time. To capture
+system state over time for later inspection or replay, start the server
+with <code>--dbg-dump-sysview</code>: at every refresh interval it
+appends the current sysview as one JSON line to a dump file (JSONL). The
+dump path defaults to <code>sysview-dump</code> (in the server’s working
+directory) and is overridable via
+<code>MRVA_SYSVIEW_DUMP_PATH</code>.</p>
+<p>The <code>run-system-02</code> harness wires this in as an opt-in, so
+a normal <code>all</code> run also records a replayable dump:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> ~/work-ghp/single-machine-mrva/cga/system-tests</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Clean up any leftovers from a previous run (also removes the sysview dump).</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="ex">./run-system-02</span> cleanup</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Full end-to-end run that also captures a sysview dump. The flag is opt-in</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co"># (off by default); MRVA_SYSVIEW_DUMP_PATH chooses where the dump lands.</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="va">MRVA_DBG_DUMP_SYSVIEW</span><span class="op">=</span>1 <span class="va">MRVA_SYSVIEW_DUMP_PATH</span><span class="op">=</span>/tmp/sysview-dump <span class="dt">\</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="ex">./run-system-02</span> all</span></code></pre></div>
+<p>Because <code>all</code> leaves the server running, its dump keeps
+growing. Stop the server (while keeping the Postgres tables, work dir
+and the dump) once the run is done:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Stop the server but keep all state (restart later with &#39;start&#39;).</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">./run-system-02</span> stop</span></code></pre></div>
+<p>Then replay the captured run with the <code>sysview-view</code> tool,
+which serves the same sysview UI driven by a vertical index slider (drag
+it, use the mouse wheel over it, or press Up/Down and Home/End to scrub;
+Reload re-reads the dump while the server is still appending):</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> ~/work-ghp/single-machine-mrva/sysview-view</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> build ./...</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="ex">./sysview-view</span> <span class="at">--dump</span> /tmp/sysview-dump <span class="at">--addr</span> :8090</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co"># then open the replay UI:</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="ex">chromium-browser</span> http://localhost:8090/</span></code></pre></div>
+<p>The live dashboard and the replay tool share their rendering code
+(<code>mrvacommander/pkg/sysviewui</code>), so a replayed snapshot looks
+identical to the live view at that moment. When you are finished,
+<code>./run-system-02 cleanup</code> tears everything down and deletes
+the dump file. See <code>../../sysview-view/README.md</code> for
+details.</p>
+<p>For a copy you can archive or view with no running process at all (no
+<code>mrvaserver</code>, no <code>sysview-view</code>), export the dump
+to a single self-contained HTML file with the snapshots baked in, then
+open it directly with <code>file://</code>:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> ~/work-ghp/single-machine-mrva/sysview-view</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">./sysview-view</span> <span class="at">--dump</span> /tmp/sysview-dump <span class="at">--export</span> replay.html</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="ex">chromium-browser</span> replay.html</span></code></pre></div>
+<h2 id="for-run-system-03">For run-system-03</h2>
+<p>The same instructions apply verbatim to <code>run-system-03</code>
+(the one-user, three-session, three-pack scenario) — just substitute
+<code>./run-system-03</code> for <code>./run-system-02</code> in every
+command above:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> ~/work-ghp/single-machine-mrva/cga/system-tests</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">./run-system-03</span> cleanup</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="va">MRVA_DBG_DUMP_SYSVIEW</span><span class="op">=</span>1 <span class="va">MRVA_SYSVIEW_DUMP_PATH</span><span class="op">=</span>/tmp/sysview-dump <span class="dt">\</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="ex">./run-system-03</span> all</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="ex">./run-system-03</span> stop</span></code></pre></div>
+<h2 id="for-run-system-04">For run-system-04</h2>
+<p>The same instructions apply verbatim to <code>run-system-04</code>
+(the one-user, three-session, distinct-language scenario —
+cpp/python/javascript) — just substitute <code>./run-system-04</code>
+for <code>./run-system-02</code> in every command above:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> ~/work-ghp/single-machine-mrva/cga/system-tests</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ex">./run-system-04</span> cleanup</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="va">MRVA_DBG_DUMP_SYSVIEW</span><span class="op">=</span>1 <span class="va">MRVA_SYSVIEW_DUMP_PATH</span><span class="op">=</span>/tmp/sysview-dump <span class="dt">\</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="ex">./run-system-04</span> all</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="ex">./run-system-04</span> stop</span></code></pre></div>
+<h2 id="for-run-system-05">For run-system-05</h2>
+<p>The same instructions apply to <code>run-system-05</code> (the status
++ download scenario: two users, one submission each — <code>bob-1</code>
+and <code>eve-1</code>) — just substitute <code>./run-system-05</code>
+for <code>./run-system-02</code> in every command above:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> ~/work-ghp/single-machine-mrva/cga/system-tests</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="ex">./run-system-05</span> cleanup</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="va">MRVA_DBG_DUMP_SYSVIEW</span><span class="op">=</span>1 <span class="va">MRVA_SYSVIEW_DUMP_PATH</span><span class="op">=</span>/tmp/sysview-dump <span class="dt">\</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="ex">./run-system-05</span> all</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="ex">./run-system-05</span> stop</span></code></pre></div>
+<h2 id="state-inspection-samples">State inspection samples</h2>
+<p>Once a run has populated state you can inspect it directly. The
+connection defaults below match the harness (see the configuration table
+above); override the env vars if you changed them.</p>
+<h3 id="test-runner-variables-and-locations">Test Runner Variables and
+Locations</h3>
+<p>The configuration table near the top of this file lists every tunable
+with its <em>shared-library</em> default (i.e. the values
+<code>run-system-02</code> uses). This section covers the harness-only
+bookkeeping that does <strong>not</strong> reach the server or agent:
+per-scenario file locations. Each harness sets a short tag
+<code>RUN_TAG</code> (<code>&lt;T&gt;</code>) before sourcing the shared
+lib; every transient file then lives under one per-scenario dir,
+<code>/tmp/mrva-&lt;T&gt;/</code>, so runs never clobber each other and
+<code>/tmp</code> stays tidy. On-disk stores (artifacts, staged DBs,
+MinIO objects) live under a distinct <code>MRVA_WORK_DIR</code>
+(<code>$W</code>).</p>
+<table>
+<colgroup>
+<col style="width: 18%" />
+<col style="width: 21%" />
+<col style="width: 44%" />
+<col style="width: 15%" />
+</colgroup>
+<thead>
+<tr>
+<th>Harness</th>
+<th><code>RUN_TAG</code> (<code>&lt;T&gt;</code>)</th>
+<th><code>MRVA_WORK_DIR</code> (<code>$W</code>)</th>
+<th>Storage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>run-system-02</code></td>
+<td><code>multi</code></td>
+<td><code>/tmp/mrva-standalone-multi</code></td>
+<td><code>filesystem</code></td>
+</tr>
+<tr>
+<td><code>run-system-03</code></td>
+<td><code>multisession</code></td>
+<td><code>/tmp/mrva-standalone-multisession</code></td>
+<td><code>minio</code></td>
+</tr>
+<tr>
+<td><code>run-system-04</code></td>
+<td><code>multilang</code></td>
+<td><code>/tmp/mrva-standalone-multilang</code></td>
+<td><code>minio</code></td>
+</tr>
+<tr>
+<td><code>run-system-05</code></td>
+<td><code>statusdl</code></td>
+<td><code>/tmp/mrva-standalone-statusdl</code></td>
+<td><code>minio</code></td>
+</tr>
+</tbody>
+</table>
+<p>Transient files (harness-only) — all under
+<code>/tmp/mrva-&lt;T&gt;/</code>, wiped by
+<code>reset</code>/<code>cleanup</code>:</p>
+<table>
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 31%" />
+<col style="width: 48%" />
+</colgroup>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Value</th>
+<th>What lives there</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MRVA_TMP_DIR</code></td>
+<td><code>/tmp/mrva-&lt;T&gt;</code></td>
+<td>the per-scenario dir holding all of below</td>
+</tr>
+<tr>
+<td><code>SERVER_LOG</code></td>
+<td><code>/tmp/mrva-&lt;T&gt;/server.log</code></td>
+<td>server + spawned-agents combined log</td>
+</tr>
+<tr>
+<td><code>SERVER_PID_FILE</code></td>
+<td><code>/tmp/mrva-&lt;T&gt;/server.pid</code></td>
+<td>server PID</td>
+</tr>
+<tr>
+<td><code>REQ_LOG</code></td>
+<td><code>/tmp/mrva-&lt;T&gt;/req.log</code></td>
+<td>CGA pack-build log</td>
+</tr>
+<tr>
+<td><code>SUBMIT_JSON</code></td>
+<td><code>/tmp/mrva-&lt;T&gt;/submit.json</code></td>
+<td>last submission request body</td>
+</tr>
+<tr>
+<td><code>STATE_FILE</code></td>
+<td><code>/tmp/mrva-&lt;T&gt;/state.env</code></td>
+<td>state handed between invocations (ids…)</td>
+</tr>
+<tr>
+<td><code>MINIO_LOG</code></td>
+<td><code>/tmp/mrva-&lt;T&gt;/minio.log</code></td>
+<td>MinIO server log (when storage=minio)</td>
+</tr>
+<tr>
+<td><code>MINIO_PID_FILE</code></td>
+<td><code>/tmp/mrva-&lt;T&gt;/minio.pid</code></td>
+<td>MinIO server PID (when storage=minio)</td>
+</tr>
+</tbody>
+</table>
+<p>On-disk stores (under <code>$W</code>; wiped by
+<code>reset</code>/<code>cleanup</code>):</p>
+<table>
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 19%" />
+<col style="width: 55%" />
+</colgroup>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Value</th>
+<th>What lives there</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MRVA_ARTIFACT_DIR</code></td>
+<td><code>$W/artifacts</code></td>
+<td>filesystem artifact store (packs + results)</td>
+</tr>
+<tr>
+<td><code>MRVA_QLDB_DIR</code></td>
+<td><code>$W/qldbs</code></td>
+<td>staged CodeQL databases</td>
+</tr>
+<tr>
+<td><code>MINIO_DATA_DIR</code></td>
+<td><code>$W/minio-data</code></td>
+<td>MinIO on-disk objects (when storage=minio)</td>
+</tr>
+<tr>
+<td><code>DOWNLOAD_DIR</code></td>
+<td><code>$W/downloads</code></td>
+<td>run-system-05 only: downloaded result zips</td>
+</tr>
+</tbody>
+</table>
+<p>Other harness paths (fixed, shared across scenarios), used only by
+the optional <code>ingest-*</code> SARIF phases:</p>
+<table>
+<colgroup>
+<col style="width: 22%" />
+<col style="width: 36%" />
+<col style="width: 40%" />
+</colgroup>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Value</th>
+<th>What it is</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DATA_LARGE_DIR</code></td>
+<td><code>data-large</code></td>
+<td>output tree for SARIF ingest</td>
+</tr>
+<tr>
+<td><code>SRFI</code></td>
+<td><code>$REPO_ROOT/sarif-ingest/bin/srfi</code></td>
+<td>path to the <code>srfi</code> SARIF tool</td>
+</tr>
+</tbody>
+</table>
+<p>Copy/paste: pick the harness you ran, then inspect its files:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># run-system-05 example (swap $W and $T for another harness via the table above).</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="va">W</span><span class="op">=</span>/tmp/mrva-standalone-statusdl</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="va">T</span><span class="op">=</span>statusdl</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="fu">tail</span> <span class="at">-n</span> 40 <span class="st">&quot;/tmp/mrva-</span><span class="va">${T}</span><span class="st">/server.log&quot;</span>   <span class="co"># server + agents</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="st">&quot;/tmp/mrva-</span><span class="va">${T}</span><span class="st">/state.env&quot;</span>           <span class="co"># session ids, PIDs, pack SHA1s</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="fu">ls</span> <span class="at">-R</span> <span class="st">&quot;/tmp/mrva-</span><span class="va">${T}</span><span class="st">&quot;</span> <span class="st">&quot;</span><span class="va">$W</span><span class="st">&quot;</span>              <span class="co"># transient files + on-disk stores</span></span></code></pre></div>
+<h3 id="object-storage-minio-via-mc">Object storage (MinIO) via
+<code>mc</code></h3>
+<p>The MinIO client is upstream <code>mc</code>; on this host the
+package installs the binary as <code>mcli</code>. These commands need
+the MinIO server running (only relevant when
+<code>MRVA_STANDALONE_STORAGE=minio</code>). Note that
+<code>run-system-03 stop</code> and <code>cleanup</code> shut MinIO
+down, so inspect while a run is up, or restart the server against the
+persisted data dir first (the objects survive on disk):</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Start MinIO against the persisted data (adjust the data dir to your work dir;</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="co"># run-system-03 defaults to /tmp/mrva-standalone-multisession/minio-data).</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="va">MINIO_ROOT_USER</span><span class="op">=</span>minioadmin <span class="va">MINIO_ROOT_PASSWORD</span><span class="op">=</span>minioadmin <span class="dt">\</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="ex">minio</span> server /tmp/mrva-standalone-multisession/minio-data <span class="at">--address</span> :9000 <span class="kw">&amp;</span></span></code></pre></div>
+<p>Then register an alias for the local server and list / fetch
+objects:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Register the local server as alias &quot;local&quot; (endpoint / access / secret).</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="ex">mcli</span> alias set local http://localhost:9000 minioadmin minioadmin</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Bucket list.</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="ex">mcli</span> ls local</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Bucket entries (recursive, with sizes) for the MRVA bucket.</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="ex">mcli</span> ls <span class="at">--recursive</span> local/mrvabucket</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Entry download: copy one object to the current directory ...</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="ex">mcli</span> cp local/mrvabucket/<span class="op">&lt;</span>object-key<span class="op">&gt;</span> ./</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="co"># ... or stream it to stdout.</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a><span class="ex">mcli</span> cat local/mrvabucket/<span class="op">&lt;</span>object-key<span class="op">&gt;</span></span></code></pre></div>
+<h3 id="postgresql-via-psql-or-pgcli">PostgreSQL via <code>psql</code>
+(or <code>pgcli</code>)</h3>
+<p><code>psql</code> is scriptable; <code>pgcli</code> gives the same
+access with autocompletion for interactive poking. Both honour
+<code>PGPASSWORD</code>:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">PGPASSWORD</span><span class="op">=</span>mrva            <span class="co"># POSTGRES_PASSWORD</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="va">PSQL</span><span class="op">=</span><span class="st">&quot;psql -h localhost -U </span><span class="va">$USER</span><span class="st"> -d mrvadev&quot;</span>   <span class="co"># or: pgcli -h localhost -U $USER mrvadev</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Table list.</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="va">$PSQL</span> <span class="at">-c</span> <span class="st">&#39;\dt&#39;</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Table schema for one table (columns, types, indexes).</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="va">$PSQL</span> <span class="at">-c</span> <span class="st">&#39;\d job_info&#39;</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Table contents.</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="va">$PSQL</span> <span class="at">-c</span> <span class="st">&#39;SELECT * FROM job_info;&#39;</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="va">$PSQL</span> <span class="at">-c</span> <span class="st">&#39;SELECT * FROM job_status;&#39;</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="va">$PSQL</span> <span class="at">-c</span> <span class="st">&#39;SELECT * FROM worker_pool;&#39;</span></span></code></pre></div>
+</body>
+</html>

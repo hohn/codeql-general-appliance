@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CGA Unified View</title>
+    <link rel="stylesheet" href="cgauv.css" />
+    <link rel="stylesheet" href="vid.css" />
+    <script src="vid-ui.js" defer></script>
+  </head>
+  <body data-vid-surface="unified">
+    <header class="panel unified-header">
+      <div>
+        <h1>CGA Unified View</h1>
+        <p id="workflow-meta">loading workflow...</p>
+      </div>
+      <nav>
+        <a id="workflow-state-link" target="_blank" rel="noopener"
+          >CGA Workflow State</a
+        >
+        <a id="sysview-link" target="_blank" rel="noopener">MRVA System View</a>
+        <a id="replay-link" target="_blank" rel="noopener">Replay</a>
+        <a id="dfg-link" target="_blank" rel="noopener">DFG</a>
+        <a id="cfg-link" target="_blank" rel="noopener">CFG</a>
+        <a id="source-link" target="_blank" rel="noopener">source</a>
+        <button id="reload" type="button">reload</button>
+        <select id="theme-select" aria-label="theme">
+          <option value="dark">dark</option>
+          <option value="light">light</option>
+          <option value="font-on-white">font on white</option>
+          <option value="minimalist-bw">minimalist b&amp;w</option>
+        </select>
+      </nav>
+    </header>
+
+    <section class="panel system-panel">
+      <div class="system-heading">
+        <button
+          id="collapse-system"
+          class="disclosure-button"
+          type="button"
+          aria-expanded="true"
+          aria-controls="system-body"
+          aria-label="collapse MRVA system summary"
+          title="collapse MRVA system summary"
+        >
+          &#9662;
+        </button>
+        <span>MRVA system summary</span>
+        <span id="system-availability" class="badge">loading</span>
+      </div>
+      <div id="system-body">
+        <div id="system-summary" class="summary-cards"></div>
+        <details class="system-more">
+          <summary>runtime details</summary>
+          <div id="system-detail" class="system-detail"></div>
+        </details>
+      </div>
+    </section>
+
+    <main class="workspace">
+      <aside class="panel flow-panel">
+        <div class="panel-heading">
+          <div class="flow-heading-title">
+            <button
+              id="collapse-all"
+              class="disclosure-button"
+              type="button"
+              aria-expanded="true"
+              aria-label="collapse all workflow stages"
+              title="collapse all workflow stages"
+            >
+              &#9662;
+            </button>
+            <h2>Workflow commands</h2>
+          </div>
+          <span id="step-count" class="badge"></span>
+        </div>
+        <div class="flow-tools">
+          <input
+            id="workflow-search"
+            type="search"
+            placeholder="filter workflow commands"
+            aria-label="filter workflow commands"
+          />
+          <select id="audience-filter" aria-label="filter by audience">
+            <option value="">all audiences</option>
+            <option value="user">user</option>
+            <option value="operator">operator</option>
+            <option value="system">system</option>
+          </select>
+          <button id="show-databases" type="button">databases</button>
+          <button id="show-queries" type="button">queries</button>
+        </div>
+        <div id="stage-list" class="stage-list"></div>
+      </aside>
+
+      <div
+        id="workflow-splitter"
+        class="splitter splitter-vertical"
+        role="separator"
+        aria-label="resize workflow and detail panes"
+        aria-orientation="vertical"
+        title="drag to resize; double-click to reset"
+        tabindex="0"
+      ></div>
+
+      <section class="right-column">
+        <section class="panel detail-panel">
+          <div
+            id="detail-heading"
+            class="panel-heading detail-heading"
+            role="button"
+            tabindex="0"
+            aria-label="reveal selected workflow command"
+            title="reveal the selected workflow command"
+          >
+            <div>
+              <h2 id="detail-title">Detail view</h2>
+              <p id="detail-subtitle">Select a workflow command.</p>
+            </div>
+            <span id="detail-status" class="badge"></span>
+          </div>
+          <div id="detail-body" class="detail-body empty">
+            Select a command on the left to inspect state, provenance, artifacts,
+            and relations.
+          </div>
+        </section>
+
+        <div
+          id="detail-splitter"
+          class="splitter splitter-horizontal"
+          role="separator"
+          aria-label="resize detail and transcript panes"
+          aria-orientation="horizontal"
+          title="drag to resize; double-click to reset"
+          tabindex="0"
+        ></div>
+
+        <section class="panel terminal-panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Command transcript</h2>
+              <p id="terminal-meta">No command selected.</p>
+            </div>
+          </div>
+          <pre id="terminal-output" tabindex="0">Select a command to view its captured output.</pre>
+        </section>
+      </section>
+    </main>
+
+    <script src="cgauv.js"></script>
+  </body>
+</html>

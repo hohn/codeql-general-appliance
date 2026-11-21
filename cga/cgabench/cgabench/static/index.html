@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>CGA Bench</title>
+    <link rel="stylesheet" href="bench.css" />
+    <link rel="stylesheet" href="vid.css" />
+    <link rel="stylesheet" href="vendor/xterm.css" />
+    <script src="vendor/xterm.js" defer></script>
+    <script src="vendor/addon-fit.js" defer></script>
+    <script src="vid-ui.js" defer></script>
+    <script src="assistant.js" defer></script>
+    <script src="bench.js" defer></script>
+  </head>
+  <body data-vid-surface="bench">
+    <header>
+      <div id="header-sidebar">
+        <button id="toggle-outline" type="button" data-presentation-control
+          aria-controls="bench-outline" aria-expanded="true"
+          aria-label="Hide navigation" title="Hide navigation" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+            <path d="M9 4v16M5.5 8h1M5.5 11h1"></path>
+          </svg>
+        </button>
+        <h1>CGA Bench</h1>
+      </div>
+      <div id="header-content">
+        <span id="experiment"></span>
+        <div id="header-actions">
+          <button id="reload" type="button" aria-label="Reload" title="Reload">
+            <svg class="reload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20 7v5h-5M20 12a8 8 0 1 0-2.3 5.7"></path>
+            </svg>
+            <span class="reload-label">Reload</span>
+          </button>
+          <details class="header-menu" id="view-menu">
+            <summary>View</summary>
+            <div class="header-menu-popup">
+              <button
+                id="collapse-assistant"
+                class="view-menu-item"
+                type="button"
+                title="Open the shared Copilot assistant in a separate window"
+              >Copilot assistant</button>
+              <a id="sysview-link" class="view-menu-item" target="_blank" rel="noopener">
+                <span id="system-availability"></span> system
+              </a>
+              <div class="appearance-options" role="group" aria-label="Appearance">
+                <span class="menu-label">Appearance</span>
+                <button type="button" class="view-menu-item" data-presentation="apple" data-presentation-control aria-pressed="false">Apple outline</button>
+                <button type="button" class="view-menu-item" data-presentation="classic" data-presentation-control aria-pressed="false">Classic</button>
+              </div>
+            </div>
+          </details>
+          <details class="header-menu" id="mode-menu">
+            <summary id="experiment-mode">Mode</summary>
+            <div class="header-menu-popup" role="group" aria-label="Experiment mode">
+              <button type="button" class="view-menu-item" data-mode="query-changes" aria-pressed="false">
+                Query changes (fixed databases)
+              </button>
+              <button type="button" class="view-menu-item" data-mode="database-changes" aria-pressed="false">
+                Database changes (fixed queries)
+              </button>
+            </div>
+          </details>
+        </div>
+      </div>
+    </header>
+    <p id="error" role="alert"></p>
+    <p id="assistant-error" role="alert"></p>
+    <section class="system-panel" aria-label="MRVA system summary">
+      <div class="section-heading">
+        <button
+          id="collapse-system"
+          class="disclosure-button"
+          type="button"
+          aria-expanded="true"
+          aria-controls="system-body"
+          aria-label="collapse MRVA system summary"
+          title="collapse MRVA system summary"
+        >
+          &#9662;
+        </button>
+        <h2>MRVA system summary</h2>
+      </div>
+      <div id="system-body">
+        <div id="system-summary" class="summary-cards"></div>
+        <div id="system-detail" class="system-detail"></div>
+      </div>
+    </section>
+    <section class="assistant-panel" aria-label="Copilot assistant" hidden>
+      <div class="section-heading">
+        <h2>Copilot assistant</h2>
+        <span id="assistant-status" role="status">Shared session in a separate window.</span>
+      </div>
+    </section>
+    <template id="assistant-popup">
+      <div id="assistant-body">
+        <p>
+          Starts with Bench; closing or reloading this window keeps the same session.
+          Normal Copilot trust and permission prompts appear here.
+          All windows share this assistant.
+        </p>
+        <div class="actions">
+          <button id="assistant-connect" type="button">Reconnect</button>
+          <button id="assistant-start" type="button" disabled>Start assistant</button>
+          <button id="assistant-stop" type="button" disabled>Stop assistant</button>
+        </div>
+        <div id="assistant-terminal" aria-label="Copilot terminal"></div>
+      </div>
+    </template>
+    <main class="bench-workspace">
+      <nav id="bench-outline" class="outline-panel" aria-label="Bench outline" hidden>
+        <h2>Contents</h2>
+        <ul id="outline-items"></ul>
+      </nav>
+      <section id="selection-panel" class="selection-panel" aria-label="Selected outline content" hidden>
+        <div class="section-heading"><h2 id="selection-title">Sessions</h2></div>
+        <div id="selection-body">
+          <p id="outline-overview" hidden>Select an item in the outline to view its contents. Commands run only when you click their action button.</p>
+        </div>
+      </section>
+      <section class="workflow-panel" aria-label="Workflow commands">
+        <div class="section-heading">
+          <button
+            id="collapse-workflow"
+            class="disclosure-button"
+            type="button"
+            aria-expanded="true"
+            aria-controls="workflow-body"
+            aria-label="collapse workflow commands"
+            title="collapse workflow commands"
+          >
+            &#9662;
+          </button>
+          <h2>Workflow commands</h2>
+        </div>
+        <div id="workflow-body" class="workflow-body">
+          <div id="infrastructure-card" class="workflow-card">
+            <div class="topic-heading">
+              <button
+                id="collapse-infrastructure"
+                class="disclosure-button"
+                type="button"
+                aria-expanded="true"
+                aria-controls="infrastructure-body"
+                aria-label="collapse infrastructure commands"
+                title="collapse infrastructure commands"
+              >
+                &#9662;
+              </button>
+              <h3>Infrastructure</h3>
+            </div>
+            <div id="infrastructure-body" class="infrastructure-controls">
+              <div class="infrastructure-group" role="group" aria-labelledby="setup-heading">
+                <h4 id="setup-heading">setup</h4>
+                <div class="actions">
+                  <button data-phase="setup">Prepare services</button
+                  ><button data-phase="check">Check services</button
+                  ><button data-phase="stop">Stop services</button>
+                  <button id="show-infrastructure" type="button">
+                    View infrastructure
+                  </button>
+                </div>
+              </div>
+              <div class="infrastructure-group" role="group" aria-labelledby="maintenance-heading">
+                <h4 id="maintenance-heading">Maintenance</h4>
+                <div id="maintenance" class="actions"></div>
+              </div>
+            </div>
+          </div>
+          <div
+            id="sessions-card"
+            class="workflow-card experiment-grid"
+            role="region"
+            aria-label="Experiment grid"
+          >
+            <div class="topic-heading">
+              <button
+                id="collapse-sessions"
+                class="disclosure-button"
+                type="button"
+                aria-expanded="true"
+                aria-controls="sessions-body"
+                aria-label="collapse sessions"
+                title="collapse sessions"
+              >
+                &#9662;
+              </button>
+              <h3>Sessions</h3>
+            </div>
+            <div id="sessions-body">
+              <p id="mode-guidance">Choose an experiment mode in the Mode menu before preparing sessions.</p>
+              <p id="mode-status" role="status"></p>
+              <form id="new-session">
+                <button>Add session</button>
+              </form>
+              <div class="table-scroll">
+                <table class="session-grid" aria-label="Session stages">
+                  <thead id="grid-head"></thead>
+                  <tbody id="grid"></tbody>
+                </table>
+              </div>
+              <p id="session-status-legend" class="session-status-legend" hidden>
+                <span aria-hidden="true">&#9675;</span> Empty / blocked
+                &middot; <span aria-hidden="true">&#9680;</span> Running
+                &middot; <span aria-hidden="true">&#10003;</span> Complete
+                &middot; <span aria-hidden="true">&#215;</span> Failed
+              </p>
+            </div>
+          </div>
+          <div id="comparison-card" class="workflow-card">
+            <div class="topic-heading">
+              <button
+                id="collapse-comparison"
+                class="disclosure-button"
+                type="button"
+                aria-expanded="true"
+                aria-controls="comparison-body"
+                aria-label="collapse comparison"
+                title="collapse comparison"
+              >
+                &#9662;
+              </button>
+              <h3>Comparison</h3>
+            </div>
+            <div id="comparison-body" class="comparison-controls">
+              <button id="compare">Compare selected (or all complete)</button>
+              <button id="show-comparison" type="button">
+                View comparison
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+      <div
+        id="workflow-splitter"
+        class="splitter"
+        role="separator"
+        aria-label="resize workflow and detail panes"
+        aria-orientation="vertical"
+        aria-controls="workflow-body detail-panel"
+        tabindex="0"
+        title="drag to resize; double-click to reset"
+      ></div>
+      <div
+        id="detail-splitter"
+        class="splitter"
+        role="separator"
+        aria-label="resize selected content and detail panes"
+        aria-orientation="horizontal"
+        aria-controls="selection-panel detail-panel"
+        tabindex="0"
+        title="drag to resize; double-click to reset"
+        hidden
+      ></div>
+      <section id="detail-panel" class="detail-panel" aria-label="Detail view">
+        <p id="detail-placeholder" hidden>Select a session status or a View detail action above to inspect it here.</p>
+        <div class="section-heading">
+          <h2 id="address">Detail: Infrastructure</h2>
+        </div>
+        <div class="detail-body">
+          <div
+            id="infrastructure-detail"
+            role="region"
+            aria-label="Infrastructure detail"
+          >
+            <h3>Infrastructure status</h3>
+            <p id="infrastructure-status"></p>
+            <p id="infrastructure-action-status" role="status"></p>
+            <p id="infrastructure-error" role="alert"></p>
+          </div>
+          <div           id="sysview-detail"
+          role="region"
+          aria-label="MRVA system view"
+          hidden
+          >
+          <p id="sysview-error" role="alert"></p>
+          <iframe id="sysview-frame" title="Read-only MRVA system view"
+            sandbox="allow-scripts allow-same-origin" referrerpolicy="no-referrer"></iframe>
+          </div>
+          <div
+          id="cell-detail" role="region" aria-label="Cell detail" hidden>
+            <p id="input-role"></p>
+            <div id="session-evidence" class="session-evidence">
+              <div class="session-tabs" role="tablist" aria-label="Session evidence">
+                <button id="session-tab-D" type="button" role="tab" aria-selected="true" aria-controls="session-panel-D" data-session-tab="D">Databases</button>
+                <button id="session-tab-Q" type="button" role="tab" aria-selected="false" aria-controls="session-panel-Q" tabindex="-1" data-session-tab="Q">Queries</button>
+                <button id="session-tab-R" type="button" role="tab" aria-selected="false" aria-controls="session-panel-R" tabindex="-1" data-session-tab="R">Result summary</button>
+                <button id="session-tab-F" type="button" role="tab" aria-selected="false" aria-controls="session-panel-F" tabindex="-1" data-session-tab="F">Findings</button>
+              </div>
+              <div id="session-panel-D" class="session-evidence-panel" role="tabpanel" aria-labelledby="session-tab-D" tabindex="0"></div>
+              <div id="session-panel-Q" class="session-evidence-panel" role="tabpanel" aria-labelledby="session-tab-Q" tabindex="0" hidden></div>
+              <div id="session-panel-R" class="session-evidence-panel" role="tabpanel" aria-labelledby="session-tab-R" tabindex="0" hidden></div>
+              <div id="session-panel-F" class="session-evidence-panel" role="tabpanel" aria-labelledby="session-tab-F" tabindex="0" hidden>
+                <h3 id="findings-heading">Findings</h3>
+                <p id="findings-summary"></p>
+                <div id="findings-link"></div>
+                <p id="result-status" role="status"></p>
+                <p id="result-error" role="alert"></p>
+                <div class="table-scroll">
+                  <table aria-label="Findings preview">
+                    <thead id="result-head"></thead>
+                    <tbody id="result-rows"></tbody>
+                  </table>
+                </div>
+              </div>
+              <p id="session-evidence-error" role="alert"></p>
+            </div>
+            <div id="cell-elements" aria-label="Stage elements"></div>
+            <form id="clone-input" hidden>
+              <label
+                >Clone from session
+                <select name="from_session" required></select></label
+              ><button>Clone fixed input</button>
+            </form>
+            <div id="workspace" hidden>
+              <h3>Input preparation</h3>
+              <div id="database-input-source" class="preparation-path" hidden>
+                <span>Preparation path</span>
+                <span>Read existing database catalogue</span>
+              </div>
+              <label id="query-input-source"
+                >Preparation path
+                <select id="input-source">
+                  <option value="list">Read existing query library</option>
+                  <option value="user">Write query and index</option>
+                </select></label
+              >
+              <div id="catalogue-discovery" hidden>
+                <p id="catalogue-help">
+                  Database catalogues are SQLite files, typically named
+                  metadata.sql, not SQL scripts or database archives. Each row
+                  describes a prebuilt CodeQL database and its download
+                  location. Obtain a catalogue from a database collection
+                  provider. The suggested cgadl/db-collection.global catalogue
+                  is a local source for an existing collection; Bench only
+                  imports it.
+                </p>
+                <div class="actions">
+                  <label
+                    >Discovered catalogues
+                    <select
+                      id="catalogue-options"
+                      aria-describedby="catalogue-help catalogue-discovery-status"
+                    >
+                      <option value="">Choose a discovered catalogue</option>
+                    </select></label
+                  ><button id="rescan-catalogues" type="button">
+                    Rescan catalogues
+                  </button>
+                </div>
+                <div id="catalogue-discovery-status" role="status"></div>
+              </div>
+              <div id="database-preparation" hidden>
+                <form id="load-catalogue">
+                  <label
+                    >Database catalogue path or URL
+                    <input
+                      name="path"
+                      aria-describedby="catalogue-help"
+                      required /></label
+                  ><button>Load database catalogue</button>
+                </form>
+                <p id="catalogue-status"></p>
+              </div>
+              <div id="query-preparation" hidden>
+                <form id="index-library">
+                  <label
+                    >Query directory <input name="directory" required /></label
+                  ><button>Index query library</button>
+                </form>
+                <p id="library-status"></p>
+              </div>
+              <form id="copy-query" hidden>
+                <label
+                  >Copy query source from
+                  <select name="from_session">
+                    <option value="library">Selected library query</option>
+                  </select></label
+                >
+                <label
+                  >New draft directory
+                  <input name="directory" required /></label
+                ><button>Copy to editable draft</button>
+              </form>
+              <div id="user-query" hidden>
+                <form id="create-query">
+                  <label
+                    >Query name <input name="name" value="MyQuery" required
+                  /></label>
+                  <label
+                    >Language
+                    <select name="language">
+                      <option>cpp</option>
+                      <option>python</option>
+                      <option>javascript</option>
+                      <option>java</option>
+                      <option>go</option>
+                      <option>csharp</option>
+                      <option>ruby</option>
+                      <option>swift</option>
+                    </select></label
+                  >
+                  <label
+                    >New directory <input name="directory" required /></label
+                  ><button>Create query workspace</button>
+                </form>
+                <p>
+                  Creates an editable placeholder query, a pinned pack
+                  configuration, and a README. The placeholder finds nothing;
+                  refine and validate it before analysis.
+                </p>
+                <div id="query-editor" hidden>
+                  <h3 id="query-file"></h3>
+                  <p>
+                    Saving updates your draft. Choose it from the table below to
+                    accept it for analysis.
+                  </p>
+                  <form id="save-query">
+                    <label
+                      >Query source
+                      <textarea
+                        name="source"
+                        rows="14"
+                        spellcheck="false"
+                        required
+                      ></textarea></label
+                    ><button>Save query</button>
+                  </form>
+                  <details>
+                    <summary>Pack configuration</summary>
+                    <pre id="pack-manifest"></pre>
+                  </details>
+                </div>
+              </div>
+            </div>
+            <div id="selection-workspace" hidden>
+              <div id="library-picker">
+                <form id="collection-search">
+                  <label
+                    >Find substring in library metadata
+                    <input
+                      name="search"
+                      type="search"
+                      placeholder="Substring in any metadata column"
+                      aria-describedby="collection-search-help" /></label
+                  ><button>Find</button>
+                </form>
+                <p id="collection-search-help">
+                  Matches a literal substring across all library metadata
+                  columns. Matching is case-insensitive for ASCII letters.
+                </p>
+                <p id="collection-status"></p>
+                <div class="table-scroll">
+                  <table>
+                    <thead id="collection-head"></thead>
+                    <tbody id="collection-rows"></tbody>
+                  </table>
+                </div>
+                <div class="actions">
+                  <button id="previous-page">Previous</button
+                  ><button id="next-page">Next</button
+                  ><button id="use-selection">Use selection</button
+                  ><span id="selection-count"></span>
+                </div>
+              </div>
+              <form id="work">
+                <label>Development note <input name="note" required /></label
+                ><button>Record note</button>
+              </form>
+            </div>
+            <div
+              id="cell-status"
+              class="detail-card"
+              role="status"
+              aria-labelledby="status-heading"
+              hidden
+            >
+              <h3 id="status-heading">Status</h3>
+              <p id="requirement"></p>
+              <p id="artifact-summary"></p>
+            </div>
+            <h3>Stage history</h3>
+            <ul id="history"></ul>
+          </div>
+          <div
+            id="comparison-detail"
+            role="region"
+            aria-label="Comparison"
+            hidden
+          >
+            <p id="comparison-inputs"></p>
+            <div id="comparison"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

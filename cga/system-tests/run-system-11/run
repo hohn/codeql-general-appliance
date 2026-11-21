@@ -1,0 +1,180 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+
+usage() {
+    cat <<EOF
+usage: $0 PHASE [PHASE ...]
+
+  prepare    freeze 200+ distinct C/C++ databases and the Fprintf query pack
+  preflight  check infrastructure and reclaim configured ports (mutating)
+  reset      reset MRVA execution state, retaining prepared inputs/reports
+  build      build MRVA server and agent
+  start      start MRVA and its database HTTP server
+  submit     submit the frozen selection for each configured user/session
+  observe    sample /sysview and /sysview/data without waiting for jobs
+  wait       poll every job to a terminal outcome or the deadline
+  verify     verify job accounting/completion; report successes and failures
+  check      separate strict server-log error gate (may fail on job errors)
+  info       show submissions, infrastructure, and observation locations
+  stop       stop services, retaining inputs, execution state, and reports
+  cleanup    stop services and remove MRVA runtime state, retaining evidence
+  all        prepare preflight reset build start submit observe wait verify
+
+Defaults: CGA_SYSTEM11_ROOT=<checkout>/.cga-system-11; USERS=1; SESSIONS=1.
+USERS/SESSIONS configure submit; OBSERVE_SAMPLES=60; OBSERVE_INTERVAL=1;
+POLL_INTERVAL=5; POLL_DEADLINE_SECS=14400. See the local README.
+Shared ports/PostgreSQL are not isolated. Only run one MRVA scenario at a time.
+EOF
+}
+
+for phase in "${@:-help}"; do
+    case "$phase" in
+        help|-h|--help) usage; exit 0 ;;
+        prepare|preflight|reset|build|start|submit|observe|wait|verify|check|info|stop|cleanup|all) ;;
+        *) usage >&2; exit 2 ;;
+    esac
+done
+
+TEST_ROOT="${CGA_SYSTEM11_ROOT-$REPO_ROOT/.cga-system-11}"
+mkdir -p "$TEST_ROOT"
+TEST_ROOT="$(cd "$TEST_ROOT" && pwd)"
+export CGA_ROOT="$REPO_ROOT/cga"
+export PATH="$CGA_ROOT:$PATH"
+export CGA_WORKFLOW_ROOT="${CGA_TEST_WORKFLOW-$TEST_ROOT/analysis}"
+export CGA_TMPDIR="${CGA_TMPDIR-$TEST_ROOT/scratch}"
+export TMPDIR="${TMPDIR-$TEST_ROOT/tmp}"
+mkdir -p "$TMPDIR"
+export RUN_TAG="${RUN_TAG-cga-system-11}"
+export MRVA_WORK_DIR="${MRVA_WORK_DIR-$TEST_ROOT/mrva}"
+export MRVA_TMP_DIR="${MRVA_TMP_DIR-$TEST_ROOT/services}"
+export MRVA_DB_SERVE_DIR="${MRVA_DB_SERVE_DIR-$TEST_ROOT/databases}"
+export PORT="${PORT-8081}"
+export CGA_MRVA_SERVER="${CGA_MRVA_SERVER-http://127.0.0.1:$PORT}"
+export MRVA_POOL_MAX_WORKERS="${MRVA_POOL_MAX_WORKERS-2}"
+export CODEQL_JAVA_HOME="${CODEQL_JAVA_HOME-/usr}"
+export MRVA_DEBUG_SYSVIEW="${MRVA_DEBUG_SYSVIEW-true}"
+export MRVA_SYSVIEW_DUMP_PATH="${MRVA_SYSVIEW_DUMP_PATH-$TEST_ROOT/sysview.jsonl}"
+if [ -n "${CODEQL_CLI_PATH:-}" ]; then
+    export PATH="$(dirname "$CODEQL_CLI_PATH"):$PATH"
+    export CGA_CGAQL_CODEQL="${CGA_CGAQL_CODEQL-$CODEQL_CLI_PATH}"
+fi
+CATALOGUE="${CGA_SYSTEM11_CATALOGUE-$CGA_ROOT/cgadl/db-collection.global/metadata.sql}"
+SELECTION_SQL="${CGA_SYSTEM11_SELECTION_SQL-$SCRIPT_DIR/databases.sql}"
+INPUTS="$TEST_ROOT/inputs.json"
+WORKLOAD="$TEST_ROOT/workload.tsv"
+OBSERVER="$SCRIPT_DIR/observe.py"
+
+mkdir -p "$CGA_WORKFLOW_ROOT"
+cd "$CGA_WORKFLOW_ROOT"
+case "$1" in
+    prepare|all) ;;
+    *)
+        [ -f .cga/config ] || {
+            echo "ERROR: run prepare first (no workflow at $CGA_WORKFLOW_ROOT)" >&2
+            exit 1
+        }
+        ;;
+esac
+
+phase_prepare() {
+    [ ! -f "$INPUTS" ] || {
+        echo "ERROR: inputs already frozen at $INPUTS; reuse them or choose a new root" >&2
+        return 1
+    }
+    if [ ! -f .cga/config ]; then cga init .; fi
+    cga chain start --name "sysview-$(date -u +%Y%m%dT%H%M%SZ)-$$"
+    cga dl getmeta "$CATALOGUE"
+    cga dl sql --user sysview --query-file "$SELECTION_SQL"
+    python3 "$OBSERVER" selection
+    phase_storage
+    cga dl download --output-dir "$MRVA_DB_SERVE_DIR"
+    cga ql index "$REPO_ROOT/sample-query"
+    cga ql select --user sysview relpath Fprintf.ql
+    cga ql pack
+    python3 "$OBSERVER" freeze --inputs "$INPUTS"
+    cga artifact add "$INPUTS" --name sysview-inputs
+}
+
+phase_storage() {
+    python3 "$OBSERVER" storage "$TEST_ROOT" "$CGA_WORKFLOW_ROOT" \
+        "$CGA_TMPDIR" "$TMPDIR" "$MRVA_DB_SERVE_DIR" "$MRVA_WORK_DIR" "$MRVA_TMP_DIR"
+}
+
+phase_start() {
+    phase_storage
+    cga mx start
+}
+
+phase_reset() {
+    cga mx reset
+    cga mr reset
+    rm -f "$WORKLOAD"
+}
+
+phase_submit() {
+    python3 "$OBSERVER" ready --inputs "$INPUTS" --check-archives
+    [ ! -e "$WORKLOAD" ] || {
+        echo "ERROR: workload already planned; use status/wait, not resubmission" >&2
+        return 1
+    }
+    local users="${USERS-1}" sessions="${SESSIONS-1}" u s name user
+    [[ "$users" =~ ^[1-9][0-9]*$ && "$sessions" =~ ^[1-9][0-9]*$ ]] || {
+        echo "ERROR: USERS and SESSIONS must be positive integers" >&2
+        return 2
+    }
+    for ((u=1; u<=users; u++)); do
+        for ((s=1; s<=sessions; s++)); do
+            printf 'sysview-u%s-s%s\tsysview-u%s\n' "$u" "$s" "$u"
+        done
+    done > "$WORKLOAD"
+    cga artifact add "$WORKLOAD" --name sysview-workload
+    while IFS=$'\t' read -r name user; do
+        cga mr submit --name "$name" --user "$user" --language cpp
+    done < "$WORKLOAD"
+}
+
+phase_observe() {
+    python3 "$OBSERVER" observe --output-dir "$TEST_ROOT/observations" \
+        --samples "${OBSERVE_SAMPLES-60}" --interval "${OBSERVE_INTERVAL-1}" \
+        --request-timeout "${OBSERVE_REQUEST_TIMEOUT-10}"
+}
+
+phase_wait() {
+    python3 "$OBSERVER" wait --inputs "$INPUTS" --workload "$WORKLOAD" \
+        --poll-seconds "${POLL_INTERVAL-5}" \
+        --timeout-seconds "${POLL_DEADLINE_SECS-14400}"
+}
+
+phase_verify() {
+    python3 "$OBSERVER" verify --inputs "$INPUTS" --workload "$WORKLOAD"
+}
+
+phase_info() {
+    cga mx info
+    cga mr info
+    printf 'sysview: %s/sysview\ninputs: %s\nworkload: %s\nobservations: %s/observations\n' \
+        "$CGA_MRVA_SERVER" "$INPUTS" "$WORKLOAD" "$TEST_ROOT"
+}
+
+phase_all() {
+    phase_prepare
+    cga mx preflight
+    phase_reset
+    cga mx build
+    phase_start
+    phase_submit
+    phase_observe
+    phase_wait
+    phase_verify
+    printf 'MRVA remains running: %s/sysview\n' "$CGA_MRVA_SERVER"
+}
+
+for phase in "$@"; do
+    case "$phase" in
+        preflight|build|check|stop|cleanup) cga mx "$phase" ;;
+        *) "phase_$phase" ;;
+    esac
+done

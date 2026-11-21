@@ -1,0 +1,12 @@
+---
+sourceLocationPrefix: /mnt/common/tank/src-debian-12/libgmpada-1.5
+baselineLinesOfCode: 55
+unicodeNewlines: false
+columnKind: utf8
+primaryLanguage: cpp
+creationMetadata:
+  cliVersion: 2.23.8
+  creationTime: 2026-01-17T21:19:10.918917425Z
+overlayBaseDatabase: false
+overlayDatabase: false
+finalised: true

@@ -1,0 +1,476 @@
+#!/usr/bin/env bash
+# cga -- unified dispatcher for the CGA tool collection.
+#
+# Usage:
+#   cga <tool> [subcommand] [args...]     e.g. cga catalog verify
+#   cga init [directory]
+#   cga chain <start|list|show|...>
+#   cga db <plan|build|validate> [args...]
+#   cga llm context <bench|unified> [args...]
+#   cga run [start|stop|status|build|seed]
+#   cga view [--capture|--export] ...
+#   cga serve [start|stop|status|build|seed|outputs]
+#
+# Every tool has a short acronym and an explicit long name; either works.
+# Tools are the per-directory binaries under this collection (cga/<tool>/bin/<tool>).
+#
+# Hidden helpers (used by bash completion; stable interface):
+#   cga __tools           list every token (short and long)
+#   cga __subs   <token>  list a tool's subcommands
+#   cga __long   <token>  print the canonical long name for a token
+#   cga __sample_steps   list sample 05 step numbers and names
+set -euo pipefail
+
+SELF="$(readlink -f "${BASH_SOURCE[0]}")"
+COLL="$(cd "$(dirname "$SELF")" && pwd)"   # the cga/ collection directory
+
+# Single source of truth. Fields: short long tool [subcommands...]
+# 'serve' is the aggregate launcher (no bin of its own).
+_spec() {
+    cat <<'SPEC'
+init init cgawf
+h help help overview sample s sample-05 getting-started bash-tutorial-sql mrva-flow bench-intro shell-workflow two-user-standalone two-user-workflow zlib-study
+status status cgawf
+root root cgawf
+doctor doctor cgawf
+cn chain cgawf start list ls current switch show rename
+st state cgawf show diff validate export import
+step step cgawf show diff
+log log cgawf
+tree tree cgawf show
+config config cgawf list get set unset path
+store store cgawf show set check verify
+artifact artifact cgawf add list show verify path materialize
+run run run start stop status build seed
+view view cga-view
+uv unified-view cgauv start stop status outline search
+gateway gateway gateway start status stop
+public-html public-html public-html setup
+llm llm llm context cb cu
+show show vid
+open open vid
+related related vid
+serve serve serve start stop status build seed outputs
+dl db-lib cgadl getmeta keys values list select sql download info serve
+ql query-lib cgaql index keys values list select sql pack clean info serve
+a assist cgaassist query-writing q database-build d
+bench bench cgabench init session infrastructure catalogue library choose-databases choose-query create-query edit-query database query work tool advance compare show info serve stop
+cc coder cgacc install info serve
+mr mrva-request cgamr submit attach status download run info verify reset serve
+mu user-view cgamu serve
+si sarif-ingest cgasi ingest tolite toduck keys values list search sql info verify serve
+ex export cgaex info serve
+dfg data-flow-graph cgadfg info show
+cfg control-flow-graph cgadfg info show
+mx local-mrva cgamx preflight reset build start logs check stop cleanup info cmd
+sv header cgasv serve
+vw dashboard-view cga-view
+cv cve cgacv import validate select expand info serve
+sp src-prep cgasp plan fetch adopt info serve
+db database group plan build validate zip
+db-build db-build cgadb
+db-plan db-plan cgadbplan
+db-validate db-validate cgadbvalidate query info
+cat catalog cgacatalog create merge verify export info
+cq codeql cgacodeql check info
+qg query-gen cgaqg materialize index info serve
+pg postgres cgapg init start createdb check stop info
+ds db-serve cgadbserve start check stop info
+ms mrva-server cgamrva start check stop info
+ctl control cgactl db-init matrix jobs-load builder-register claim renew phase finish retry job-config jobs-config snapshot-register resource-profile-set requeue-expired status serve measure
+SPEC
+}
+
+# _lookup <token> -> spec line whose short or long field matches; nonzero if none.
+_lookup() {
+    local tok="$1"
+    _spec | awk -v t="$tok" '$1==t || $2==t {print; found=1} END{exit !found}'
+}
+
+_all_tokens() { _spec | awk '{print $1; if ($1!=$2) print $2}'; }
+_subs() {
+    local row
+    if row="$(_lookup "$1")"; then
+        printf '%s\n' "$row" | awk '{for(i=4;i<=NF;i++) print $i}'
+    else
+        PYTHONPATH="$COLL/cgalib" python3 -c \
+            'import sys; from tutorial_help import BY_NAME
+if sys.argv[1] not in BY_NAME:
+    raise SystemExit(1)
+print(" ".join(name for name, title in BY_NAME[sys.argv[1]].chapters))' "$1"
+    fi
+}
+_long()       { _lookup "$1" | awk '{print $2}'; }
+
+usage() {
+    python3 "$COLL/cgalib/dispatcher_help.py" "" "$@"
+}
+
+cmd_serve() {
+    local action="${1:-start}"
+    case "$action" in
+        start|stop|status)
+            exec python3 "$COLL/cgalib/viewers.py" "$@"
+            ;;
+        seed)
+            "$COLL/cga-run" "$action"
+            "$COLL/cga-prep-run" "$action"
+            ;;
+        build)   "$COLL/cga-run" build ;;      # only the analysis side builds Go
+        outputs) "$COLL/cga-prep-run" outputs ;;
+        *) echo "usage: cga serve [start|stop|status|build|seed|outputs]" >&2; return 2 ;;
+    esac
+}
+
+cmd_run() {
+    local action="${1:-start}"
+    case "$action" in
+        -h|--help|help)
+            echo "usage: cga run [start|stop|status|build|seed]"
+            return 0
+            ;;
+        start|stop|status|build|seed)
+            exec "$COLL/cga-run" "$action" "${@:2}"
+            ;;
+        *)
+            echo "usage: cga run [start|stop|status|build|seed]" >&2
+            return 2
+            ;;
+    esac
+}
+
+cmd_view() {
+    exec "$COLL/cga-view/bin/cga-view" "$@"
+}
+
+cmd_unified_view() {
+    local action="${1:-start}"
+    case "$action" in
+        start|stop|status)
+            exec "$COLL/cga-uv-run" "$@"
+            ;;
+        outline|search)
+            exec "$COLL/cgauv/bin/cgauv" "$@"
+            ;;
+        -h|--help|help)
+            cat <<'EOF'
+usage: cga uv [start|stop|status]
+       cga uv outline [--format markdown|json] [--detail summary|steps]
+       cga uv search [QUERY] [--match-tag TAG] [--kind KIND]
+EOF
+            ;;
+        *)
+            echo "cga uv: unknown command '$action'" >&2
+            return 2
+            ;;
+    esac
+}
+
+db_usage() {
+    python3 "$COLL/cgalib/dispatcher_help.py" db
+}
+
+workflow_exists() {
+    [ "${CGA_WORKFLOW_ACTIVE:-0}" != 1 ] || return 1
+    if [ -n "${CGA_DIR:-}" ]; then
+        [ -f "$CGA_DIR/config" ]
+        return
+    fi
+    local probe="$PWD"
+    while [ "$probe" != / ] && [ ! -f "$probe/.cga/config" ]; do
+        probe="$(dirname "$probe")"
+    done
+    [ -f "$probe/.cga/config" ]
+}
+
+CGA_COMMON_TAGS=()
+CGA_CLEAN_ARGS=()
+
+extract_common_tags() {
+    CGA_CLEAN_ARGS=()
+    local scan=1
+    while [ "$#" -gt 0 ]; do
+        if [ "$scan" -eq 0 ]; then
+            CGA_CLEAN_ARGS+=("$1")
+            shift
+            continue
+        fi
+        case "$1" in
+            --)
+                scan=0
+                CGA_CLEAN_ARGS+=("$1")
+                shift
+                ;;
+            --tag)
+                [ "$#" -ge 2 ] || {
+                    echo "cga: --tag requires a value" >&2
+                    return 2
+                }
+                CGA_COMMON_TAGS+=("$2")
+                shift 2
+                ;;
+            --tag=*)
+                CGA_COMMON_TAGS+=("${1#--tag=}")
+                shift
+                ;;
+            *)
+                CGA_CLEAN_ARGS+=("$1")
+                shift
+                ;;
+        esac
+    done
+}
+
+reject_common_tags() {
+    if [ "${#CGA_COMMON_TAGS[@]}" -gt 0 ]; then
+        echo "cga: --tag applies only to recorded CGAST filter commands" >&2
+        return 2
+    fi
+}
+
+workflow_run() {
+    local display_token="$1" display_action="$2" executable="$3"
+    shift 3
+    local args=(run --display-token "$display_token")
+    if [ -n "$display_action" ]; then
+        args+=(--display-action "$display_action")
+    fi
+    local tag
+    for tag in "${CGA_COMMON_TAGS[@]}"; do
+        args+=(--tag "$tag")
+    done
+    args+=(--source-step "${CGA_SOURCE_STEP:-interactive}" -- "$executable" "$@")
+    exec "$COLL/cgawf/bin/cgawf" "${args[@]}"
+}
+
+main() {
+    local tok
+    while [ "$#" -gt 0 ]; do
+        case "$1" in
+            -C)
+                [ "$#" -ge 2 ] || {
+                    echo "cga: -C requires a directory" >&2
+                    return 2
+                }
+                cd "$2"
+                shift 2
+                ;;
+            --cga-dir)
+                [ "$#" -ge 2 ] || {
+                    echo "cga: --cga-dir requires a directory" >&2
+                    return 2
+                }
+                export CGA_DIR="$2"
+                shift 2
+                ;;
+            --store)
+                [ "$#" -ge 2 ] || {
+                    echo "cga: --store requires a root" >&2
+                    return 2
+                }
+                export CGA_OBJECT_STORE="$2"
+                shift 2
+                ;;
+            --tag)
+                [ "$#" -ge 2 ] || {
+                    echo "cga: --tag requires a value" >&2
+                    return 2
+                }
+                CGA_COMMON_TAGS+=("$2")
+                shift 2
+                ;;
+            --tag=*) CGA_COMMON_TAGS+=("${1#--tag=}"); shift ;;
+            --json) export CGA_OUTPUT_JSON=1; shift ;;
+            --quiet) export CGA_QUIET=1; shift ;;
+            --verbose) export CGA_VERBOSE=1; shift ;;
+            *) break ;;
+        esac
+    done
+    tok="${1:-}"
+    extract_common_tags "$@" || return $?
+    set -- "${CGA_CLEAN_ARGS[@]}"
+    local help_requested=0 argument
+    for argument in "${@:2}"; do
+        case "$argument" in
+            --) break ;;
+            -h|--help) help_requested=1; break ;;
+        esac
+    done
+    if [ "$help_requested" -eq 1 ] || [ "${2:-}" = help ]; then
+        local help_family=""
+        case "$tok" in
+            run|serve) help_family="$tok" ;;
+            uv|unified-view)
+                case "${2:-}" in
+                    outline|search) ;;
+                    *) help_family=uv ;;
+                esac
+                ;;
+            mu|user-view) help_family=mu ;;
+            sv|header) help_family=sv ;;
+        esac
+        if [ -n "$help_family" ]; then
+            reject_common_tags || return $?
+            exec python3 "$COLL/cgalib/dispatcher_help.py" "$help_family" "${@:2}"
+        fi
+    fi
+    case "$tok" in
+        ""|-h|--help|-s|-hs|-sh)
+            reject_common_tags || return $?
+            usage "$@"
+            return $?
+            ;;
+        h|help)
+            reject_common_tags || return $?
+            shift
+            if [ "$#" -eq 0 ]; then usage; return 0; fi
+            exec python3 "$COLL/cgalib/help_view.py" "$@"
+            ;;
+        a|assist)
+            shift
+            if [ "$help_requested" -eq 1 ]; then
+                exec "$COLL/cgaassist/bin/cgaassist" "$@"
+            fi
+            if [ "${2:-}" = start ]; then
+                reject_common_tags || return $?
+                exec "$COLL/cgaassist/bin/cgaassist" "$@"
+            fi
+            if ! workflow_exists; then
+                echo "cga assist: initialize a workflow with cga init, or use cga a q start DIRECTORY for query authoring" >&2
+                return 2
+            fi
+            workflow_run "$tok" "" "$COLL/cgaassist/bin/cgaassist" "$@"
+            ;;
+        __tools) _all_tokens; return 0 ;;
+        __spec) _spec; return 0 ;;
+        __sample_steps)
+            PYTHONPATH="$COLL/cgalib" python3 -c \
+                'from sample_help import STEPS; print(" ".join(token for step in STEPS for token in (step.number, step.name)))'
+            return 0
+            ;;
+        __subs)  shift; _subs "${1:-}"; return 0 ;;
+        __long)  shift; _long "${1:-}"; return 0 ;;
+        run)     reject_common_tags || return $?; shift; cmd_run "$@"; return $? ;;
+        view)    reject_common_tags || return $?; shift; cmd_view "$@"; return $? ;;
+        uv|unified-view)
+            reject_common_tags || return $?
+            reject_common_tags || return $?
+            shift
+            cmd_unified_view "$@"
+            return $?
+            ;;
+        serve)   reject_common_tags || return $?; shift; cmd_serve "$@"; return $? ;;
+        gateway)
+            reject_common_tags || return $?
+            shift
+            exec python3 "$COLL/cgalib/gateway.py" "$@"
+            ;;
+        public-html)
+            reject_common_tags || return $?
+            shift
+            exec python3 "$COLL/cgalib/public_html.py" "$@"
+            ;;
+        llm)
+            reject_common_tags || return $?
+            shift
+            exec python3 "$COLL/cgalib/llm.py" "$@"
+            ;;
+        show|open|related)
+            reject_common_tags || return $?
+            exec python3 "$COLL/cgalib/vid.py" "$@"
+            ;;
+    esac
+    case "$tok" in
+        init|status|root|doctor|cn|chain|st|state|step|log|tree|config|store|artifact)
+            reject_common_tags || return $?
+            shift
+            exec "$COLL/cgawf/bin/cgawf" "$tok" "$@"
+            ;;
+    esac
+    if [ "$tok" = db ] || [ "$tok" = database ]; then
+        shift
+        local action="${1:-}"
+        local executable
+        case "$action" in
+            ""|-h|--help|help) db_usage; return 0 ;;
+            plan) executable="$COLL/cgadbplan/bin/cgadbplan" ;;
+            build) executable="$COLL/cgadb/bin/cgadb" ;;
+            zip) executable="$COLL/cgadb/bin/cgadb" ;;
+            validate) executable="$COLL/cgadbvalidate/bin/cgadbvalidate" ;;
+            *) echo "cga db: unknown command '$action'" >&2; db_usage; return 2 ;;
+        esac
+        shift
+        if [ "$action" = zip ]; then
+            set -- zip "$@"
+        fi
+        if [ "$help_requested" -eq 1 ]; then
+            exec "$executable" "$@"
+        fi
+        if [ "${#CGA_COMMON_TAGS[@]}" -gt 0 ] && ! workflow_exists; then
+            echo "cga: --tag requires an initialized .cga workflow" >&2
+            return 2
+        fi
+        if workflow_exists; then
+            workflow_run db "$action" "$executable" "$@"
+        fi
+        exec "$executable" "$@"
+    fi
+    local line tool control_flow=0
+    if ! line="$(_lookup "$tok")"; then
+        echo "cga: unknown command '$tok'" >&2
+        usage
+        return 2
+    fi
+    tool="$(awk '{print $3}' <<<"$line")"
+    case "$tok" in cfg|control-flow-graph) control_flow=1 ;; esac
+    shift
+    if [ "$control_flow" -eq 1 ]; then
+        exec "$COLL/$tool/bin/$tool" --control-flow "$@"
+    fi
+    local action="${1:-}"
+    if [ "$help_requested" -eq 1 ]; then
+        exec "$COLL/$tool/bin/$tool" "$@"
+    fi
+    if [ "${#CGA_COMMON_TAGS[@]}" -gt 0 ] && ! workflow_exists; then
+        echo "cga: --tag requires an initialized .cga workflow" >&2
+        return 2
+    fi
+    if [ "$tok" = bench ] && [ "$action" = stop ]; then
+        exec "$COLL/$tool/bin/$tool" "$@"
+    fi
+    case "$tok" in
+        bench|dl|db-lib|ql|query-lib|mr|mrva-request|si|sarif-ingest|ex|export|mx|local-mrva)
+            case "$action" in
+                ""|-h|--help|help|serve|cmd) ;;
+                *)
+                    if workflow_exists; then
+                        workflow_run "$tok" "" "$COLL/$tool/bin/$tool" "$@"
+                    fi
+                    ;;
+            esac
+            ;;
+        cv|cve|sp|src-prep|db-build|db-plan|db-validate|cat|catalog|cq|codeql|qg|query-gen|pg|postgres|ds|db-serve|ms|mrva-server)
+            case "$action" in
+                ""|-h|--help|help|serve) ;;
+                *)
+                    if workflow_exists; then
+                        workflow_run "$tok" "" "$COLL/$tool/bin/$tool" "$@"
+                    fi
+                    ;;
+            esac
+            ;;
+        ctl|control)
+            if [ "$action" = measure ]; then
+                local argument
+                for argument in "$@"; do
+                    if [ "$argument" = --cgast-filter ] && workflow_exists; then
+                        workflow_run "$tok" "" "$COLL/$tool/bin/$tool" "$@"
+                    fi
+                done
+            fi
+            ;;
+    esac
+    exec "$COLL/$tool/bin/$tool" "$@"
+}
+
+main "$@"

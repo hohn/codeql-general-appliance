@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Six-session storage equivalent</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="../../../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../../../docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Six-session storage equivalent</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#six-session-storage-equivalent"
+id="toc-six-session-storage-equivalent">Six-session storage
+equivalent</a>
+<ul>
+<li><a href="#experiment-and-session-index"
+id="toc-experiment-and-session-index">Experiment and session
+index</a></li>
+<li><a href="#shared-database-d" id="toc-shared-database-d">Shared
+database D</a></li>
+<li><a href="#common-submission-context"
+id="toc-common-submission-context">Common submission context</a></li>
+<li><a href="#session-1" id="toc-session-1">Session 1</a>
+<ul>
+<li><a href="#s1-accepted-query" id="toc-s1-accepted-query">S1 accepted
+query</a></li>
+<li><a href="#s1-submission" id="toc-s1-submission">S1
+submission</a></li>
+<li><a href="#s1-results" id="toc-s1-results">S1 results</a></li>
+</ul></li>
+<li><a href="#session-2" id="toc-session-2">Session 2</a>
+<ul>
+<li><a href="#s2-accepted-query" id="toc-s2-accepted-query">S2 accepted
+query</a></li>
+<li><a href="#s2-submission" id="toc-s2-submission">S2
+submission</a></li>
+<li><a href="#s2-results" id="toc-s2-results">S2 results</a></li>
+</ul></li>
+<li><a href="#session-3" id="toc-session-3">Session 3</a>
+<ul>
+<li><a href="#s3-accepted-query" id="toc-s3-accepted-query">S3 accepted
+query</a></li>
+<li><a href="#s3-submission" id="toc-s3-submission">S3
+submission</a></li>
+<li><a href="#s3-results" id="toc-s3-results">S3 results</a></li>
+</ul></li>
+<li><a href="#session-4" id="toc-session-4">Session 4</a>
+<ul>
+<li><a href="#s4-accepted-query" id="toc-s4-accepted-query">S4 accepted
+query</a></li>
+<li><a href="#s4-submission" id="toc-s4-submission">S4
+submission</a></li>
+<li><a href="#s4-results" id="toc-s4-results">S4 results</a></li>
+</ul></li>
+<li><a href="#session-5" id="toc-session-5">Session 5</a>
+<ul>
+<li><a href="#s5-accepted-query" id="toc-s5-accepted-query">S5 accepted
+query</a></li>
+<li><a href="#s5-submission" id="toc-s5-submission">S5
+submission</a></li>
+<li><a href="#s5-results" id="toc-s5-results">S5 results</a></li>
+</ul></li>
+<li><a href="#session-6" id="toc-session-6">Session 6</a>
+<ul>
+<li><a href="#s6-accepted-query" id="toc-s6-accepted-query">S6 accepted
+query</a></li>
+<li><a href="#s6-submission" id="toc-s6-submission">S6
+submission</a></li>
+<li><a href="#s6-results" id="toc-s6-results">S6 results</a></li>
+</ul></li>
+<li><a href="#what-each-result-representation-preserves"
+id="toc-what-each-result-representation-preserves">What each result
+representation preserves</a></li>
+<li><a href="#sql-stores-and-their-scope"
+id="toc-sql-stores-and-their-scope">SQL stores and their scope</a></li>
+<li><a href="#comparison-c" id="toc-comparison-c">Comparison C</a></li>
+<li><a href="#what-a-person-would-keep-rather-than-all-cgast-state"
+id="toc-what-a-person-would-keep-rather-than-all-cgast-state">What a
+person would keep, rather than all CGAST state</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="six-session-storage-equivalent">Six-session storage
+equivalent</h1>
+<p>This is a hand-kept experiment notebook for the same six-session
+<code>query-study</code> illustrated by <a
+href="six-session-shell-equivalent.sh">the linear shell sequence</a>. It
+collects the <strong>data and connections a person would need to
+retain</strong>, not every CGAST checkpoint, command response, editor
+setting, or intermediate draft. The records below describe the actual
+accepted artifacts in <code>my-bench</code>, active chain
+<code>cga_1</code>; the shell illustration’s friendlier filenames are
+not their on-disk names.</p>
+<p>The sections are nodes in the storage graph. A session connects an
+accepted database and query to a submission; that submission connects to
+results; the comparison connects selected result snapshots back to their
+inputs. A filename or a finding count alone is not enough to recover
+those connections.</p>
+<p><strong>Path convention:</strong> <code>W</code> means
+<code>cga/cgabench/my-bench</code>, relative to the repository root.
+<code>T</code> means <code>W/.cga/tmp</code>. File links are relative to
+this document and point to existing local artifacts, many of which are
+not committed to Git. This is an index, <strong>not a portable
+archive</strong>: it does not copy or relocate those files.</p>
+<h2 id="experiment-and-session-index">Experiment and session index</h2>
+<p>Experiment: <code>query-study</code>; mode:
+<code>query-changes</code>; reference: <strong>S1</strong>. All six
+sessions are complete. Every session uses the same accepted <a
+href="#shared-database-d">database D</a>, not six independently chosen
+databases.</p>
+<table style="width:100%;">
+<colgroup>
+<col style="width: 16%" />
+<col style="width: 16%" />
+<col style="width: 16%" />
+<col style="width: 16%" />
+<col style="width: 16%" />
+<col style="width: 16%" />
+</colgroup>
+<thead>
+<tr>
+<th>Session</th>
+<th>Database</th>
+<th>Accepted query</th>
+<th>Submission</th>
+<th>Results</th>
+<th>Findings</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="#session-1">S1</a></td>
+<td><a href="#shared-database-d">D</a>, reference</td>
+<td><a href="#s1-accepted-query">Q1: fprintf</a></td>
+<td><a href="#s1-submission">J1</a></td>
+<td><a href="#s1-results">R1</a></td>
+<td>172</td>
+</tr>
+<tr>
+<td><a href="#session-2">S2</a></td>
+<td><a href="#shared-database-d">D</a>, inherited from S1</td>
+<td><a href="#s2-accepted-query">Q2: fprintf again</a></td>
+<td><a href="#s2-submission">J2</a></td>
+<td><a href="#s2-results">R2</a></td>
+<td>172</td>
+</tr>
+<tr>
+<td><a href="#session-3">S3</a></td>
+<td><a href="#shared-database-d">D</a>, inherited from S1</td>
+<td><a href="#s3-accepted-query">Q3: printf</a></td>
+<td><a href="#s3-submission">J3</a></td>
+<td><a href="#s3-results">R3</a></td>
+<td>1478</td>
+</tr>
+<tr>
+<td><a href="#session-4">S4</a></td>
+<td><a href="#shared-database-d">D</a>, inherited from S1</td>
+<td><a href="#s4-accepted-query">Q4: printf again</a></td>
+<td><a href="#s4-submission">J4</a></td>
+<td><a href="#s4-results">R4</a></td>
+<td>1478</td>
+</tr>
+<tr>
+<td><a href="#session-5">S5</a></td>
+<td><a href="#shared-database-d">D</a>, inherited from S1</td>
+<td><a href="#s5-accepted-query">Q5: back to fprintf</a></td>
+<td><a href="#s5-submission">J5</a></td>
+<td><a href="#s5-results">R5</a></td>
+<td>172</td>
+</tr>
+<tr>
+<td><a href="#session-6">S6</a></td>
+<td><a href="#shared-database-d">D</a>, inherited from S1</td>
+<td><a href="#s6-accepted-query">Q6: narrower fprintf</a></td>
+<td><a href="#s6-submission">J6</a></td>
+<td><a href="#s6-results">R6</a></td>
+<td>116</td>
+</tr>
+</tbody>
+</table>
+<p>The latest <a href="#comparison-c">comparison C</a> uses all six R
+nodes and S1 as baseline. Its result is not implied by the six counts
+above.</p>
+<h2 id="shared-database-d">Shared database D</h2>
+<p>There are two different objects to remember: <strong>which database
+was selected</strong> and <strong>the downloaded bytes used for
+analysis</strong>.</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Record</th>
+<th>Retained value or file</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Catalogue used to choose D</td>
+<td><a
+href="../../cgadl/db-collection.global/metadata.sql">metadata.sql</a></td>
+</tr>
+<tr>
+<td>Accepted selection, one database</td>
+<td><a
+href="../my-bench/.cga/tmp/cgabench-g577fiy4.json">T/cgabench-g577fiy4.json</a></td>
+</tr>
+<tr>
+<td>Repository</td>
+<td><code>AFLplusplus/AFLplusplus</code></td>
+</tr>
+<tr>
+<td>Language</td>
+<td><code>cpp</code></td>
+</tr>
+<tr>
+<td>Source commit</td>
+<td><code>474ff18ba2a7999a518a4d194fcd5a1f87c3625d</code></td>
+</tr>
+<tr>
+<td>Build identifier</td>
+<td><code>30eebb0889</code></td>
+</tr>
+<tr>
+<td>Database-producing tool</td>
+<td><code>codeql-cpp</code>, version <code>2.23.1</code></td>
+</tr>
+<tr>
+<td>Download</td>
+<td><a
+href="../my-bench/.cga/runtime/mrva/db-serve/AFLplusplus/AFLplusplus/AFLplusplus_AFLplusplus_db.zip">AFLplusplus_AFLplusplus_db.zip</a></td>
+</tr>
+<tr>
+<td>Download directory</td>
+<td><code>W/.cga/runtime/mrva/db-serve/AFLplusplus/AFLplusplus/</code></td>
+</tr>
+<tr>
+<td>Download size</td>
+<td>27,271,907 bytes</td>
+</tr>
+<tr>
+<td>Selection SHA-256</td>
+<td><code>8b15f9e90eaa35e9a5ccb186a1a3160915034cdf165507cbe51e2decbfb636b6</code></td>
+</tr>
+<tr>
+<td>Archive SHA-256 / catalogue content hash</td>
+<td><code>a5ff9f6b9c69310d398f38b5322ecaf914182e5cd50b9fb32731e75b32ced64c</code></td>
+</tr>
+</tbody>
+</table>
+<p>The selection preserves its original <a
+href="https://hohnlab.org/mrva/values/AFLplusplus-AFLplusplus-ctsj-30eebb0889-a5ff9f6b9c69310d.zip">download
+URL</a> and catalogue metadata. Keeping the selected row avoids relying
+on row 7, the current contents of a mutable catalogue, or just the
+repository name.</p>
+<p>There is <strong>one retained database archive referenced by all six
+sessions</strong>. S2-S6 record inheritance from S1.D and its
+selection/archive digests. They do not need separate archive copies or
+fresh downloads. This observation does not claim that the original
+download request was a cache miss.</p>
+<p>Manual connection to retain:
+<code>S1.D = S2.D = ... = S6.D = this selection + these archive bytes</code>.
+Database inputs and the result ZIPs below are different things.</p>
+<h2 id="common-submission-context">Common submission context</h2>
+<p>The following context applies to <a
+href="#experiment-and-session-index">J1-J6</a>:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MRVA server</td>
+<td><code>http://127.0.0.1:8081</code></td>
+</tr>
+<tr>
+<td>Controller owner/repository</td>
+<td><code>octo/ctl</code></td>
+</tr>
+<tr>
+<td>Submission user</td>
+<td><code>hohn</code></td>
+</tr>
+<tr>
+<td>Language</td>
+<td><code>cpp</code></td>
+</tr>
+<tr>
+<td>Repository/job target</td>
+<td><code>AFLplusplus/AFLplusplus</code></td>
+</tr>
+<tr>
+<td>Terminal status</td>
+<td><code>succeeded</code></td>
+</tr>
+</tbody>
+</table>
+<p>Each submission additionally needs its <strong>own</strong> client
+submission name, server session ID, accepted query pack, and result
+locations. Here the MRVA IDs happen to be 1-6, matching the Bench row
+numbers. That is a coincidence, not a mapping rule; IDs are scoped to
+the server deployment and can be reused after a reset.</p>
+<h2 id="session-1">Session 1</h2>
+<h3 id="s1-accepted-query">S1 accepted query</h3>
+<p><a href="#s1-accepted-query">Q1</a> plus <a
+href="#shared-database-d">D</a> are the inputs to <a
+href="#s1-submission">J1</a>. Q1 was selected from the existing
+<code>sample-query</code> library: <code>Fprintf.ql</code>, rule
+<code>cpp-fprintf-call</code>, targeting <code>fprintf</code>.</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Record</th>
+<th>Retained file or value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Accepted query selection</td>
+<td><a
+href="../my-bench/.cga/tmp/cgabench-query-ppodqxeh.json">T/cgabench-query-ppodqxeh.json</a></td>
+</tr>
+<tr>
+<td>Submitted pack</td>
+<td><a
+href="../my-bench/.cga/tmp/cgabench-ybqj_pss.tgz">T/cgabench-ybqj_pss.tgz</a></td>
+</tr>
+<tr>
+<td>Selection SHA-256</td>
+<td><code>d1782784f649814c500929705edc694d49995d91a27133ee56d74ee93110b139</code></td>
+</tr>
+<tr>
+<td>Pack SHA-256</td>
+<td><code>1c4a942fb1c73f4d9bdf88ab9873200a6f7ebb0654a7e0094b17313f16f82e62</code></td>
+</tr>
+</tbody>
+</table>
+<p>The accepted pack contains the source, manifest, and packaged
+dependencies. Its manifest records CodeQL CLI <code>2.27.1</code> and
+<code>codeql/cpp-all: 12.1.1</code>. The selection’s original source
+path is <code>sample-query/Fprintf.ql</code> under the repository root;
+that mutable file is not the accepted source of truth.</p>
+<h3 id="s1-submission">S1 submission</h3>
+<p><strong>J1:</strong>
+<code>bench-ddd8efab29e2449abae45ab84c4aacde</code>; MRVA session
+<strong>1</strong>. Connect <a href="#shared-database-d">D</a> and <a
+href="#s1-accepted-query">Q1’s pack</a>, with the <a
+href="#common-submission-context">common context</a>, to <a
+href="#s1-results">R1</a>.</p>
+<h3 id="s1-results">S1 results</h3>
+<p><strong>R1:</strong> 172 findings from <a
+href="#s1-submission">J1</a>. SQL/SARIF storage root:
+<code>T/cgasi-a378mqh4/</code>. SARIF and SQLite are in its
+<code>bench-ddd8efab29e2449abae45ab84c4aacde/</code> subdirectory.</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Object</th>
+<th>Retained file</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Downloaded result ZIP</td>
+<td><a
+href="../my-bench/.cga/tmp/cgamr-bench-ddd8efab29e2449abae45ab84c4aacde-ux8qz_3w/AFLplusplus-AFLplusplus.zip">AFLplusplus-AFLplusplus.zip</a></td>
+</tr>
+<tr>
+<td>Extracted raw SARIF</td>
+<td><a
+href="../my-bench/.cga/tmp/cgasi-a378mqh4/bench-ddd8efab29e2449abae45ab84c4aacde/job-01-AFLplusplus-AFLplusplus.sarif">job-01-AFLplusplus-AFLplusplus.sarif</a></td>
+</tr>
+<tr>
+<td>Ingested per-job SQLite</td>
+<td><a
+href="../my-bench/.cga/tmp/cgasi-a378mqh4/bench-ddd8efab29e2449abae45ab84c4aacde/job-01-AFLplusplus-AFLplusplus.sqlite">job-01-AFLplusplus-AFLplusplus.sqlite</a></td>
+</tr>
+<tr>
+<td>Session findings DuckDB</td>
+<td><a
+href="../my-bench/.cga/tmp/cgasi-a378mqh4/all.duckdb">all.duckdb</a></td>
+</tr>
+<tr>
+<td>Frozen findings/provenance snapshot</td>
+<td><a
+href="../my-bench/.cga/tmp/cgabench-results-yk9xj5oz.json">T/cgabench-results-yk9xj5oz.json</a></td>
+</tr>
+</tbody>
+</table>
+<p>Snapshot SHA-256:
+<code>8c0eee340763558fa3b386da7c429a8977bd769b4cd1f279a8f6dfc46511f1ec</code>.
+R1 is the reference input to <a href="#comparison-c">comparison
+C</a>.</p>
+<h2 id="session-2">Session 2</h2>
+<h3 id="s2-accepted-query">S2 accepted query</h3>
+<p><a href="#s2-accepted-query">Q2</a> plus <a
+href="#shared-database-d">D</a> are the inputs to <a
+href="#s2-submission">J2</a>. The accepted selection used the existing
+library again: <code>Fprintf.ql</code>, rule
+<code>cpp-fprintf-call</code>, targeting <code>fprintf</code>, identical
+source bytes to Q1. The edited <code>MyQuery</code> placeholder was
+<strong>not</strong> the accepted input.</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Record</th>
+<th>Retained file or value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Accepted query selection</td>
+<td><a
+href="../my-bench/.cga/tmp/cgabench-query-9pa25d4v.json">T/cgabench-query-9pa25d4v.json</a></td>
+</tr>
+<tr>
+<td>Submitted pack</td>
+<td><a
+href="../my-bench/.cga/tmp/cgabench-sfogicj1.tgz">T/cgabench-sfogicj1.tgz</a></td>
+</tr>
+<tr>
+<td>Selection SHA-256</td>
+<td><code>d1782784f649814c500929705edc694d49995d91a27133ee56d74ee93110b139</code></td>
+</tr>
+<tr>
+<td>Pack SHA-256</td>
+<td><code>d8f9f48f743f182f5a81c8a403af76e892a5a1876c21c457ae79f3ab8fb5ac5a</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="s2-submission">S2 submission</h3>
+<p><strong>J2:</strong>
+<code>bench-34852f18481f423d84ac6c96f0913d18</code>; MRVA session
+<strong>2</strong>. Connect <a href="#shared-database-d">D</a> and <a
+href="#s2-accepted-query">Q2’s pack</a>, with the <a
+href="#common-submission-context">common context</a>, to <a
+href="#s2-results">R2</a>.</p>
+<h3 id="s2-results">S2 results</h3>
+<p><strong>R2:</strong> 172 findings from <a
+href="#s2-submission">J2</a>. SQL/SARIF storage root:
+<code>T/cgasi-a17y4o67/</code>. SARIF and SQLite are in its
+<code>bench-34852f18481f423d84ac6c96f0913d18/</code> subdirectory.</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Object</th>
+<th>Retained file</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Downloaded result ZIP</td>
+<td><a
+href="../my-bench/.cga/tmp/cgamr-bench-34852f18481f423d84ac6c96f0913d18-od5kmoq8/AFLplusplus-AFLplusplus.zip">AFLplusplus-AFLplusplus.zip</a></td>
+</tr>
+<tr>
+<td>Extracted raw SARIF</td>
+<td><a
+href="../my-bench/.cga/tmp/cgasi-a17y4o67/bench-34852f18481f423d84ac6c96f0913d18/job-01-AFLplusplus-AFLplusplus.sarif">job-01-AFLplusplus-AFLplusplus.sarif</a></td>
+</tr>
+<tr>
+<td>Ingested per-job SQLite</td>
+<td><a
+href="../my-bench/.cga/tmp/cgasi-a17y4o67/bench-34852f18481f423d84ac6c96f0913d18/job-01-AFLplusplus-AFLplusplus.sqlite">job-01-AFLplusplus-AFLplusplus.sqlite</a></td>
+</tr>
+<tr>
+<td>Session findings DuckDB</td>
+<td><a
+href="../my-bench/.cga/tmp/cgasi-a17y4o67/all.duckdb">all.duckdb</a></td>
+</tr>
+<tr>
+<td>Frozen findings/provenance snapshot</td>
+<td><a
+href="../my-bench/.cga/tmp/cgabench-results-hgyh1g77.json">T/cgabench-results-hgyh1g77.json</a></td>
+</tr>
+</tbody>
+</table>
+<p>Snapshot SHA-256:
+<code>0885734be142c978ef252beef14d469d46599f01667a69070681fe0732c12c5d</code>.
+R2 is an independent repeat, not a pointer to R1; both feed <a
+href="#comparison-c">comparison C</a>.</p>
+<h2 id="session-3">Session 3</h2>
+<h3 id="s3-accepted-query">S3 accepted query</h3>
+<p><a href="#s3-accepted-query">Q3</a> plus <a
+href="#shared-database-d">D</a> are the inputs to <a
+href="#s3-submission">J3</a>. The editable source began as a copy of <a
+href="#s1-accepted-query">S1’s accepted pack</a>, then changed to
+<code>printf</code> with rule <code>cpp-printf-call</code>. The filename
+is still <code>Fprintf.ql</code>.</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Record</th>
+<th>Retained file or value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Accepted query selection</td>
+<td><a
+href="../my-bench/.cga/tmp/cgabench-query-0ah4t8qj.json">T/cgabench-query-0ah4t8qj.json</a></td>
+</tr>
+<tr>
+<td>Submitted pack</td>
+<td><a
+href="../my-bench/.cga/tmp/cgabench-h_nh5ook.tgz">T/cgabench-h_nh5ook.tgz</a></td>
+</tr>
+<tr>
+<td>Selection SHA-256</td>
+<td><code>c3fccdbc48cd716d1e521f04984e1795040d17ccf3ae91eb00a1e5942ffb4df8</code></td>
+</tr>
+<tr>
+<td>Pack SHA-256</td>
+<td><code>4ef31c5d70a524e92410ec82dc8531301e135f8d9bdcb4b728ce759b1648d693</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="s3-submission">S3 submission</h3>
+<p><strong>J3:</strong>
+<code>bench-0528f6d2d5564d4ea3d1b2a748655899</code>; MRVA session
+<strong>3</strong>. Connect <a href="#shared-database-d">D</a> and <a
+href="#s3-accepted-query">Q3’s pack</a>, with the <a
+href="#common-submission-context">common context</a>, to <a
+href="#s3-results">R3</a>.</p>
+<h3 id="s3-results">S3 results</h3>
+<p><strong>R3:</strong> 1478 findings from <a
+href="#s3-submission">J3</a>. SQL/SARIF storage root:
+<code>T/cgasi-6u0d4_l8/</code>. SARIF and SQLite are in its
+<code>bench-0528f6d2d5564d4ea3d1b2a748655899/</code> subdirectory.</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Object</th>
+<th>Retained file</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Downloaded result ZIP</td>
+<td><a
+href="../my-bench/.cga/tmp/cgamr-bench-0528f6d2d5564d4ea3d1b2a748655899-nlhb5bwb/AFLplusplus-AFLplusplus.zip">AFLplusplus-AFLplusplus.zip</a></td>
+</tr>
+<tr>
+<td>Extracted raw SARIF</td>
+<td><a
+href="../my-bench/.cga/tmp/cgasi-6u0d4_l8/bench-0528f6d2d5564d4ea3d1b2a748655899/job-01-AFLplusplus-AFLplusplus.sarif">job-01-AFLplusplus-AFLplusplus.sarif</a></td>
+</tr>
+<tr>
+<td>Ingested per-job SQLite</td>
+<td><a
+href="../my-bench/.cga/tmp/cgasi-6u0d4_l8/bench-0528f6d2d5564d4ea3d1b2a748655899/job-01-AFLplusplus-AFLplusplus.sqlite">job-01-AFLplusplus-AFLplusplus.sqlite</a></td>
+</tr>
+<tr>
+<td>Session findings DuckDB</td>
+<td><a
+href="../my-bench/.cga/tmp/cgasi-6u0d4_l8/all.duckdb">all.duckdb</a></td>
+</tr>
+<tr>
+<td>Frozen findings/provenance snapshot</td>
+<td><a
+href="../my-bench/.cga/tmp/cgabench-results-hqxp1hg1.json">T/cgabench-results-hqxp1hg1.json</a></td>
+</tr>
+</tbody>
+</table>
+<p>Snapshot SHA-256:
+<code>6e8ab6bcf490f564d03b6f98e17ea1497797fb1bb85c2c651b9480e722a7b99e</code>.
+R3 feeds <a href="#comparison-c">comparison C</a>.</p>
+<h2 id="session-4">Session 4</h2>
+<h3 id="s4-accepted-query">S4 accepted query</h3>
+<p><a href="#s4-accepted-query">Q4</a> plus <a
+href="#shared-database-d">D</a> are the inputs to <a
+href="#s4-submission">J4</a>. Another copy of <a
+href="#s1-accepted-query">S1’s accepted pack</a> was edited to the same
+<code>printf</code> / <code>cpp-printf-call</code> source as Q3. The
+accepted pack, not the intermediate editor save with the old rule ID,
+defines this run.</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Record</th>
+<th>Retained file or value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Accepted query selection</td>
+<td><a
+href="../my-bench/.cga/tmp/cgabench-query-gf0wmx31.json">T/cgabench-query-gf0wmx31.json</a></td>
+</tr>
+<tr>
+<td>Submitted pack</td>
+<td><a
+href="../my-bench/.cga/tmp/cgabench-gb5dtwz4.tgz">T/cgabench-gb5dtwz4.tgz</a></td>
+</tr>
+<tr>
+<td>Selection SHA-256</td>
+<td><code>cdb419b58aa051ffd03e97eb5c43c9de43560ca61e79f56f3bfb6d2cebc0255c</code></td>
+</tr>
+<tr>
+<td>Pack SHA-256</td>
+<td><code>08890c6a29ab11b7619a0ced9b92769007e48fd2928d2d74784053c90272a817</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="s4-submission">S4 submission</h3>
+<p><strong>J4:</strong>
+<code>bench-6e3428e4c5094f84ad47f8c7355136e8</code>; MRVA session
+<strong>4</strong>. Connect <a href="#shared-database-d">D</a> and <a
+href="#s4-accepted-query">Q4’s pack</a>, with the <a
+href="#common-submission-context">common context</a>, to <a
+href="#s4-results">R4</a>.</p>
+<h3 id="s4-results">S4 results</h3>
+<p><strong>R4:</strong> 1478 findings from <a
+href="#s4-submission">J4</a>. SQL/SARIF storage root:
+<code>T/cgasi-yo87yd0u/</code>. SARIF and SQLite are in its
+<code>bench-6e3428e4c5094f84ad47f8c7355136e8/</code> subdirectory.</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Object</th>
+<th>Retained file</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Downloaded result ZIP</td>
+<td><a
+href="../my-bench/.cga/tmp/cgamr-bench-6e3428e4c5094f84ad47f8c7355136e8-f3bxqgra/AFLplusplus-AFLplusplus.zip">AFLplusplus-AFLplusplus.zip</a></td>
+</tr>
+<tr>
+<td>Extracted raw SARIF</td>
+<td><a
+href="../my-bench/.cga/tmp/cgasi-yo87yd0u/bench-6e3428e4c5094f84ad47f8c7355136e8/job-01-AFLplusplus-AFLplusplus.sarif">job-01-AFLplusplus-AFLplusplus.sarif</a></td>
+</tr>
+<tr>
+<td>Ingested per-job SQLite</td>
+<td><a
+href="../my-bench/.cga/tmp/cgasi-yo87yd0u/bench-6e3428e4c5094f84ad47f8c7355136e8/job-01-AFLplusplus-AFLplusplus.sqlite">job-01-AFLplusplus-AFLplusplus.sqlite</a></td>
+</tr>
+<tr>
+<td>Session findings DuckDB</td>
+<td><a
+href="../my-bench/.cga/tmp/cgasi-yo87yd0u/all.duckdb">all.duckdb</a></td>
+</tr>
+<tr>
+<td>Frozen findings/provenance snapshot</td>
+<td><a
+href="../my-bench/.cga/tmp/cgabench-results-akxu3h2r.json">T/cgabench-results-akxu3h2r.json</a></td>
+</tr>
+</tbody>
+</table>
+<p>Snapshot SHA-256:
+<code>6183ed1069fc8d18ea4bd560ce0dfc229d1952f7efa0b42bff00492f13d47f83</code>.
+R4 is a separate run with its own artifacts, despite having Q3’s source
+and R3’s finding count. It feeds <a href="#comparison-c">comparison
+C</a>.</p>
+<h2 id="session-5">Session 5</h2>
+<h3 id="s5-accepted-query">S5 accepted query</h3>
+<p><a href="#s5-accepted-query">Q5</a> plus <a
+href="#shared-database-d">D</a> are the inputs to <a
+href="#s5-submission">J5</a>. A copy of <a
+href="#s1-accepted-query">S1’s accepted pack</a> was accepted with the
+baseline <code>fprintf</code> / <code>cpp-fprintf-call</code> source
+again.</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Record</th>
+<th>Retained file or value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Accepted query selection</td>
+<td><a
+href="../my-bench/.cga/tmp/cgabench-query-8md9lxf_.json">T/cgabench-query-8md9lxf_.json</a></td>
+</tr>
+<tr>
+<td>Submitted pack</td>
+<td><a
+href="../my-bench/.cga/tmp/cgabench-x0eitzl0.tgz">T/cgabench-x0eitzl0.tgz</a></td>
+</tr>
+<tr>
+<td>Selection SHA-256</td>
+<td><code>1df19440197a6be03e5a8a9648d4211ca787a3846ab01039c00d66833fb41409</code></td>
+</tr>
+<tr>
+<td>Pack SHA-256</td>
+<td><code>b8b1b5d7db5b2454257bd168e052950fd1ba157a5914dd60160e6f28fe5d9da6</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="s5-submission">S5 submission</h3>
+<p><strong>J5:</strong>
+<code>bench-5b39b02738214bcb9f83fa527dbd9b18</code>; MRVA session
+<strong>5</strong>. Connect <a href="#shared-database-d">D</a> and <a
+href="#s5-accepted-query">Q5’s pack</a>, with the <a
+href="#common-submission-context">common context</a>, to <a
+href="#s5-results">R5</a>.</p>
+<h3 id="s5-results">S5 results</h3>
+<p><strong>R5:</strong> 172 findings from <a
+href="#s5-submission">J5</a>. SQL/SARIF storage root:
+<code>T/cgasi-va678b_0/</code>. SARIF and SQLite are in its
+<code>bench-5b39b02738214bcb9f83fa527dbd9b18/</code> subdirectory.</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Object</th>
+<th>Retained file</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Downloaded result ZIP</td>
+<td><a
+href="../my-bench/.cga/tmp/cgamr-bench-5b39b02738214bcb9f83fa527dbd9b18-f4l9rtm5/AFLplusplus-AFLplusplus.zip">AFLplusplus-AFLplusplus.zip</a></td>
+</tr>
+<tr>
+<td>Extracted raw SARIF</td>
+<td><a
+href="../my-bench/.cga/tmp/cgasi-va678b_0/bench-5b39b02738214bcb9f83fa527dbd9b18/job-01-AFLplusplus-AFLplusplus.sarif">job-01-AFLplusplus-AFLplusplus.sarif</a></td>
+</tr>
+<tr>
+<td>Ingested per-job SQLite</td>
+<td><a
+href="../my-bench/.cga/tmp/cgasi-va678b_0/bench-5b39b02738214bcb9f83fa527dbd9b18/job-01-AFLplusplus-AFLplusplus.sqlite">job-01-AFLplusplus-AFLplusplus.sqlite</a></td>
+</tr>
+<tr>
+<td>Session findings DuckDB</td>
+<td><a
+href="../my-bench/.cga/tmp/cgasi-va678b_0/all.duckdb">all.duckdb</a></td>
+</tr>
+<tr>
+<td>Frozen findings/provenance snapshot</td>
+<td><a
+href="../my-bench/.cga/tmp/cgabench-results-mp7_20xr.json">T/cgabench-results-mp7_20xr.json</a></td>
+</tr>
+</tbody>
+</table>
+<p>Snapshot SHA-256:
+<code>a2dec49ad1e26701447bd985360c6e7c9f2917a24caf11c4a1616de61ae90ca9</code>.
+R5 feeds <a href="#comparison-c">comparison C</a>.</p>
+<h2 id="session-6">Session 6</h2>
+<h3 id="s6-accepted-query">S6 accepted query</h3>
+<p><a href="#s6-accepted-query">Q6</a> plus <a
+href="#shared-database-d">D</a> are the inputs to <a
+href="#s6-submission">J6</a>. A copy of <a
+href="#s1-accepted-query">S1’s accepted pack</a> was edited to require
+<code>fprintf</code> <strong>and</strong>
+<code>fc.getNumberOfArguments() &gt; 2</code>. The rule remains
+<code>cpp-fprintf-call</code>.</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Record</th>
+<th>Retained file or value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Accepted query selection</td>
+<td><a
+href="../my-bench/.cga/tmp/cgabench-query-m9my1tol.json">T/cgabench-query-m9my1tol.json</a></td>
+</tr>
+<tr>
+<td>Submitted pack</td>
+<td><a
+href="../my-bench/.cga/tmp/cgabench-m7bug8en.tgz">T/cgabench-m7bug8en.tgz</a></td>
+</tr>
+<tr>
+<td>Selection SHA-256</td>
+<td><code>0c3b5b36c55898f56059e7327849836bc80f832fd2b6b67dc9338974888c874c</code></td>
+</tr>
+<tr>
+<td>Pack SHA-256</td>
+<td><code>c75fdc6e80e1d70eccb755dbd8b99990909ea8caecc5e48e8f4cc5d7996ad996</code></td>
+</tr>
+</tbody>
+</table>
+<p>The accepted pack contains a 286-byte <code>Fprintf.ql</code>, while
+its selection row’s <code>file_size</code> still says 250. The packed
+source includes the extra condition: catalogue display metadata and
+current draft files are not substitutes for the accepted source
+bytes.</p>
+<h3 id="s6-submission">S6 submission</h3>
+<p><strong>J6:</strong>
+<code>bench-5ee64681e7e84f99a22335abcb266f80</code>; MRVA session
+<strong>6</strong>. Connect <a href="#shared-database-d">D</a> and <a
+href="#s6-accepted-query">Q6’s pack</a>, with the <a
+href="#common-submission-context">common context</a>, to <a
+href="#s6-results">R6</a>.</p>
+<h3 id="s6-results">S6 results</h3>
+<p><strong>R6:</strong> 116 findings from <a
+href="#s6-submission">J6</a>. SQL/SARIF storage root:
+<code>T/cgasi-y2voc79o/</code>. SARIF and SQLite are in its
+<code>bench-5ee64681e7e84f99a22335abcb266f80/</code> subdirectory.</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Object</th>
+<th>Retained file</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Downloaded result ZIP</td>
+<td><a
+href="../my-bench/.cga/tmp/cgamr-bench-5ee64681e7e84f99a22335abcb266f80-jrr3lko5/AFLplusplus-AFLplusplus.zip">AFLplusplus-AFLplusplus.zip</a></td>
+</tr>
+<tr>
+<td>Extracted raw SARIF</td>
+<td><a
+href="../my-bench/.cga/tmp/cgasi-y2voc79o/bench-5ee64681e7e84f99a22335abcb266f80/job-01-AFLplusplus-AFLplusplus.sarif">job-01-AFLplusplus-AFLplusplus.sarif</a></td>
+</tr>
+<tr>
+<td>Ingested per-job SQLite</td>
+<td><a
+href="../my-bench/.cga/tmp/cgasi-y2voc79o/bench-5ee64681e7e84f99a22335abcb266f80/job-01-AFLplusplus-AFLplusplus.sqlite">job-01-AFLplusplus-AFLplusplus.sqlite</a></td>
+</tr>
+<tr>
+<td>Session findings DuckDB</td>
+<td><a
+href="../my-bench/.cga/tmp/cgasi-y2voc79o/all.duckdb">all.duckdb</a></td>
+</tr>
+<tr>
+<td>Frozen findings/provenance snapshot</td>
+<td><a
+href="../my-bench/.cga/tmp/cgabench-results-b28zmo3x.json">T/cgabench-results-b28zmo3x.json</a></td>
+</tr>
+</tbody>
+</table>
+<p>Snapshot SHA-256:
+<code>cdc8d4daaf529de7c0ef576ab9898fd75859940db75c0599def2373a6caeddc8</code>.
+R6 feeds <a href="#comparison-c">comparison C</a>.</p>
+<h2 id="what-each-result-representation-preserves">What each result
+representation preserves</h2>
+<p>The edges within every R section have different meanings:</p>
+<pre class="text"><code>submission + repository
+    -&gt; downloaded result ZIP
+        -&gt; results.sarif
+            -&gt; per-job SQLite -&gt; session all.duckdb
+            -&gt; frozen findings/provenance JSON -&gt; comparison C</code></pre>
+<p>The result ZIP contains <code>results.sarif</code>; the separately
+retained <code>.sarif</code> file is its extracted copy. SQLite and
+DuckDB expose the ingested findings for SQL. The frozen JSON preserves
+each finding’s <code>identity</code>, SARIF <code>result</code>, and
+<code>provenance</code>, plus ingestion information.</p>
+<p>That provenance connects a finding to its Bench session/name, user,
+submission, MRVA session, repository, SARIF path, and <strong>zero-based
+run and result indices</strong> within that SARIF. The session record
+connects it further back to D and Q. The frozen result document is not a
+complete substitute for that input index.</p>
+<p>Identical basenames recur throughout the study. Each result ZIP is
+named <code>AFLplusplus-AFLplusplus.zip</code>; each job has the same
+SARIF/SQLite basename; every session SQL store is named
+<code>all.duckdb</code>. <strong>The enclosing session/job directory is
+part of the identity.</strong> Putting them in one folder without
+renaming or keeping these connections would lose which run they came
+from.</p>
+<h2 id="sql-stores-and-their-scope">SQL stores and their scope</h2>
+<p>Each linked SQLite and DuckDB has a <code>sarif_results</code> table
+with columns:</p>
+<pre class="text"><code>user, file_name, kind, rule_id, rule_name, uri,
+start_line, start_column, result_json</code></pre>
+<p><code>result_json</code> retains the SARIF result object. The SQL
+database is therefore more than a count or a summary table. The <a
+href="../README.html">Findings popup</a> uses the selected session’s
+DuckDB; its separate result-summary tab shows counts derived from the
+ingestion records.</p>
+<p>Although the filename is <code>all.duckdb</code>, <strong>each of
+these six stores contains only its own session’s ingestion</strong>.
+There is no study-wide combined SQL store here. Each session has one
+repository/job, hence one per-job SQLite input.</p>
+<p>For example, from the repository’s <code>cga/</code> directory, this
+reads S6 without changing it:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">duckdb</span> <span class="at">-readonly</span> <span class="at">-safe</span> <span class="at">-no-init</span> <span class="at">-bail</span> <span class="dt">\</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  cgabench/my-bench/.cga/tmp/cgasi-y2voc79o/all.duckdb <span class="dt">\</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">-c</span> <span class="st">&#39;SELECT rule_id, count(*) AS findings FROM sarif_results GROUP BY rule_id;&#39;</span></span></code></pre></div>
+<p>It reports <code>cpp-fprintf-call</code> with a count of 116. If
+combining stores by hand, attach an explicit session label before
+unioning records: <code>user</code>, <code>file_name</code>, and
+<code>rule_id</code> repeat across sessions and cannot identify a
+trial.</p>
+<p>The Databases, Queries, and Result summary SQL popups are different
+again: they materialize temporary DuckDB tables named
+<code>databases</code>, <code>queries</code>, and
+<code>result_summaries</code> from accepted evidence. Those databases
+are discarded after the request; they are not additional retained
+experiment/comparison stores.</p>
+<h2 id="comparison-c">Comparison C</h2>
+<p><strong>Important distinction:</strong> the current Bench does
+<strong>not</strong> create a separate comparison SQL database. It reads
+the frozen findings JSON snapshots and writes a comparison <strong>JSON
+document</strong>. The six DuckDBs above are retained SQL findings
+stores, not six materialized comparison databases.</p>
+<p>Latest retained comparison: <a
+href="../my-bench/.cga/tmp/cgabench-comparison-une4142z.json">T/cgabench-comparison-une4142z.json</a>.
+Created: <code>2026-10-16T18:39:21.745977+00:00</code>. SHA-256,
+calculated for this notebook:
+<code>120eb54a319cf6ac5501a16dc7db07dea67c353661e39d5a69a9bc145958422e</code>.</p>
+<p>Its input edges are <a href="#s1-results">R1</a>, <a
+href="#s2-results">R2</a>, <a href="#s3-results">R3</a>, <a
+href="#s4-results">R4</a>, <a href="#s5-results">R5</a>, and <a
+href="#s6-results">R6</a>; baseline is <code>E.S[1].R</code>. The
+document also retains each input’s D/Q artifacts, job record, user/name,
+and inherited-input provenance, rather than only the six counts.</p>
+<p>Comparison identity is <strong>exact repository, rule,
+physical/logical locations, and message</strong>, with
+<strong>multiset</strong> semantics. Duplicate findings retain their
+multiplicity. Each session’s added/removed results are relative to S1;
+the <code>common</code> list is the intersection across
+<strong>all</strong> selected sessions.</p>
+<table>
+<thead>
+<tr>
+<th>Compared session</th>
+<th>Findings</th>
+<th>Added versus S1</th>
+<th>Removed versus S1</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S1</td>
+<td>172</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>172</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<td>S3</td>
+<td>1478</td>
+<td>1478</td>
+<td>172</td>
+</tr>
+<tr>
+<td>S4</td>
+<td>1478</td>
+<td>1478</td>
+<td>172</td>
+</tr>
+<tr>
+<td>S5</td>
+<td>172</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<td>S6</td>
+<td>116</td>
+<td>0</td>
+<td>56</td>
+</tr>
+</tbody>
+</table>
+<p>Common to all six: <strong>0</strong>. The <code>printf</code> trials
+use a different rule and message, so sharing a source location would not
+make a finding identical to a baseline <code>fprintf</code> finding.
+Equal counts likewise would not prove equal findings.</p>
+<p>The retained earlier comparisons are separate graph nodes, not
+overwritten versions of the latest file:</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Inputs</th>
+<th>Retained comparison</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S1, S2</td>
+<td><a
+href="../my-bench/.cga/tmp/cgabench-comparison-s_n1ecfb.json">cgabench-comparison-s_n1ecfb.json</a></td>
+</tr>
+<tr>
+<td>S1, S2, S3</td>
+<td><a
+href="../my-bench/.cga/tmp/cgabench-comparison-283yymvv.json">cgabench-comparison-283yymvv.json</a></td>
+</tr>
+<tr>
+<td>S1, S2, S3, repeated</td>
+<td><a
+href="../my-bench/.cga/tmp/cgabench-comparison-uob1n904.json">cgabench-comparison-uob1n904.json</a></td>
+</tr>
+<tr>
+<td>S1, S4</td>
+<td><a
+href="../my-bench/.cga/tmp/cgabench-comparison-ikhc7wyi.json">cgabench-comparison-ikhc7wyi.json</a></td>
+</tr>
+<tr>
+<td>S1, S5</td>
+<td><a
+href="../my-bench/.cga/tmp/cgabench-comparison-ote51xwg.json">cgabench-comparison-ote51xwg.json</a></td>
+</tr>
+<tr>
+<td>S1-S5</td>
+<td><a
+href="../my-bench/.cga/tmp/cgabench-comparison-2qbsg9n5.json">cgabench-comparison-2qbsg9n5.json</a></td>
+</tr>
+<tr>
+<td>S1-S5, repeated</td>
+<td><a
+href="../my-bench/.cga/tmp/cgabench-comparison-3n2tvoab.json">cgabench-comparison-3n2tvoab.json</a></td>
+</tr>
+</tbody>
+</table>
+<p>For a hand-built SQL comparison, the user would additionally retain
+the session-to-database mapping, baseline/input list, SQL or view
+definitions, identity/multiplicity policy, and saved output. Merely
+keeping <code>all.duckdb</code> or subtracting counts would not preserve
+this comparison.</p>
+<h2 id="what-a-person-would-keep-rather-than-all-cgast-state">What a
+person would keep, rather than all CGAST state</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Keep by hand</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>This experiment/session index and D/Q/J/R/C links</td>
+<td>Preserve the graph: what ran against what, and which results were
+compared</td>
+</tr>
+<tr>
+<td>The accepted D selection, archive identity/hash, and archive or a
+verified way to retrieve it</td>
+<td>Identify the actual analyzed code/database, not today’s catalogue
+entry</td>
+</tr>
+<tr>
+<td>Each accepted query selection and pack, with hashes</td>
+<td>Preserve the selected query and executable inputs, including
+dependencies, independently of drafts</td>
+</tr>
+<tr>
+<td>Actual findings: the SQL stores and frozen result snapshots</td>
+<td>Retain inspectable results and the comparison-ready
+identities/provenance</td>
+</tr>
+<tr>
+<td>A raw SARIF form, preferably ZIP or extracted SARIF</td>
+<td>Recommended for full-report inspection, independent re-ingestion,
+and following original-report provenance</td>
+</tr>
+<tr>
+<td>Comparison document(s), input list, baseline, and comparison
+policy</td>
+<td>Preserve the conclusions and their derivation, not just displayed
+totals</td>
+</tr>
+</tbody>
+</table>
+<p>Raw SARIF is not required merely to query an existing SQL store or
+compare already-frozen R snapshots. Keeping it is nevertheless useful:
+<code>result_json</code> and frozen finding objects do not preserve the
+entire SARIF report’s tool/rule/run metadata. ZIP and extracted SARIF
+duplicate the report; a manual archive could keep one raw form and
+document how to recover the other.</p>
+<p>SQLite and DuckDB also overlap: DuckDB is rebuilt from the ingested
+per-job SQLite files. A manually curated archive could choose a
+canonical retained representation plus a regeneration recipe instead of
+keeping every derivative. This notebook lists <strong>what is actually
+retained</strong>, not a deletion plan for the running Bench.</p>
+<p>There is no need in such a notebook to preserve every unsuccessful
+draft, editor port, disclosure state, service-check response, polling
+response, or whole-CGAST revision just to understand the completed
+study. Recovery while a job is in flight is a separate concern; this
+index does not replace execution checkpoints.</p>
+<p>The awkward part is not storing six reports. It is preserving every
+edge: which database bytes, which accepted query bytes, which remote
+job, which report, which SQL projection, and which comparison inputs.
+Paths under <code>.cga/tmp</code> here are live retained evidence,
+despite the name. Removing them or copying only the state JSON would
+leave missing targets. Moving the experiment by hand requires copying
+the chosen artifacts <strong>and updating all these links and provenance
+paths</strong>; this document does not perform that migration.</p>
+</body>
+</html>

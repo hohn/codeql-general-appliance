@@ -1,0 +1,848 @@
+#!/usr/bin/env bash
+#
+# run-system-08 -- two-server SECOND-WAVE / RESPAWN regression test.
+#
+# Two users concurrently submit one analysis each, with two CodeQL databases
+# per analysis and one submission sent to each server. After all four jobs
+# finish and their results are downloaded, the test waits for every worker to
+# exit. It then repeats the same workload, swapping which endpoint receives
+# each user's submission. Wave 2 must spawn fresh workers and finish.
+#
+# The script intentionally does not require election telemetry, so the same
+# scenario can run against server versions from before the lease-based leader
+# election. When telemetry is present, it additionally verifies a consistent
+# leader/backup pair and that only one server spawned workers.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SYSTEM_TESTS_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+cd "$SYSTEM_TESTS_DIR"
+
+export MRVA_WORK_DIR="${MRVA_WORK_DIR:-/tmp/mrva-standalone-queue-restart}"
+export RUN_TAG="${RUN_TAG:-queue-restart}"
+export MRVA_STANDALONE_STORAGE="${MRVA_STANDALONE_STORAGE:-filesystem}"
+export MRVA_POOL_MAX_WORKERS="${MRVA_POOL_MAX_WORKERS:-4}"
+export MRVA_POOL_IDLE_TIMEOUT_SECONDS="${MRVA_POOL_IDLE_TIMEOUT_SECONDS:-8}"
+export MRVA_POOL_SCALE_CHECK_SECONDS="${MRVA_POOL_SCALE_CHECK_SECONDS:-1}"
+export MRVA_POOL_LEADER_LEASE_SECONDS="${MRVA_POOL_LEADER_LEASE_SECONDS:-6}"
+export MRVA_POOL_LEADER_CHECK_SECONDS="${MRVA_POOL_LEADER_CHECK_SECONDS:-1}"
+export MRVA_DBG_DUMP_SYSVIEW="${MRVA_DBG_DUMP_SYSVIEW:-1}"
+export QUERY_PATH="${QUERY_PATH:-../../sample-query/ReturnValueIgnored.ql}"
+
+PORT_A="${PORT_A:-8081}"
+PORT_B="${PORT_B:-8082}"
+export PORT="$PORT_A"
+
+# shellcheck source=cga/system-tests/standalone-multi-agent-lib.sh
+# shellcheck disable=SC1091
+. "${SYSTEM_TESTS_DIR}/standalone-multi-agent-lib.sh"
+
+load_state
+
+SERVER_A="http://127.0.0.1:${PORT_A}"
+SERVER_B="http://127.0.0.1:${PORT_B}"
+SERVER_ID_A="${SERVER_ID_A:-server-a}"
+SERVER_ID_B="${SERVER_ID_B:-server-b}"
+SERVER_LOG_A="${MRVA_TMP_DIR}/server-a.log"
+SERVER_LOG_B="${MRVA_TMP_DIR}/server-b.log"
+SERVER_PID_FILE_A="${MRVA_TMP_DIR}/server-a.pid"
+SERVER_PID_FILE_B="${MRVA_TMP_DIR}/server-b.pid"
+SYSVIEW_DUMP_A="${MRVA_WORK_DIR}/sysview-a.jsonl"
+SYSVIEW_DUMP_B="${MRVA_WORK_DIR}/sysview-b.jsonl"
+SYSVIEW_OBS_A="${MRVA_TMP_DIR}/sysview-a-observations.jsonl"
+SYSVIEW_OBS_B="${MRVA_TMP_DIR}/sysview-b-observations.jsonl"
+PACK_TGZ="${MRVA_WORK_DIR}/query-pack.tgz"
+DOWNLOAD_DIR="${MRVA_WORK_DIR}/downloads"
+LANGUAGE="${LANGUAGE:-cpp}"
+
+SUBMISSIONS=(alice-1 bob-1 alice-2 bob-2)
+declare -A SUB_USER SUB_SLOT SUB_REPOS WAVE_SUBMISSIONS
+
+SUB_USER[alice-1]="alice"
+SUB_SLOT[alice-1]="A"
+SUB_REPOS[alice-1]="debian/iniparser-4.1 debian/libgmpada-1.5"
+
+SUB_USER[bob-1]="bob"
+SUB_SLOT[bob-1]="B"
+SUB_REPOS[bob-1]="debian/lua-filesystem-1.8.0 debian/libjsonparser-1.1.0"
+
+# Same users and DB sets, but route each second-wave submission through the
+# opposite server.
+SUB_USER[alice-2]="alice"
+SUB_SLOT[alice-2]="B"
+SUB_REPOS[alice-2]="${SUB_REPOS[alice-1]}"
+
+SUB_USER[bob-2]="bob"
+SUB_SLOT[bob-2]="A"
+SUB_REPOS[bob-2]="${SUB_REPOS[bob-1]}"
+
+WAVE_SUBMISSIONS[wave1]="alice-1 bob-1"
+WAVE_SUBMISSIONS[wave2]="alice-2 bob-2"
+
+mapfile -t STAGE_REPOS < <(
+    for name in "${SUBMISSIONS[@]}"; do
+        # Intentional split of each space-separated repository list.
+        # shellcheck disable=SC2086
+        printf '%s\n' ${SUB_REPOS[$name]}
+    done | sort -u
+)
+
+JOBS_PER_WAVE=0
+for _name in ${WAVE_SUBMISSIONS[wave1]}; do
+    # shellcheck disable=SC2206
+    _repos=(${SUB_REPOS[$_name]})
+    JOBS_PER_WAVE=$(( JOBS_PER_WAVE + ${#_repos[@]} ))
+done
+JOBS_TOTAL=$(( JOBS_PER_WAVE * 2 ))
+STALE_STATUS_SESSION=-547859
+EXPECT_STALE_STATUS_RECOVERY=0
+
+_mark() {
+    CURRENT_PHASE="$1"
+    save_state CURRENT_PHASE "$1"
+}
+
+_state_key() {
+    printf 'SID_%s' "${1//[^A-Za-z0-9]/_}"
+}
+
+_wave_worker_key() {
+    printf 'WORKERS_%s' "${1^^}"
+}
+
+_get_sid() {
+    load_state
+    local key
+    key="$(_state_key "$1")"
+    printf '%s' "${!key:-}"
+}
+
+_slot_value() {
+    local slot="$1" kind="$2"
+    case "${slot}:${kind}" in
+        A:url) echo "$SERVER_A" ;;
+        B:url) echo "$SERVER_B" ;;
+        A:port) echo "$PORT_A" ;;
+        B:port) echo "$PORT_B" ;;
+        A:id) echo "$SERVER_ID_A" ;;
+        B:id) echo "$SERVER_ID_B" ;;
+        A:log) echo "$SERVER_LOG_A" ;;
+        B:log) echo "$SERVER_LOG_B" ;;
+        A:pidfile) echo "$SERVER_PID_FILE_A" ;;
+        B:pidfile) echo "$SERVER_PID_FILE_B" ;;
+        A:dump) echo "$SYSVIEW_DUMP_A" ;;
+        B:dump) echo "$SYSVIEW_DUMP_B" ;;
+        A:obs) echo "$SYSVIEW_OBS_A" ;;
+        B:obs) echo "$SYSVIEW_OBS_B" ;;
+        *) echo "ERROR: invalid server slot/value ${slot}:${kind}" >&2; return 2 ;;
+    esac
+}
+
+_other_slot() {
+    [ "$1" = A ] && echo B || echo A
+}
+
+_start_server() {
+    local slot="$1" port id log pidfile dump url pid
+    port="$(_slot_value "$slot" port)"
+    id="$(_slot_value "$slot" id)"
+    log="$(_slot_value "$slot" log)"
+    pidfile="$(_slot_value "$slot" pidfile)"
+    dump="$(_slot_value "$slot" dump)"
+    url="$(_slot_value "$slot" url)"
+
+    mkdir -p "$MRVA_TMP_DIR" "$MRVA_WORK_DIR"
+    echo "--- starting ${id} on :${port} ---"
+    SERVER_PORT="$port" \
+    MRVA_SERVER_ID="$id" \
+    MRVA_SYSVIEW_DUMP_PATH="$dump" \
+        nohup ../../server-commander/mrvaserver --mode=standalone --loglevel=info \
+            --dbpath="$MRVA_QLDB_DIR" \
+            ${MRVA_DBG_DUMP_SYSVIEW:+--dbg-dump-sysview} \
+            > "$log" 2>&1 &
+    pid=$!
+    echo "$pid" > "$pidfile"
+    save_state "SERVER_${slot}_PID" "$pid"
+
+    local _
+    for _ in $(seq 1 30); do
+        curl -sf "${url}/sysview/data" >/dev/null 2>&1 && break
+        sleep 0.5
+    done
+    if ! curl -sf "${url}/sysview/data" >/dev/null 2>&1; then
+        echo "ERROR: ${id} did not start; log tail:" >&2
+        tail -30 "$log" >&2
+        return 1
+    fi
+    echo "  ${id} up (pid ${pid}, ${url})"
+}
+
+_stop_server() {
+    local slot="$1" port pidfile key pid="" p
+    port="$(_slot_value "$slot" port)"
+    pidfile="$(_slot_value "$slot" pidfile)"
+    key="SERVER_${slot}_PID"
+    load_state
+    pid="${!key:-}"
+    [ -n "$pid" ] || pid="$(cat "$pidfile" 2>/dev/null || true)"
+
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+        kill "$pid"
+        echo "  sent SIGTERM to $(_slot_value "$slot" id) pid ${pid}"
+        local _
+        for _ in $(seq 1 30); do
+            kill -0 "$pid" 2>/dev/null || break
+            sleep 0.1
+        done
+        wait "$pid" 2>/dev/null || true
+    fi
+    for p in $(pids_on_port "$port"); do
+        kill "$p" 2>/dev/null || true
+        echo "  stopped stale pid ${p} on :${port}"
+    done
+    rm -f "$pidfile"
+    save_state "$key" ""
+}
+
+_agent_pids() {
+    local pids
+    pids="$(pgrep -x mrvaagent 2>/dev/null | sort -n | tr '\n' ' ' | sed 's/ *$//')" || true
+    printf '%s' "$pids"
+}
+
+_agent_count() {
+    local pids
+    pids="$(_agent_pids)"
+    if [ -z "$pids" ]; then
+        echo 0
+    else
+        printf '%s\n' "$pids" | wc -w | tr -d ' '
+    fi
+}
+
+_sysview_json() {
+    local slot="$1" out
+    out="$(curl -sf "$(_slot_value "$slot" url)/sysview/data" 2>/dev/null)" || true
+    [ -n "$out" ] && printf '%s' "$out" || printf '{}'
+}
+
+_record_sysview() {
+    local slot="$1" phase="$2" json obs
+    json="$(_sysview_json "$slot")"
+    obs="$(_slot_value "$slot" obs)"
+    printf '%s' "$json" | jq -c \
+        --arg observed_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        --arg endpoint "$(_slot_value "$slot" url)" \
+        --arg phase "$phase" \
+        '. + {observed_at:$observed_at, observed_endpoint:$endpoint, observed_phase:$phase}' \
+        >> "$obs" 2>/dev/null || true
+}
+
+_active_workers() {
+    _sysview_json A | jq -r \
+        '[(.workers // [])[] | select(.status == 0 or .status == 1)] | length' \
+        2>/dev/null || echo 0
+}
+
+_worker_summary() {
+    _sysview_json A | jq -r '
+      (.workers // []) as $w
+      | "workers total=\($w|length) idle=\([$w[]|select(.status==0)]|length) busy=\([$w[]|select(.status==1)]|length) exited=\([$w[]|select(.status==3)]|length)"' \
+        2>/dev/null || echo "workers unavailable"
+}
+
+_session_status() {
+    local name="$1" sid slot url
+    sid="$(_get_sid "$name")"
+    slot="$(_other_slot "${SUB_SLOT[$name]}")"
+    url="$(_slot_value "$slot" url)"
+    cga_status_json "$name" --server "$url" | jq -r '.status'
+}
+
+_wave_sid_csv() {
+    local wave="$1" name sid out=""
+    for name in ${WAVE_SUBMISSIONS[$wave]}; do
+        sid="$(_get_sid "$name")"
+        [ -n "$sid" ] || return 1
+        out="${out:+${out},}${sid}"
+    done
+    printf '%s' "$out"
+}
+
+_save_worker_generation() {
+    local wave="$1" sids workers key
+    sids="$(_wave_sid_csv "$wave")"
+    workers="$(psql_mrva -t -A -c "
+SELECT COALESCE(string_agg(DISTINCT worker_id, ',' ORDER BY worker_id), '')
+FROM job_info
+WHERE session_id IN (${sids}) AND worker_id != '';
+" | tr -d '[:space:]')"
+    key="$(_wave_worker_key "$wave")"
+    save_state "$key" "$workers"
+    echo "  ${wave} worker IDs: ${workers:-<none>}"
+}
+
+_submit_request() {
+    local name="$1" user slot url body response
+    user="${SUB_USER[$name]}"
+    slot="${SUB_SLOT[$name]}"
+    url="$(_slot_value "$slot" url)"
+    body="${MRVA_WORK_DIR}/submit-body-${name}.json"
+    response="${MRVA_TMP_DIR}/submit-response-${name}.json"
+    # shellcheck disable=SC2206
+    local repos=(${SUB_REPOS[$name]})
+
+    python3 - "$PACK_TGZ" "$LANGUAGE" "$body" "${repos[@]}" <<'PY'
+import base64
+import json
+import sys
+
+pack_path, language, out_path = sys.argv[1:4]
+body = {
+    "action_repo_ref": "",
+    "language": language,
+    "query_pack": base64.b64encode(open(pack_path, "rb").read()).decode("ascii"),
+    "repositories": sys.argv[4:],
+}
+with open(out_path, "w") as out:
+    json.dump(body, out)
+PY
+
+    curl -sf -X POST \
+        "${url}/repos/${CONTROLLER_OWNER}/${CONTROLLER_REPO}/code-scanning/codeql/variant-analyses" \
+        -H 'Content-Type: application/json' \
+        -H "X-MRVA-User: ${user}" \
+        --data-binary "@${body}" > "$response"
+}
+
+_submit_wave() {
+    local wave="$1" name pid rc=0
+    local -a pids=()
+
+    echo "--- ${wave}: concurrently submit one two-DB analysis to each server ---"
+    for name in ${WAVE_SUBMISSIONS[$wave]}; do
+        echo "  ${name}: user=${SUB_USER[$name]} endpoint=$(_slot_value "${SUB_SLOT[$name]}" id)"
+        # Intentional split of the space-separated repository list.
+        # shellcheck disable=SC2086
+        printf '    %s\n' ${SUB_REPOS[$name]}
+        _submit_request "$name" &
+        pids+=("$!")
+    done
+    for pid in "${pids[@]}"; do
+        wait "$pid" || rc=1
+    done
+    [ "$rc" -eq 0 ] || {
+        echo "ERROR: ${wave} submission failed" >&2
+        return 1
+    }
+
+    local response sid
+    for name in ${WAVE_SUBMISSIONS[$wave]}; do
+        response="${MRVA_TMP_DIR}/submit-response-${name}.json"
+        sid="$(jq -er '.id' "$response")"
+        save_state "$(_state_key "$name")" "$sid"
+        cga mr attach --name "$name" --user "${SUB_USER[$name]}" \
+            --session-id "$sid" --server "$(_slot_value "${SUB_SLOT[$name]}" url)" \
+            --controller-owner "$CONTROLLER_OWNER" --controller-repo "$CONTROLLER_REPO"
+        echo "  ${name} session=${sid}"
+    done
+}
+
+_poll_wave() {
+    local wave="$1" deadline name status all_done failed
+    deadline=$(( $(date +%s) + POLL_DEADLINE_SECS ))
+    echo "--- ${wave}: poll both sessions through the opposite endpoints ---"
+    while [ "$(date +%s)" -lt "$deadline" ]; do
+        all_done=1
+        failed=0
+        _record_sysview A "$wave"
+        _record_sysview B "$wave"
+        printf '  [%s] ' "$(date +%T)"
+        for name in ${WAVE_SUBMISSIONS[$wave]}; do
+            status="$(_session_status "$name")"
+            printf '%s=%-12s ' "$name" "${status:-?}"
+            case "$status" in
+                succeeded) ;;
+                failed|cancelled) failed=1 ;;
+                *) all_done=0 ;;
+            esac
+        done
+        printf 'agents=%s %s\n' "$(_agent_count)" "$(_worker_summary)"
+        [ "$failed" -eq 0 ] || {
+            phase_evidence "${wave}-failed"
+            return 1
+        }
+        if [ "$all_done" -eq 1 ]; then
+            _save_worker_generation "$wave"
+            return 0
+        fi
+        sleep "$POLL_INTERVAL"
+    done
+    echo "ERROR: ${wave} timed out after ${POLL_DEADLINE_SECS}s" >&2
+    phase_evidence "${wave}-timeout"
+    return 1
+}
+
+_download_wave() {
+    local wave="$1" name sid slot dest
+    echo "--- ${wave}: retrieve result archives ---"
+    for name in ${WAVE_SUBMISSIONS[$wave]}; do
+        sid="$(_get_sid "$name")"
+        slot="${SUB_SLOT[$name]}"
+        dest="${DOWNLOAD_DIR}/${name}"
+        mkdir -p "$dest"
+        cga mr download --name "$name" \
+            --server "$(_slot_value "$slot" url)" --output-dir "$dest"
+    done
+}
+
+_table_exists() {
+    [ "$(psql_mrva -t -A -c \
+        "SELECT to_regclass('public.$1') IS NOT NULL;" 2>/dev/null | tr -d '[:space:]')" = t ]
+}
+
+_error_check() {
+    local bad=0 log
+    for log in "$SERVER_LOG_A" "$SERVER_LOG_B"; do
+        if grep -E "ERROR|panic|fatal" "$log" 2>/dev/null \
+            | grep -v 'mrva-project-resolver' >/dev/null; then
+            echo "errors in ${log}:"
+            grep -E "ERROR|panic|fatal" "$log" \
+                | grep -v 'mrva-project-resolver' | head -10
+            bad=1
+        fi
+    done
+    [ "$bad" -eq 0 ]
+}
+
+phase_preflight() {
+    echo "--- preflight ---"
+    for tool in codeql go curl jq psql pg_isready ss zip unzip python3; do
+        command -v "$tool" >/dev/null || {
+            echo "ERROR: '${tool}' required but not found" >&2
+            return 1
+        }
+    done
+    codeql version --format=terse | sed 's/^/codeql version: /'
+    go version | sed 's/^/go version: /'
+    pg_ensure_running
+    pg_ensure_role_db
+
+    local port p
+    for port in "$PORT_A" "$PORT_B"; do
+        for p in $(pids_on_port "$port"); do
+            echo "killing stale process on :${port}: ${p}"
+            kill "$p" 2>/dev/null || true
+        done
+    done
+    minio_reclaim_port
+    db_server_reclaim_port
+}
+
+phase_reset() {
+    echo "--- reset (clean slate) ---"
+    _stop_server A
+    _stop_server B
+    local p
+    for p in $(pgrep -x mrvaagent 2>/dev/null || true); do
+        kill "$p" 2>/dev/null || true
+        echo "  stopped stale agent pid ${p}"
+    done
+    psql_mrva -q -c "
+DROP TABLE IF EXISTS $(IFS=,; echo "${MRVA_TABLES[*]}") CASCADE;
+DROP SEQUENCE IF EXISTS $(IFS=,; echo "${MRVA_SEQUENCES[*]}") CASCADE;
+" >/dev/null
+    rm -rf "$MRVA_WORK_DIR" "$MRVA_TMP_DIR"
+    mkdir -p "$MRVA_ARTIFACT_DIR" "$MRVA_QLDB_DIR" "$MRVA_DB_SERVE_DIR" "$MRVA_TMP_DIR"
+    echo "  dropped tables; wiped ${MRVA_WORK_DIR} and ${MRVA_TMP_DIR}"
+}
+
+phase_stage() {
+    echo "--- staging ${#STAGE_REPOS[@]} CodeQL DBs ---"
+    local repo owner name src zipf tmpd bundle
+    for repo in "${STAGE_REPOS[@]}"; do
+        owner="${repo%/*}"
+        name="${repo#*/}"
+        src="${SAMPLE_DB_ROOT}/${LANGUAGE}/${owner}/${name}"
+        if [ ! -d "$src" ]; then
+            zipf="${src}.zip"
+            [ -f "$zipf" ] || {
+                echo "ERROR: missing database ${src} (or ${zipf})" >&2
+                return 1
+            }
+            tmpd="$(mktemp -d "${TMPDIR:-/tmp}/mrva-db.XXXXXX")"
+            unzip -q "$zipf" -d "$tmpd"
+            bundle="$(find "$tmpd" -mindepth 1 -maxdepth 1 -type d | head -1)"
+            [ -n "$bundle" ] || {
+                rm -rf "$tmpd"
+                echo "ERROR: ${zipf} has no top-level database directory" >&2
+                return 1
+            }
+            mv "$bundle" "$src"
+            rm -rf "$tmpd"
+        fi
+        mkdir -p "$MRVA_DB_SERVE_DIR/${owner}/${name}"
+        cga db zip --db-dir "$src" \
+            --output "$MRVA_DB_SERVE_DIR/${owner}/${name}/${owner}_${name}_db.zip"
+        echo "  staged ${repo}"
+    done
+}
+
+phase_build() {
+    echo "--- building server + agent ---"
+    make -s -C ../../server-commander mrvaserver mrvaagent
+}
+
+phase_start() {
+    echo "--- starting shared infrastructure and two servers ---"
+    minio_start
+    db_server_start
+    _start_server A
+    _start_server B
+}
+
+phase_roles() {
+    echo "--- detect leader-election telemetry ---"
+    local deadline a b servers_a servers_b
+    deadline=$(( $(date +%s) + 15 ))
+    while [ "$(date +%s)" -lt "$deadline" ]; do
+        a="$(_sysview_json A)"
+        b="$(_sysview_json B)"
+        servers_a="$(jq -c '[.servers[]? | {instance_id, role, online}] | sort_by(.instance_id)' <<< "$a")"
+        servers_b="$(jq -c '[.servers[]? | {instance_id, role, online}] | sort_by(.instance_id)' <<< "$b")"
+        if jq -e '
+            ([.servers[]? | select(.online == true)] | length) == 2 and
+            ([.servers[]? | select(.role == "leader")] | length) == 1 and
+            ([.servers[]? | select(.role == "backup")] | length) == 1
+        ' >/dev/null 2>&1 <<< "$a" &&
+           [ "$servers_a" = "$servers_b" ]; then
+            save_state ELECTION_TELEMETRY 1
+            echo "  lease election present:"
+            jq -r '.servers[] | "    \(.instance_id): \(.role) online=\(.online)"' <<< "$a"
+            return 0
+        fi
+        sleep 0.5
+    done
+    save_state ELECTION_TELEMETRY 0
+    echo "  no two-server election telemetry (expected for pre-lease server code)"
+}
+
+phase_pack() {
+    echo "--- building ${LANGUAGE} query pack ---"
+    cga_pack_query "$QUERY_PATH" "$PACK_TGZ" > "$REQ_LOG" 2>&1
+    ls -lh "$PACK_TGZ"
+}
+
+phase_wave1() {
+    _submit_wave wave1
+    _poll_wave wave1
+    _download_wave wave1
+}
+
+phase_wait_exit() {
+    local budget="${1:-$(( MRVA_POOL_IDLE_TIMEOUT_SECONDS + 30 ))}"
+    local deadline cnt active pending
+    deadline=$(( $(date +%s) + budget ))
+    echo "--- wait-exit: wait up to ${budget}s for every wave-1 runner to exit ---"
+    while [ "$(date +%s)" -lt "$deadline" ]; do
+        cnt="$(_agent_count)"
+        active="$(_active_workers)"
+        printf '  [%s] live mrvaagent=%s active-workers=%s %s\n' \
+            "$(date +%T)" "$cnt" "$active" "$(_worker_summary)"
+        if [ "$cnt" -eq 0 ] && [ "$active" -eq 0 ]; then
+            pending="$(psql_mrva -t -A -c 'SELECT COUNT(*) FROM pending_spawns;' \
+                | tr -d '[:space:]')"
+            save_state PRE_WAVE2_PENDING "$pending"
+            echo "  all runners exited; pending_spawns=${pending}; pausing 2s before wave 2"
+            sleep 2
+            return 0
+        fi
+        sleep 1
+    done
+    echo "ERROR: wave-1 runners did not exit" >&2
+    phase_evidence "wait-exit-timeout"
+    return 1
+}
+
+phase_inject_stale_status() {
+    echo "--- inject-stale-status: add orphan Queued rows without job payloads ---"
+    psql_mrva -q -c "
+INSERT INTO job_status (session_id, owner, repo, status)
+SELECT ${STALE_STATUS_SESSION}, 'stale-job-status', 'orphan-' || n, 6
+FROM generate_series(1, ${MRVA_POOL_MAX_WORKERS}) AS n;
+" >/dev/null
+    local stale
+    stale="$(psql_mrva -t -A -c "
+SELECT COUNT(*) FROM job_status
+WHERE session_id=${STALE_STATUS_SESSION}
+  AND owner='stale-job-status'
+  AND status=6;
+" | tr -d '[:space:]')"
+    [ "$stale" -eq "$MRVA_POOL_MAX_WORKERS" ]
+    save_state STALE_STATUS_ROWS "$stale"
+    echo "  injected ${stale} orphan Queued job_status rows"
+}
+
+phase_wave2() {
+    _submit_wave wave2
+    _poll_wave wave2
+    _download_wave wave2
+}
+
+phase_evidence() {
+    local label="${1:-manual}" out table
+    out="${MRVA_TMP_DIR}/evidence-${label}.txt"
+    mkdir -p "$MRVA_TMP_DIR"
+    {
+        echo "run-system-08 evidence: ${label}"
+        date -Ins
+        echo
+        echo "== processes =="
+        echo "mrvaagent pids: $(_agent_pids)"
+        # Full parent/state/elapsed columns are useful evidence here.
+        # shellcheck disable=SC2009
+        ps -eo pid,ppid,stat,etime,args | grep -E '[m]rvaserver|[m]rvaagent' || true
+        echo
+        echo "== server-a sysview =="
+        _sysview_json A | jq . 2>/dev/null || true
+        echo
+        echo "== server-b sysview =="
+        _sysview_json B | jq . 2>/dev/null || true
+        echo
+        echo "== jobs =="
+        psql_mrva -P pager=off -c "
+SELECT ji.session_id, ji.user_id, ji.owner, ji.repo, js.status,
+       ji.worker_id, ji.started_at, ji.completed_at
+FROM job_info ji
+LEFT JOIN job_status js
+  ON js.session_id=ji.session_id AND js.owner=ji.owner AND js.repo=ji.repo
+ORDER BY ji.session_id, ji.user_id, ji.owner, ji.repo;
+" 2>&1 || true
+        for table in worker_pool pending_spawns scheduler_lock server_registry; do
+            echo
+            echo "== ${table} =="
+            if _table_exists "$table"; then
+                psql_mrva -P pager=off -c "TABLE ${table};" 2>&1 || true
+            else
+                echo "(table absent)"
+            fi
+        done
+        echo
+        echo "== server-a log tail =="
+        tail -80 "$SERVER_LOG_A" 2>/dev/null || true
+        echo
+        echo "== server-b log tail =="
+        tail -80 "$SERVER_LOG_B" 2>/dev/null || true
+    } | tee "$out"
+    echo "evidence saved to ${out}"
+}
+
+phase_logs() {
+    echo "--- server-a log tail ---"
+    tail -20 "$SERVER_LOG_A"
+    echo "--- server-b log tail ---"
+    tail -20 "$SERVER_LOG_B"
+    echo "--- error scan ---"
+    _error_check && echo "NO ERRORS (mrva-project-resolver warnings excluded)"
+}
+
+phase_verify() {
+    load_state
+    echo "--- verify (two users / two servers / runner exit / second wave) ---"
+    local ok=1 name sid
+    local sessions=0 succeeded results archives
+    local workers1="${WORKERS_WAVE1:-}" workers2="${WORKERS_WAVE2:-}"
+    local disjoint=1 worker
+
+    for name in "${SUBMISSIONS[@]}"; do
+        sid="$(_get_sid "$name")"
+        if [ -n "$sid" ]; then
+            sessions=$(( sessions + 1 ))
+        else
+            echo "  missing session id for ${name}"
+            ok=0
+        fi
+    done
+
+    succeeded="$(psql_mrva -t -A -c \
+        'SELECT COUNT(*) FROM job_status WHERE status=2;' | tr -d '[:space:]')"
+    results="$(psql_mrva -t -A -c \
+        'SELECT COUNT(*) FROM analyze_results;' | tr -d '[:space:]')"
+    archives="$(find "$DOWNLOAD_DIR" -type f -name '*.zip' 2>/dev/null \
+        | wc -l | tr -d ' ')"
+
+    [ -n "$workers1" ] || ok=0
+    [ -n "$workers2" ] || ok=0
+    for worker in ${workers1//,/ }; do
+        case ",${workers2}," in
+            *",${worker},"*) disjoint=0 ;;
+        esac
+    done
+
+    [ "$sessions" -eq "${#SUBMISSIONS[@]}" ] || ok=0
+    [ "$succeeded" -eq "$JOBS_TOTAL" ] || ok=0
+    [ "$results" -eq "$JOBS_TOTAL" ] || ok=0
+    [ "$archives" -eq "$JOBS_TOTAL" ] || ok=0
+    [ "${PRE_WAVE2_PENDING:-1}" -eq 0 ] || ok=0
+    [ "$disjoint" -eq 1 ] || ok=0
+    if [ "$EXPECT_STALE_STATUS_RECOVERY" -eq 1 ]; then
+        local stale
+        stale="$(psql_mrva -t -A -c "
+SELECT COUNT(*) FROM job_status
+WHERE session_id=${STALE_STATUS_SESSION}
+  AND owner='stale-job-status'
+  AND status=6;
+" | tr -d '[:space:]')"
+        [ "${STALE_STATUS_ROWS:-0}" -eq "$MRVA_POOL_MAX_WORKERS" ] || ok=0
+        [ "$stale" -eq "$MRVA_POOL_MAX_WORKERS" ] || ok=0
+    fi
+    _error_check || ok=0
+
+    local spawns_a spawns_b
+    spawns_a="$(grep -c 'Spawned pool worker' "$SERVER_LOG_A" 2>/dev/null || true)"
+    spawns_b="$(grep -c 'Spawned pool worker' "$SERVER_LOG_B" 2>/dev/null || true)"
+    if [ "${ELECTION_TELEMETRY:-0}" -eq 1 ]; then
+        if ! { [ "$spawns_a" -gt 0 ] && [ "$spawns_b" -eq 0 ]; } &&
+           ! { [ "$spawns_b" -gt 0 ] && [ "$spawns_a" -eq 0 ]; }; then
+            echo "  lease-election invariant failed: both/neither servers spawned workers"
+            ok=0
+        fi
+    fi
+
+    echo
+    echo "sessions:                    ${sessions}/${#SUBMISSIONS[@]}"
+    echo "succeeded job rows:          ${succeeded}/${JOBS_TOTAL}"
+    echo "result rows:                 ${results}/${JOBS_TOTAL}"
+    echo "downloaded archives:         ${archives}/${JOBS_TOTAL}"
+    echo "pending spawns before wave2: ${PRE_WAVE2_PENDING:-<unknown>} (want 0)"
+    echo "wave1 workers:               ${workers1:-<none>}"
+    echo "wave2 workers:               ${workers2:-<none>}"
+    echo "worker generations disjoint: $([ "$disjoint" -eq 1 ] && echo yes || echo NO)"
+    echo "election telemetry:          ${ELECTION_TELEMETRY:-0}"
+    echo "spawn log counts:            server-a=${spawns_a} server-b=${spawns_b}"
+    if [ "$EXPECT_STALE_STATUS_RECOVERY" -eq 1 ]; then
+        echo "orphan queued rows retained: ${stale:-<unknown>}/${MRVA_POOL_MAX_WORKERS}"
+        echo "manual stale-row deletion:   0"
+    fi
+    echo "servers and PostgreSQL remain running for inspection"
+
+    if [ "$ok" -eq 1 ]; then
+        echo "PASS: wave 2 spawned fresh runners and completed after wave 1 scaled to zero"
+        return 0
+    fi
+    phase_evidence "verify-failed"
+    echo "FAIL: second-wave scheduling invariant failed"
+    return 1
+}
+
+phase_stop() {
+    echo "--- stopping both servers (keeping state) ---"
+    _stop_server A
+    _stop_server B
+    local p
+    for p in $(pgrep -x mrvaagent 2>/dev/null || true); do
+        kill "$p" 2>/dev/null || true
+        echo "  stopped lingering agent pid ${p}"
+    done
+    db_server_stop
+    minio_stop
+}
+
+phase_cleanup() {
+    phase_stop
+    echo "--- dropping MRVA tables and removing test state ---"
+    if psql_mrva -c "SELECT 1;" >/dev/null 2>&1; then
+        psql_mrva -q -c "
+DROP TABLE IF EXISTS $(IFS=,; echo "${MRVA_TABLES[*]}") CASCADE;
+DROP SEQUENCE IF EXISTS $(IFS=,; echo "${MRVA_SEQUENCES[*]}") CASCADE;
+" >/dev/null
+    fi
+    rm -rf "$MRVA_WORK_DIR" "$MRVA_TMP_DIR"
+    echo "cleanup complete"
+}
+
+phase_query() {
+    exec "${SYSTEM_TESTS_DIR}/query-standalone-multi-agent-e2e.sh"
+}
+
+phase_where() {
+    load_state
+    echo "run-system-08: two-server second-wave / respawn regression"
+    echo "  servers: ${SERVER_ID_A}=:${PORT_A}, ${SERVER_ID_B}=:${PORT_B}"
+    echo "  last phase: ${CURRENT_PHASE:-<none>}"
+    echo "  pipeline: ${ALL_PHASES[*]}"
+    echo "  state: ${MRVA_TMP_DIR}"
+}
+
+phase_all() {
+    local phase
+    for phase in "${ALL_PHASES[@]}"; do
+        "phase_${phase}"
+        _mark "$phase"
+        echo
+    done
+}
+
+ALL_PHASES=(preflight reset stage build start roles pack wave1 wait_exit wave2 logs verify)
+STALE_STATUS_PHASES=(preflight reset stage build start roles pack wave1 wait_exit inject_stale_status wave2 logs verify)
+
+usage() {
+    cat <<USAGE
+Usage: ${SCRIPT_DIR}/run [COMMAND ...]
+
+Two-server regression test for scheduling fresh work after every wave-1 runner
+has exited. Each wave submits ${JOBS_PER_WAVE} jobs across alice and bob, with
+one concurrent submission sent to each server.
+
+Pipeline:
+  ${ALL_PHASES[*]}
+
+Meta:
+  all       run the full pipeline
+  stale-status-recovery
+            inject orphan Queued job_status rows before wave 2 and prove they
+            do not consume capacity or prevent valid jobs from completing
+  where     show scenario state
+  evidence  capture PostgreSQL, sysview, process, and log state
+  query     inspect PostgreSQL with the shared query helper
+  stop      stop both servers, retain database/work files
+  cleanup   stop both servers, drop tables, remove scenario files
+  help      show this text
+USAGE
+}
+
+dispatch_one() {
+    local command="$1"
+    case "$command" in
+        all) phase_all ;;
+        stale-status-recovery)
+            EXPECT_STALE_STATUS_RECOVERY=1
+            local phase
+            for phase in "${STALE_STATUS_PHASES[@]}"; do
+                "phase_${phase}"
+                _mark "$phase"
+                echo
+            done
+            ;;
+        preflight|reset|stage|build|start|roles|pack|wave1|wait_exit|inject_stale_status|wave2|logs|verify|stop)
+            "phase_${command}"
+            _mark "$command"
+            ;;
+        evidence) phase_evidence manual ;;
+        query) phase_query ;;
+        cleanup) phase_cleanup ;;
+        where) phase_where ;;
+        help|-h|--help) usage ;;
+        *) echo "ERROR: unknown command '${command}'" >&2; usage >&2; return 2 ;;
+    esac
+}
+
+if [ "$#" -eq 0 ]; then
+    usage
+    exit 0
+fi
+
+for command in "$@"; do
+    dispatch_one "$command"
+done

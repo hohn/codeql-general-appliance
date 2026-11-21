@@ -1,0 +1,45 @@
+* llm walkthrough instructions
+  - examine cga/ for details of the structure and semantics of the system
+  - Use the sample cga/sample-05-i as reference;
+    - that sample uses the following part of cga
+      #+BEGIN_SRC text
+        cga db library / chooser
+        │
+        ▼
+        cga query library / chooser
+        │
+        ▼
+        × {query₁, query₂, ...} 
+        │
+        ▼
+        cga analyze / run mrva
+        │
+        ▼
+        cga SARIF ingest / view
+      #+END_SRC
+  - goal: to explain simple, direct use of cga to a user (here, me)
+    1. give a short explanation of this part of cga in plain english (sample-05
+       uses existing DBs and queries, it does not compute them)
+    2. give a step by step walkthrough, using brief explanations, stopping at every
+       step.  Echo and run the appropriate cga shell commands for every step --
+       not the sample's shell wrappers.
+       e.g., for 05-index-libraries.sh:
+       - do not show 05-index-libraries.sh itself
+       - show and explain its cga* commands; here,
+         #+BEGIN_SRC sh 
+           cga_cmd cgadl getmeta "${CGA_ROOT}/cgadl/db-collection.global/metadata.sql"
+           cga_cmd cgaql index "${REPO_ROOT}/sample-query"
+           cga_cmd cgadl info
+           cga_cmd cgaql info
+         #+END_SRC
+    3. our interaction should resemble a typical shell session / jupyter notebook
+       - repeated
+         + english prose
+         + prompt
+         + shell command
+         
+  - I will follow along through the web view and prompt for the next step;
+    start by reminding me of the url
+    
+  - sample-05-i does not include it, but add the cgaex step
+

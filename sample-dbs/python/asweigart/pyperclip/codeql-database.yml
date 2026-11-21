@@ -1,0 +1,13 @@
+---
+sourceLocationPrefix: /tmp/mrva-db-build/py-pyperclip
+baselineLinesOfCode: 0
+unicodeNewlines: false
+columnKind: utf32
+primaryLanguage: python
+creationMetadata:
+  sha: f5326bfd7c5448b40051dd261a7304657977b838
+  cliVersion: 2.23.8
+  creationTime: 2026-07-13T23:47:25.432225309Z
+overlayBaseDatabase: false
+overlayDatabase: false
+finalised: true

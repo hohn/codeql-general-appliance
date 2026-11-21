@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Bash-first assistance: the SQLite toy</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="../../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../../docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Bash-first assistance: the SQLite toy</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#bash-first-assistance-the-sqlite-toy"
+id="toc-bash-first-assistance-the-sqlite-toy">Bash-first assistance: the
+SQLite toy</a>
+<ul>
+<li><a href="#set-up-the-toy-workspace"
+id="toc-set-up-the-toy-workspace">Set up the toy workspace</a></li>
+<li><a href="#build-a-database-collection"
+id="toc-build-a-database-collection">Build a database collection</a>
+<ul>
+<li><a href="#llm-supervised-attempts"
+id="toc-llm-supervised-attempts">LLM-supervised attempts</a></li>
+</ul></li>
+<li><a href="#set-up-query-authoring"
+id="toc-set-up-query-authoring">Set up query authoring</a></li>
+<li><a href="#author-the-injection-query"
+id="toc-author-the-injection-query">Author the injection query</a></li>
+<li><a href="#save-drafts-and-publish"
+id="toc-save-drafts-and-publish">Save drafts and publish</a></li>
+<li><a href="#sqlite-injection-publish-patch-rebuild-and-compare"
+id="toc-sqlite-injection-publish-patch-rebuild-and-compare">SQLite
+injection: publish, patch, rebuild, and compare</a>
+<ul>
+<li><a href="#patch-the-toy-and-prepare-the-shared-dependency"
+id="toc-patch-the-toy-and-prepare-the-shared-dependency">Patch the toy
+and prepare the shared dependency</a></li>
+<li><a href="#build-both-revisions-in-both-modes"
+id="toc-build-both-revisions-in-both-modes">Build both revisions in both
+modes</a></li>
+<li><a href="#publish-the-four-database-collection"
+id="toc-publish-the-four-database-collection">Publish the four-database
+collection</a></li>
+<li><a href="#run-the-published-query-on-all-four-through-mrva"
+id="toc-run-the-published-query-on-all-four-through-mrva">Run the
+published query on all four through MRVA</a></li>
+<li><a href="#combine-the-results-in-duckdb"
+id="toc-combine-the-results-in-duckdb">Combine the results in
+DuckDB</a></li>
+<li><a href="#compare-in-duckdb-and-return-later"
+id="toc-compare-in-duckdb-and-return-later">Compare in DuckDB and return
+later</a></li>
+</ul></li>
+<li><a href="#fixed-sqlite-toy-check"
+id="toc-fixed-sqlite-toy-check">Fixed SQLite toy check</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="bash-first-assistance-the-sqlite-toy">Bash-first assistance: the
+SQLite toy</h1>
+<p>Follow <a
+href="https://github.com/hohn/codeql-dataflow-sql-injection">codeql-dataflow-sql-injection</a>
+from database creation through query authoring to a vulnerable/patched
+comparison. <code>cga assist database-build</code>
+(<code>cga a d</code>) builds the initial collection;
+<code>cga assist query-writing</code> (<code>cga a q</code>) prepares
+and publishes the query. The paired experiment uses CGA’s lower-level
+commands to rebuild the collection and run it through MRVA.</p>
+<p>The completed work is retained outside Git under
+<code>../single-machine-mrva-artifacts/cgaassist/sqlite-toy/</code>. The
+commands show how it was created: reuse existing collections, working
+trees, and publications rather than rerunning their creation. To inspect
+the final result, jump to <a
+href="#compare-in-duckdb-and-return-later">Compare in DuckDB and return
+later</a>. For a new run, choose an unused <code>TOY</code>
+directory.</p>
+<h2 id="set-up-the-toy-workspace">Set up the toy workspace</h2>
+<p>Install the host dependencies in <a
+href="../../INSTALL.html">INSTALL.md</a>, including CodeQL’s C++
+libraries. This walkthrough uses Bash, <code>cga</code>, CodeQL, Clang,
+Git, <code>sqlite3</code>, <code>jq</code>, <code>unzip</code>,
+<code>patch</code>, <code>dpkg-deb</code>, DuckDB, and PostgreSQL. From
+the repository root, define these paths; repeat this block when
+returning in a fresh shell:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="va">REPO</span><span class="op">=</span><span class="st">&quot;</span><span class="va">$PWD</span><span class="st">&quot;</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="va">TOY</span><span class="op">=</span><span class="st">&quot;</span><span class="va">$(</span><span class="bu">cd</span> .. <span class="kw">&amp;&amp;</span> <span class="bu">pwd</span><span class="va">)</span><span class="st">/single-machine-mrva-artifacts/cgaassist/sqlite-toy&quot;</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">&quot;</span><span class="va">$TOY</span><span class="st">/query-writing/.cga/tmp/query-writing/working&quot;</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="va">PAIR</span><span class="op">=</span><span class="st">&quot;</span><span class="va">$TOY</span><span class="st">/paired&quot;</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="va">ANALYSIS</span><span class="op">=</span><span class="st">&quot;</span><span class="va">$PAIR</span><span class="st">/mrva-analysis&quot;</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="va">EXAMPLE</span><span class="op">=</span><span class="st">&quot;</span><span class="va">$REPO</span><span class="st">/cga/cgaassist/examples/sqlite-toy&quot;</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="va">BASE</span><span class="op">=</span>bc7cda527427917e7a68676911c16e7db407c25a</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">CODEQL_JAVA_HOME</span><span class="op">=</span><span class="st">&quot;</span><span class="va">${CODEQL_JAVA_HOME</span><span class="op">:-</span>/usr<span class="va">}</span><span class="st">&quot;</span></span></code></pre></div>
+<p><code>EXAMPLE</code> points to the tracked query, patch, and SQL
+fixtures in this checkout. <code>BASE</code> is the toy revision used in
+the retained run. <code>/usr</code> is this Linux host’s CodeQL Java
+setting; keep your explicit override if different. New sources, database
+archives, and results below stay under <code>TOY</code>.</p>
+<h2 id="build-a-database-collection">Build a database collection</h2>
+<p>The toy documents <code>./build.sh</code> and needs SQLite headers
+and libraries. Fetch the pinned revision and build both extraction
+modes:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="st">&quot;</span><span class="va">$TOY</span><span class="st">/preparation&quot;</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> <span class="st">&quot;</span><span class="va">$TOY</span><span class="st">/preparation&quot;</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> init</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> chain start <span class="at">--name</span> database-build</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> a d fetch <span class="dt">\</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--git</span> https://github.com/hohn/codeql-dataflow-sql-injection.git <span class="dt">\</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">--ref</span> <span class="st">&quot;toy=</span><span class="va">$BASE</span><span class="st">&quot;</span> <span class="at">--language</span> cpp <span class="at">--use-llm</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> a d build <span class="at">--mode</span> bm-none <span class="at">--mode</span> trace <span class="at">--use-llm</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> a d index</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> a d export <span class="st">&quot;</span><span class="va">$TOY</span><span class="st">/collection&quot;</span></span></code></pre></div>
+<p><code>fetch</code> records the source commit and tree hash.
+<code>build</code> makes independent disposable copies; successful jobs
+are verified and skipped when resumed. <code>index</code> creates and
+verifies <code>metadata.sql</code> and <code>manifest.json</code>.
+<code>export</code> copies both databases and their metadata into
+<code>collection/</code> with local file URLs. Authoring uses those
+files directly; the later MRVA run serves its own copy.</p>
+<p>The two databases have the same source revision but different
+extraction modes, not different vulnerability versions. Each database
+identity is <code>hohn/codeql-dataflow-sql-injection-</code> followed by
+its final ZIP’s full SHA-256. Copying/exporting preserves that identity;
+rebuilding may produce new bytes.</p>
+<p>If <code>collection/</code> already exists, continue below. For
+interrupted preparation, return to <code>preparation/</code> and repeat
+the unfinished phase. Source and build choices are fixed once jobs are
+planned; export refuses an existing directory.</p>
+<h3 id="llm-supervised-attempts">LLM-supervised attempts</h3>
+<p>Here <code>--use-llm</code> lets the supervisor read the toy’s human
+build documentation, prepare dependencies, and supply the trace build
+command. In the retained run, it repaired the missing SQLite dependency
+by downloading development/runtime Debian packages, extracting them
+locally, and generating a build wrapper.</p>
+<p>CGA starts supervision before execution and returns failed attempt
+logs for repair, up to three attempts by default
+(<code>--llm-attempts</code> changes the bound). The default runner is
+<code>copilot --silent --available-tools= --prompt</code>, followed by
+the task. Its JSON response contains <code>commands</code> (argv
+arrays), <code>build_command</code> (a string or null), and
+<code>notes</code> (a string). <code>CGA_PREP_LLM_COMMAND</code> can
+replace the runner; its argv is parsed without a shell and the prompt is
+appended as one argument.</p>
+<p>CGA executes the recipes with the caller’s normal permissions, not
+expanded tool approvals. Fetch recipes prepare prerequisites; CGA checks
+out the requested revision itself. Build recipes operate on disposable
+sources; compilation runs under CodeQL. Requests, recipes, command logs,
+outcomes, and attempt sources remain under the preparation workflow’s
+<code>.cga/tmp/database-build/</code>. Trace mode still requires
+intercepted-process evidence; reporting success cannot substitute for a
+real traced build.</p>
+<h2 id="set-up-query-authoring">Set up query authoring</h2>
+<p>Start a separate authoring workflow and import the toy catalogue:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> a q start <span class="st">&quot;</span><span class="va">$TOY</span><span class="st">/query-writing&quot;</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> <span class="st">&quot;</span><span class="va">$TOY</span><span class="st">/query-writing&quot;</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> a q catalogue <span class="st">&quot;</span><span class="va">$TOY</span><span class="st">/collection/metadata.sql&quot;</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> a q select-databases <span class="at">--rows</span> 1 2</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> a q download</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> a q prepare</span></code></pre></div>
+<p>At the last prompt, choose both displayed, hash-qualified identities.
+The working tree at <code>WORK</code> contains <code>Fprintf.ql</code>,
+a pinned <code>qlpack.yml</code> and lockfile, the two extracted
+databases, and <code>query.code-workspace</code>.
+<code>editor-databases.json</code> lists their local directories. These
+editor inputs are fixed after preparation.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">code</span> <span class="st">&quot;</span><span class="va">$WORK</span><span class="st">/query.code-workspace&quot;</span></span></code></pre></div>
+<p>In VS Code’s <strong>CodeQL Databases</strong> view, add the
+directories listed in <code>editor-databases.json</code>. Run the
+starter <code>Fprintf.ql</code> against the traced database: it finds
+the toy’s <code>fprintf()</code> calls.</p>
+<p>If the authoring workflow already exists, skip <code>start</code> and
+<code>prepare</code>. Return with <code>cd "$TOY/query-writing"</code>;
+<code>cga state show</code> and <code>cga tree show</code> inspect its
+retained state and history.</p>
+<h2 id="author-the-injection-query">Author the injection query</h2>
+<p>Read the traced database’s identity from <code>metadata.sql</code>,
+then locate its prepared editor directory:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="va">TRACED_NAME</span><span class="op">=</span><span class="st">&quot;</span><span class="va">$(</span><span class="ex">sqlite3</span> <span class="st">&quot;</span><span class="va">$TOY</span><span class="st">/collection/metadata.sql&quot;</span> <span class="dt">\</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;SELECT git_owner || &#39;-&#39; || git_repo FROM metadata</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="st">   WHERE build_cid LIKE &#39;%--trace--%&#39;;&quot;</span><span class="va">)</span><span class="st">&quot;</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="va">TRACED</span><span class="op">=</span><span class="st">&quot;</span><span class="va">$(</span><span class="fu">find</span> <span class="st">&quot;</span><span class="va">$WORK</span><span class="st">/databases&quot;</span> <span class="at">-mindepth</span> 1 <span class="at">-maxdepth</span> 1 <span class="dt">\</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">-type</span> d <span class="at">-name</span> <span class="st">&quot;db-*-</span><span class="va">$TRACED_NAME</span><span class="st">&quot;</span><span class="va">)</span><span class="st">&quot;</span></span></code></pre></div>
+<p>Extract its <code>src.zip</code> to inspect <code>add-user.c</code>.
+Skip extraction if <code>extracted-source/</code> is already
+retained:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">unzip</span> <span class="at">-q</span> <span class="st">&quot;</span><span class="va">$TRACED</span><span class="st">/src.zip&quot;</span> <span class="at">-d</span> <span class="st">&quot;</span><span class="va">$WORK</span><span class="st">/extracted-source&quot;</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">find</span> <span class="st">&quot;</span><span class="va">$WORK</span><span class="st">/extracted-source&quot;</span> <span class="at">-name</span> add-user.c <span class="at">-print</span></span></code></pre></div>
+<p>The injection path is stdin <code>read()</code> at line 52, through
+<code>get_user_info()</code> and <code>write_info()</code>, into
+<code>snprintf()</code> SQL construction at line 80, then
+<code>sqlite3_exec()</code> at line 84. Trailing-whitespace removal does
+not escape SQL.</p>
+<p>Leave <code>Fprintf.ql</code> unchanged and write
+<code>injection.ql</code> beside it. The completed <a
+href="examples/sqlite-toy/injection.ql">injection.ql</a> uses C++ global
+taint tracking from modeled user-input sources to the SQL-text argument
+of <code>sqlite3_exec()</code>. Copy it from <code>EXAMPLE</code>, the
+fixture directory defined in the setup block:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> <span class="st">&quot;</span><span class="va">$EXAMPLE</span><span class="st">/injection.ql&quot;</span> <span class="st">&quot;</span><span class="va">$WORK</span><span class="st">/injection.ql&quot;</span></span></code></pre></div>
+<p>Close VS Code before command-line evaluation if its CodeQL extension
+holds the database lock. Do not remove the lock file.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> <span class="st">&quot;</span><span class="va">$WORK</span><span class="st">&quot;</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="ex">codeql</span> database analyze <span class="st">&quot;</span><span class="va">$TRACED</span><span class="st">&quot;</span> injection.ql <span class="dt">\</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--format</span><span class="op">=</span>sarifv2.1.0 <span class="at">--output</span><span class="op">=</span>injection.sarif <span class="dt">\</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads</span><span class="op">=</span>2 <span class="at">--ram</span><span class="op">=</span>4096 <span class="at">--rerun</span></span></code></pre></div>
+<p>The retained result has one finding at <code>add-user.c:84</code>,
+with an interprocedural path from line 52. The display may condense the
+modeled <code>snprintf()</code> step.</p>
+<h2 id="save-drafts-and-publish">Save drafts and publish</h2>
+<p>Save this query, not the starter:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> <span class="st">&quot;</span><span class="va">$TOY</span><span class="st">/query-writing&quot;</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> a q save injection <span class="at">--source</span> <span class="st">&quot;</span><span class="va">$WORK</span><span class="st">/injection.ql&quot;</span></span></code></pre></div>
+<p>This stages the query, support modules, manifest, and lockfile under
+<code>.cga/tmp/query-writing/qlib/injection/</code> and indexes that
+draft. Unfinished drafts are allowed. After editing
+<code>working/injection.ql</code>, repeat the same <code>save</code>
+command; earlier saved snapshots remain in history.</p>
+<p>Publish the verified draft into the toy’s permanent query
+library:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> a q publish <span class="st">&quot;</span><span class="va">$TOY</span><span class="st">/queries&quot;</span> <span class="at">--name</span> injection</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> ql list</span></code></pre></div>
+<p>Publication checks a private copy with CodeQL’s check-only
+compilation, then copies and indexes
+<code>queries/injection/injection.ql</code>. It does not copy editor
+databases or run the query. Failed compilation leaves the destination
+unchanged. If this publication already exists, reuse it; overwriting the
+package or its query ID is refused.</p>
+<h2 id="sqlite-injection-publish-patch-rebuild-and-compare">SQLite
+injection: publish, patch, rebuild, and compare</h2>
+<p>The published injection query is now the fixed input for a matched
+experiment: rebuild both vulnerable and patched sources with the same
+SQLite dependency, run the query on all four databases through MRVA,
+then compare in DuckDB. One submission selects the entire collection,
+just as it would for hundreds of databases. The original
+<code>collection/</code> and editor databases remain unchanged.</p>
+<p>The completed builds are retained under <code>PAIR</code>, with the
+MRVA analysis in <code>ANALYSIS</code>. Their creation commands follow;
+choose unused directories for another run, or jump to the comparison to
+inspect the existing MRVA results.</p>
+<h3 id="patch-the-toy-and-prepare-the-shared-dependency">Patch the toy
+and prepare the shared dependency</h3>
+<p>Clone the toy at <code>BASE</code>, copy it for the patched revision,
+and reuse the exact development/runtime packages acquired in the earlier
+LLM-supervised trace build. The manifest records that build’s disposable
+source location. Neither original sources nor original database archives
+are modified.</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="st">&quot;</span><span class="va">$PAIR</span><span class="st">&quot;</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="st">&quot;</span><span class="va">$PAIR</span><span class="st">/sources&quot;</span> <span class="st">&quot;</span><span class="va">$PAIR</span><span class="st">/dependencies/packages&quot;</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone <span class="at">--quiet</span> https://github.com/hohn/codeql-dataflow-sql-injection.git <span class="dt">\</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;</span><span class="va">$PAIR</span><span class="st">/sources/vulnerable&quot;</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> <span class="at">-C</span> <span class="st">&quot;</span><span class="va">$PAIR</span><span class="st">/sources/vulnerable&quot;</span> checkout <span class="at">--quiet</span> <span class="at">--detach</span> <span class="st">&quot;</span><span class="va">$BASE</span><span class="st">&quot;</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> <span class="at">-a</span> <span class="st">&quot;</span><span class="va">$PAIR</span><span class="st">/sources/vulnerable&quot;</span> <span class="st">&quot;</span><span class="va">$PAIR</span><span class="st">/sources/patched&quot;</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="va">PACKAGES</span><span class="op">=</span><span class="st">&quot;</span><span class="va">$(</span><span class="ex">jq</span> <span class="at">-er</span> <span class="st">&#39;.databases[] | select(.mode == &quot;trace&quot;) |</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="st">  .disposable_source + &quot;/.cga-sqlite/packages&quot;&#39;</span> <span class="st">&quot;</span><span class="va">$TOY</span><span class="st">/collection/manifest.json&quot;</span><span class="va">)</span><span class="st">&quot;</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> <span class="st">&quot;</span><span class="va">$PACKAGES</span><span class="st">&quot;</span>/libsqlite3-<span class="dt">{0</span><span class="op">,</span><span class="dt">dev}</span>_<span class="pp">*</span>.deb <span class="st">&quot;</span><span class="va">$PAIR</span><span class="st">/dependencies/packages/&quot;</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> archive <span class="kw">in</span> <span class="st">&quot;</span><span class="va">$PAIR</span><span class="st">/dependencies/packages/&quot;</span><span class="pp">*</span>.deb<span class="kw">;</span> <span class="cf">do</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>  <span class="ex">dpkg-deb</span> <span class="at">--extract</span> <span class="st">&quot;</span><span class="va">$archive</span><span class="st">&quot;</span> <span class="st">&quot;</span><span class="va">$PAIR</span><span class="st">/dependencies/root&quot;</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="cf">done</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> <span class="st">&quot;</span><span class="va">$EXAMPLE</span><span class="st">&quot;</span>/<span class="dt">{sources.json</span><span class="op">,</span><span class="dt">environment.sh</span><span class="op">,</span><span class="dt">bind-parameters.patch}</span> <span class="st">&quot;</span><span class="va">$PAIR</span><span class="st">/&quot;</span></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a><span class="fu">patch</span> <span class="at">--directory</span><span class="op">=</span><span class="st">&quot;</span><span class="va">$PAIR</span><span class="st">/sources/patched&quot;</span> <span class="at">-p1</span> <span class="op">&lt;</span> <span class="st">&quot;</span><span class="va">$PAIR</span><span class="st">/bind-parameters.patch&quot;</span></span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> <span class="st">&quot;</span><span class="va">$PAIR</span><span class="st">&quot;</span></span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a><span class="fu">sha256sum</span> bind-parameters.patch dependencies/packages/<span class="pp">*</span>.deb <span class="op">&gt;</span> inputs.sha256</span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> ./environment.sh</span></code></pre></div>
+<p>This run uses native ARM64 SQLite <code>libsqlite3-dev</code> and
+<code>libsqlite3-0</code> <code>3.54.1-1</code>, shared by all four
+builds. <code>environment.sh</code> supplies the extracted
+headers/libraries through <code>CPATH</code>, <code>LIBRARY_PATH</code>,
+and <code>LD_LIBRARY_PATH</code>, including for <code>bm-none</code>
+extraction. It fails if the dependency is missing. On another host,
+supply matching native development/runtime packages rather than reusing
+ARM64 packages. The original host’s CodeQL Java default is
+<code>/usr</code>; an explicit <code>CODEQL_JAVA_HOME</code> is
+preserved.</p>
+<p>The <a href="examples/sqlite-toy/bind-parameters.patch">patch</a>
+replaces SQL interpolation with
+<code>sqlite3_prepare_v2("INSERT INTO users VALUES (?, ?)")</code>,
+<code>sqlite3_bind_int()</code>,
+<code>sqlite3_bind_text(..., SQLITE_TRANSIENT)</code>, and
+<code>sqlite3_step()</code>. It checks errors and finalizes the
+statement. The patched tree is a local patch on <code>BASE</code>, not a
+claimed new upstream commit; CGA hashes both source trees and retains
+the patch reference in the build records.</p>
+<h3 id="build-both-revisions-in-both-modes">Build both revisions in both
+modes</h3>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> <span class="st">&quot;</span><span class="va">$PAIR</span><span class="st">&quot;</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> ./environment.sh</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> init</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> chain start <span class="at">--name</span> sqlite-injection-pair</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> sp adopt <span class="at">--manifest</span> sources.json</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> db plan <span class="at">--mode</span> bm-none <span class="at">--mode</span> trace <span class="at">--output-dir</span> jobs</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> db build <span class="at">--job</span> jobs/sqlite-toy-vulnerable--none.json <span class="dt">\</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">--bm-none</span> <span class="at">--output-dir</span> databases</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> db build <span class="at">--job</span> jobs/sqlite-toy-vulnerable--trace.json <span class="dt">\</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">--trace</span> <span class="at">--output-dir</span> databases</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> db build <span class="at">--job</span> jobs/sqlite-toy-patched--none.json <span class="dt">\</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">--bm-none</span> <span class="at">--output-dir</span> databases</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> db build <span class="at">--job</span> jobs/sqlite-toy-patched--trace.json <span class="dt">\</span></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">--trace</span> <span class="at">--output-dir</span> databases</span></code></pre></div>
+<p>The source manifest supplies <code>bash ./build.sh</code> for trace
+mode. All jobs use the same dependency prefix and independent disposable
+source copies. <code>bm-none</code> does not run the compiler build; the
+catalogue calls that mode <code>none</code>. Trace builds must have
+positive intercepted-process evidence. Existing built job IDs are
+refused, so use a fresh paired workflow for another experiment.</p>
+<p>As an additional runtime check, the patched trace executable was run
+against an isolated temporary <code>users.sqlite</code> with names
+<code>Alice</code>, <code>O'Reilly</code>, and
+<code>Robert'); SELECT 'inert'; --</code>. All three were inserted
+literally and the temporary database was removed; the original toy
+database was not used.</p>
+<h3 id="publish-the-four-database-collection">Publish the four-database
+collection</h3>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> cat create <span class="at">--output</span> index/metadata.sql <span class="at">--manifest</span> index/manifest.json</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> cat verify <span class="at">--catalog</span> index/metadata.sql <span class="at">--manifest</span> index/manifest.json</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> cat export <span class="st">&quot;</span><span class="va">$PAIR</span><span class="st">/collection&quot;</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> cat verify <span class="dt">\</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">--catalog</span> <span class="st">&quot;</span><span class="va">$PAIR</span><span class="st">/collection/metadata.sql&quot;</span> <span class="dt">\</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--manifest</span> <span class="st">&quot;</span><span class="va">$PAIR</span><span class="st">/collection/manifest.json&quot;</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> state export <span class="at">-o</span> <span class="st">&quot;</span><span class="va">$PAIR</span><span class="st">/preparation-state.json&quot;</span></span></code></pre></div>
+<p>The collection has
+<code>(vulnerable, patched) x (none, trace)</code>, with four
+hash-qualified identities and local file URLs. The manifest maps those
+identities to variant, mode, source hashes, and tracer evidence.</p>
+<h3 id="run-the-published-query-on-all-four-through-mrva">Run the
+published query on all four through MRVA</h3>
+<p>Start a separate analysis workflow. Import the four-database
+catalogue and the published query, select every database, and build one
+query pack:</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> init <span class="st">&quot;</span><span class="va">$ANALYSIS</span><span class="st">&quot;</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> <span class="st">&quot;</span><span class="va">$ANALYSIS</span><span class="st">&quot;</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">CGAST_TMPDIR</span><span class="op">=</span><span class="st">&quot;</span><span class="va">$ANALYSIS</span><span class="st">/.cga/tmp/artifacts&quot;</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> chain start <span class="at">--name</span> sqlite-injection-mrva</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> dl getmeta <span class="st">&quot;</span><span class="va">$PAIR</span><span class="st">/collection/metadata.sql&quot;</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> dl select <span class="at">--user</span> toy</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> dl download <span class="at">--output-dir</span> <span class="st">&quot;</span><span class="va">$ANALYSIS</span><span class="st">/qldbstore&quot;</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> ql index <span class="st">&quot;</span><span class="va">$TOY</span><span class="st">/queries&quot;</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> ql select <span class="at">--user</span> toy id cpp/toy-sql-injection</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> ql pack</span></code></pre></div>
+<p>Start toy-owned services with a private PostgreSQL cluster and
+separate ports. Choose free ports before running this block; these
+commands refuse occupied ports rather than stopping another experiment.
+No shared reset is used.</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">PORT</span><span class="op">=</span>18081 <span class="va">SERVER_PORT</span><span class="op">=</span>18081</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">POSTGRES_HOST</span><span class="op">=</span>127.0.0.1 <span class="va">POSTGRES_PORT</span><span class="op">=</span>55433</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">POSTGRES_USER</span><span class="op">=</span>study <span class="va">POSTGRES_DB</span><span class="op">=</span>mrvadev</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">MRVA_WORK_DIR</span><span class="op">=</span><span class="st">&quot;</span><span class="va">$ANALYSIS</span><span class="st">/runtime/mrva&quot;</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">MRVA_TMP_DIR</span><span class="op">=</span><span class="st">&quot;</span><span class="va">$ANALYSIS</span><span class="st">/runtime/logs&quot;</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">SERVER_LOG</span><span class="op">=</span><span class="st">&quot;</span><span class="va">$MRVA_TMP_DIR</span><span class="st">/server.log&quot;</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">MRVA_ENVSIM_AGENT_BINARY</span><span class="op">=</span><span class="st">&quot;</span><span class="va">$REPO</span><span class="st">/agent-commander-argo/mrvaagent&quot;</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">MRVA_DB_SERVER_URL</span><span class="op">=</span>http://127.0.0.1:19080</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">CGA_MRVA_SERVER</span><span class="op">=</span>http://127.0.0.1:18081</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">MRVA_STANDALONE_STORAGE</span><span class="op">=</span>filesystem <span class="va">MRVA_POOL_MAX_WORKERS</span><span class="op">=</span>2</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> pg init <span class="at">--data-dir</span> <span class="st">&quot;</span><span class="va">$ANALYSIS</span><span class="st">/runtime/pgdata&quot;</span> <span class="dt">\</span></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">--bin-dir</span> <span class="st">&quot;</span><span class="va">$(</span><span class="ex">pg_config</span> <span class="at">--bindir</span><span class="va">)</span><span class="st">&quot;</span> <span class="at">--port</span> <span class="st">&quot;</span><span class="va">$POSTGRES_PORT</span><span class="st">&quot;</span> <span class="at">--user</span> <span class="st">&quot;</span><span class="va">$POSTGRES_USER</span><span class="st">&quot;</span></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> pg start</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> pg createdb <span class="st">&quot;</span><span class="va">$POSTGRES_DB</span><span class="st">&quot;</span></span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> ds start <span class="at">--directory</span> <span class="st">&quot;</span><span class="va">$ANALYSIS</span><span class="st">/qldbstore&quot;</span> <span class="dt">\</span></span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">--port</span> 19080 <span class="at">--log</span> <span class="st">&quot;</span><span class="va">$ANALYSIS</span><span class="st">/runtime/archives.log&quot;</span></span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> mx build</span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> ms start <span class="at">--binary</span> <span class="st">&quot;</span><span class="va">$REPO</span><span class="st">/server-commander/mrvaserver&quot;</span></span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> pg check</span>
+<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> ds check</span>
+<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> ms check</span></code></pre></div>
+<p>Submit once, wait for completion, and retrieve all four result
+archives:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> mr run <span class="at">--name</span> sqlite-injection <span class="at">--user</span> toy <span class="at">--language</span> cpp <span class="dt">\</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> <span class="st">&quot;</span><span class="va">$ANALYSIS</span><span class="st">/downloads&quot;</span> <span class="at">--log-dir</span> <span class="st">&quot;</span><span class="va">$ANALYSIS</span><span class="st">/checkpoints&quot;</span></span></code></pre></div>
+<p>MRVA workers consume the served archives, not the editor databases.
+The worker pool schedules the selected collection without a shell loop
+over databases. <code>succeeded</code> means execution completed, not
+zero findings. If interrupted, inspect
+<code>cga mr status --name sqlite-injection</code> and the retained
+checkpoints; resume with
+<code>cga mr download --name sqlite-injection --output-dir "$ANALYSIS/downloads"</code>
+after success rather than submitting again.</p>
+<h3 id="combine-the-results-in-duckdb">Combine the results in
+DuckDB</h3>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> si ingest <span class="at">--name</span> sqlite-injection <span class="at">--output-dir</span> <span class="st">&quot;</span><span class="va">$ANALYSIS</span><span class="st">/findings&quot;</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> si verify sqlite-injection</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> state export <span class="at">-o</span> <span class="st">&quot;</span><span class="va">$ANALYSIS</span><span class="st">/analysis-state.json&quot;</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> <span class="st">&quot;</span><span class="va">$EXAMPLE</span><span class="st">&quot;</span>/<span class="dt">{compare.sql</span><span class="op">,</span><span class="dt">locations.sql}</span> <span class="st">&quot;</span><span class="va">$ANALYSIS</span><span class="st">/&quot;</span></span></code></pre></div>
+<p>Named ingestion extracts each SARIF, creates four per-job SQLite
+inputs, and combines them into <code>findings/all.duckdb</code>. It also
+records the repository, MRVA status/count, query pack, and artifacts for
+every job, including both successful zero-finding jobs.
+<code>verify</code> checks those artifacts and cumulative counts.</p>
+<h3 id="compare-in-duckdb-and-return-later">Compare in DuckDB and return
+later</h3>
+<p>For the retained run, first restore the path variables from <a
+href="#set-up-the-toy-workspace">Set up the toy workspace</a> in a fresh
+shell, then:</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> <span class="st">&quot;</span><span class="va">$ANALYSIS</span><span class="st">&quot;</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> si sql <span class="at">--query-file</span> compare.sql</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> si sql <span class="at">--query-file</span> locations.sql</span></code></pre></div>
+<p><code>compare.sql</code> joins the DuckDB findings to
+<code>../collection/manifest.json</code> and the named ingestion in
+<code>analysis-state.json</code>. Its explicit four-build matrix retains
+zero-finding jobs, flags missing builds/jobs and mismatched
+MRVA/ingestion/DuckDB counts, and prints repository, user, session, and
+query pack provenance. Keep those JSON files and the ingestion
+artifacts.</p>
+<p>Observed MRVA result with CodeQL 2.27.1 and one published query
+pack:</p>
+<table>
+<thead>
+<tr>
+<th>Variant</th>
+<th>Mode</th>
+<th>Status</th>
+<th style="text-align: right;">Findings</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>vulnerable</td>
+<td>none</td>
+<td>complete</td>
+<td style="text-align: right;">1</td>
+</tr>
+<tr>
+<td>vulnerable</td>
+<td>trace</td>
+<td>complete</td>
+<td style="text-align: right;">1</td>
+</tr>
+<tr>
+<td>patched</td>
+<td>none</td>
+<td>complete</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td>patched</td>
+<td>trace</td>
+<td>complete</td>
+<td style="text-align: right;">0</td>
+</tr>
+</tbody>
+</table>
+<p><code>locations.sql</code> shows both vulnerable findings at
+<code>add-user.c:84:27</code>. The fixed program’s bound-parameter
+behavior was also checked at runtime. This query covers the toy’s
+<code>sqlite3_exec()</code> flow; zero findings are not a general proof
+about every SQLite API or other vulnerabilities.</p>
+<p>After finishing the submission, stop only this workflow’s
+services:</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> ms check</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> ms stop</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> ds stop</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> pg stop</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> state export <span class="at">-o</span> <span class="st">&quot;</span><span class="va">$ANALYSIS</span><span class="st">/analysis-state.json&quot;</span></span></code></pre></div>
+<p>The retained services are stopped. Reading the DuckDB comparison
+later does not require restarting MRVA, the archive server, or
+PostgreSQL.</p>
+<p>Only the query, patch, manifests/settings, comparison SQL, and these
+instructions are kept in Git. Sources, dependency packages, database
+ZIPs, SARIF, SQLite, DuckDB, and CGA workflow histories remain in the
+external artifact tree.</p>
+<h2 id="fixed-sqlite-toy-check">Fixed SQLite toy check</h2>
+<p>To repeat just the initial acquisition/build/export/download check in
+a new directory, without the authoring and patch comparison:</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="va">CHECK</span><span class="op">=</span><span class="st">&quot;</span><span class="va">$TOY</span><span class="st">/check-001&quot;</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> <span class="st">&quot;</span><span class="va">$REPO</span><span class="st">/cga/cgaassist/tests/sqlite_toy.py&quot;</span> <span class="st">&quot;</span><span class="va">$CHECK</span><span class="st">&quot;</span> <span class="at">--use-llm</span></span></code></pre></div>
+<p>The check builds both extraction modes, verifies identities and
+resumption, exports and briefly serves the collection, downloads into a
+separate workflow, and unbundles both databases. It stops its own
+server. <code>CHECK/collection/</code> retains local file URLs for later
+authoring; <code>CHECK/http-collection/</code> was used only by the
+temporary serving check.</p>
+</body>
+</html>

@@ -1,0 +1,1303 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<!-- 2026-05-18 Mon 14:41 -->
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SQL Catalog: state_postgres.go</title>
+<meta name="author" content="(extracted from source)" />
+<meta name="generator" content="Org Mode" />
+<style type="text/css">
+  #content { max-width: 60em; margin: auto; }
+  .title  { text-align: center;
+             margin-bottom: .2em; }
+  .subtitle { text-align: center;
+              font-size: medium;
+              font-weight: bold;
+              margin-top:0; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { font-family: monospace; color: green; }
+  .priority { font-family: monospace; color: orange; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .org-right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .org-left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .org-center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #e6e6e6;
+    border-radius: 3px;
+    background-color: #f2f2f2;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: auto;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    top: -8px;
+    right: 12px;
+    padding: 3px;
+    color: #555;
+    background-color: #f2f2f299;
+  }
+  pre.src:hover:before { display: inline; margin-top: 14px;}
+  /* Languages per Org manual */
+  pre.src-asymptote:before { content: 'Asymptote'; }
+  pre.src-awk:before { content: 'Awk'; }
+  pre.src-authinfo::before { content: 'Authinfo'; }
+  pre.src-C:before { content: 'C'; }
+  /* pre.src-C++ doesn't work in CSS */
+  pre.src-clojure:before { content: 'Clojure'; }
+  pre.src-css:before { content: 'CSS'; }
+  pre.src-D:before { content: 'D'; }
+  pre.src-ditaa:before { content: 'ditaa'; }
+  pre.src-dot:before { content: 'Graphviz'; }
+  pre.src-calc:before { content: 'Emacs Calc'; }
+  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
+  pre.src-fortran:before { content: 'Fortran'; }
+  pre.src-gnuplot:before { content: 'gnuplot'; }
+  pre.src-haskell:before { content: 'Haskell'; }
+  pre.src-hledger:before { content: 'hledger'; }
+  pre.src-java:before { content: 'Java'; }
+  pre.src-js:before { content: 'Javascript'; }
+  pre.src-latex:before { content: 'LaTeX'; }
+  pre.src-ledger:before { content: 'Ledger'; }
+  pre.src-lisp:before { content: 'Lisp'; }
+  pre.src-lilypond:before { content: 'Lilypond'; }
+  pre.src-lua:before { content: 'Lua'; }
+  pre.src-matlab:before { content: 'MATLAB'; }
+  pre.src-mscgen:before { content: 'Mscgen'; }
+  pre.src-ocaml:before { content: 'Objective Caml'; }
+  pre.src-octave:before { content: 'Octave'; }
+  pre.src-org:before { content: 'Org mode'; }
+  pre.src-oz:before { content: 'OZ'; }
+  pre.src-plantuml:before { content: 'Plantuml'; }
+  pre.src-processing:before { content: 'Processing.js'; }
+  pre.src-python:before { content: 'Python'; }
+  pre.src-R:before { content: 'R'; }
+  pre.src-ruby:before { content: 'Ruby'; }
+  pre.src-sass:before { content: 'Sass'; }
+  pre.src-scheme:before { content: 'Scheme'; }
+  pre.src-screen:before { content: 'Gnu Screen'; }
+  pre.src-sed:before { content: 'Sed'; }
+  pre.src-sh:before { content: 'shell'; }
+  pre.src-sql:before { content: 'SQL'; }
+  pre.src-sqlite:before { content: 'SQLite'; }
+  /* additional languages in org.el's org-babel-load-languages alist */
+  pre.src-forth:before { content: 'Forth'; }
+  pre.src-io:before { content: 'IO'; }
+  pre.src-J:before { content: 'J'; }
+  pre.src-makefile:before { content: 'Makefile'; }
+  pre.src-maxima:before { content: 'Maxima'; }
+  pre.src-perl:before { content: 'Perl'; }
+  pre.src-picolisp:before { content: 'Pico Lisp'; }
+  pre.src-scala:before { content: 'Scala'; }
+  pre.src-shell:before { content: 'Shell Script'; }
+  pre.src-ebnf2ps:before { content: 'ebfn2ps'; }
+  /* additional language identifiers per "defun org-babel-execute"
+       in ob-*.el */
+  pre.src-cpp:before  { content: 'C++'; }
+  pre.src-abc:before  { content: 'ABC'; }
+  pre.src-coq:before  { content: 'Coq'; }
+  pre.src-groovy:before  { content: 'Groovy'; }
+  /* additional language identifiers from org-babel-shell-names in
+     ob-shell.el: ob-shell is the only babel language using a lambda to put
+     the execution function name together. */
+  pre.src-bash:before  { content: 'bash'; }
+  pre.src-csh:before  { content: 'csh'; }
+  pre.src-ash:before  { content: 'ash'; }
+  pre.src-dash:before  { content: 'dash'; }
+  pre.src-ksh:before  { content: 'ksh'; }
+  pre.src-mksh:before  { content: 'mksh'; }
+  pre.src-posh:before  { content: 'posh'; }
+  /* Additional Emacs modes also supported by the LaTeX listings package */
+  pre.src-ada:before { content: 'Ada'; }
+  pre.src-asm:before { content: 'Assembler'; }
+  pre.src-caml:before { content: 'Caml'; }
+  pre.src-delphi:before { content: 'Delphi'; }
+  pre.src-html:before { content: 'HTML'; }
+  pre.src-idl:before { content: 'IDL'; }
+  pre.src-mercury:before { content: 'Mercury'; }
+  pre.src-metapost:before { content: 'MetaPost'; }
+  pre.src-modula-2:before { content: 'Modula-2'; }
+  pre.src-pascal:before { content: 'Pascal'; }
+  pre.src-ps:before { content: 'PostScript'; }
+  pre.src-prolog:before { content: 'Prolog'; }
+  pre.src-simula:before { content: 'Simula'; }
+  pre.src-tcl:before { content: 'tcl'; }
+  pre.src-tex:before { content: 'TeX'; }
+  pre.src-plain-tex:before { content: 'Plain TeX'; }
+  pre.src-verilog:before { content: 'Verilog'; }
+  pre.src-vhdl:before { content: 'VHDL'; }
+  pre.src-xml:before { content: 'XML'; }
+  pre.src-nxml:before { content: 'XML'; }
+  /* add a generic configuration mode; LaTeX export needs an additional
+     (add-to-list 'org-latex-listings-langs '(conf " ")) in .emacs */
+  pre.src-conf:before { content: 'Configuration File'; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.org-right  { text-align: center;  }
+  th.org-left   { text-align: center;   }
+  th.org-center { text-align: center; }
+  td.org-right  { text-align: right;  }
+  td.org-left   { text-align: left;   }
+  td.org-center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara { display: inline; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .equation-container {
+    display: table;
+    text-align: center;
+    width: 100%;
+  }
+  .equation {
+    vertical-align: middle;
+  }
+  .equation-label {
+    display: table-cell;
+    text-align: right;
+    vertical-align: middle;
+  }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  .org-svg { }
+</style>
+</head>
+<body>
+<div id="content" class="content">
+<h1 class="title">SQL Catalog: state_postgres.go</h1>
+<div id="table-of-contents" role="doc-toc">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents" role="doc-toc">
+<ul>
+<li><a href="#org66db3a1">1. SetupSchemas()</a>
+<ul>
+<li><a href="#org41bf3ba">1.1. Q01: DDL — line 126</a></li>
+<li><a href="#orgb1120aa">1.2. Q02: DDL — line 137</a></li>
+<li><a href="#org518fe69">1.3. Q03: DDL — line 143</a></li>
+<li><a href="#org947459d">1.4. Q04: DDL — line 155</a></li>
+<li><a href="#org2154c60">1.5. Q05: DDL — line 167</a></li>
+<li><a href="#org91613b7">1.6. Q06: DDL — line 189</a></li>
+<li><a href="#org8b2bb6a">1.7. Q07: DDL — line 201</a></li>
+<li><a href="#org823a2e9">1.8. Q08: DDL — line 213</a></li>
+<li><a href="#org3035a52">1.9. Q09: DDL (ALTER) — line 227</a></li>
+</ul>
+</li>
+<li><a href="#org65cbf7c">2. NextID()</a>
+<ul>
+<li><a href="#org39271ab">2.1. Q10: Query — line 257</a></li>
+</ul>
+</li>
+<li><a href="#org29f01c6">3. SetResult()</a>
+<ul>
+<li><a href="#org7a04b1e">3.1. Q11: Upsert — line 278</a></li>
+</ul>
+</li>
+<li><a href="#orgd4d7722">4. GetResult()</a>
+<ul>
+<li><a href="#org384aba7">4.1. Q12: Query — line 300</a></li>
+</ul>
+</li>
+<li><a href="#org5808166">5. SetJobInfo()</a>
+<ul>
+<li><a href="#org861120a">5.1. Q13: Upsert — line 333</a></li>
+</ul>
+</li>
+<li><a href="#org457a55c">6. GetJobInfo()</a>
+<ul>
+<li><a href="#org2985f72">6.1. Q14: Query — line 363</a></li>
+</ul>
+</li>
+<li><a href="#org0e7db3a">7. SetStatus()</a>
+<ul>
+<li><a href="#orgcd3fa6c">7.1. Q15: Upsert — line 401</a></li>
+</ul>
+</li>
+<li><a href="#org1cdec3b">8. GetSessionStatus()</a>
+<ul>
+<li><a href="#org3a4dc0f">8.1. Q16: Query — line 421</a></li>
+</ul>
+</li>
+<li><a href="#org342c41c">9. GetStatus()</a>
+<ul>
+<li><a href="#orgaadadaa">9.1. Q17: Query — line 481</a></li>
+</ul>
+</li>
+<li><a href="#orga07e8c7">10. GetRepoId()</a>
+<ul>
+<li><a href="#org7d7b2c5">10.1. Q18: Upsert — line 500</a></li>
+</ul>
+</li>
+<li><a href="#orge263653">11. AddJob()</a>
+<ul>
+<li><a href="#org0cbe970">11.1. Q19: Upsert — line 534</a></li>
+</ul>
+</li>
+<li><a href="#org0492338">12. GetJobList()</a>
+<ul>
+<li><a href="#orgc098a3b">12.1. Q20: Query — line 561</a></li>
+</ul>
+</li>
+<li><a href="#org9275694">13. GetJobSpecByRepoId()</a>
+<ul>
+<li><a href="#orgc477b42">13.1. Q21: Query — line 599</a></li>
+</ul>
+</li>
+<li><a href="#org0698a96">14. GetJobsByStatus()</a>
+<ul>
+<li><a href="#orgb091279">14.1. Q22: Query — line 629</a></li>
+</ul>
+</li>
+<li><a href="#orgedb137c">15. GetUserJobCounts()</a>
+<ul>
+<li><a href="#org2c3901c">15.1. Q23: Query — line 671</a></li>
+</ul>
+</li>
+<li><a href="#orgc2e0cad">16. GetUserRecentRuntime()</a>
+<ul>
+<li><a href="#org089f973">16.1. Q24: Query — line 710</a></li>
+</ul>
+</li>
+<li><a href="#orga29c137">17. GetRecentSessions()</a>
+<ul>
+<li><a href="#org80fad04">17.1. Q25: Query — line 733</a></li>
+</ul>
+</li>
+<li><a href="#org0ac47d3">18. CancelSession()</a>
+<ul>
+<li><a href="#org87e14f0">18.1. Q26: Update — line 793</a></li>
+</ul>
+</li>
+<li><a href="#org37ee5ef">19. GetSessionOwnerRepo()</a>
+<ul>
+<li><a href="#org14f85f3">19.1. Q27: Query — line 817</a></li>
+</ul>
+</li>
+<li><a href="#org917d37b">20. AcquireSchedulerLock()</a>
+<ul>
+<li><a href="#orgdfea3db">20.1. Q28: Insert — line 841</a></li>
+<li><a href="#orgfee1f76">20.2. Q29: ) — line 843</a></li>
+<li><a href="#orgca65677">20.3. Q30: Query — line 859</a></li>
+</ul>
+</li>
+<li><a href="#orgf967db5">21. RenewSchedulerLock()</a>
+<ul>
+<li><a href="#org52ec81b">21.1. Q31: Update — line 891</a></li>
+</ul>
+</li>
+<li><a href="#orgd2132a3">22. ReleaseSchedulerLock()</a>
+<ul>
+<li><a href="#orge6dcadc">22.1. Q32: Delete — line 922</a></li>
+</ul>
+</li>
+<li><a href="#orga9c7613">23. GetSchedulerLockHolder()</a>
+<ul>
+<li><a href="#orgf82afbe">23.1. Q33: Query — line 946</a></li>
+</ul>
+</li>
+<li><a href="#org5740d14">24. RegisterWorker()</a>
+<ul>
+<li><a href="#org4e7758e">24.1. Q34: Upsert — line 965</a></li>
+</ul>
+</li>
+<li><a href="#org1a19ade">25. WorkerHeartbeat()</a>
+<ul>
+<li><a href="#org77daa50">25.1. Q35: Update — line 986</a></li>
+</ul>
+</li>
+<li><a href="#org424f857">26. GetWorkerStatus()</a>
+<ul>
+<li><a href="#org32d716c">26.1. Q36: Query — line 1006</a></li>
+</ul>
+</li>
+<li><a href="#org8be573f">27. SetWorkerStatus()</a>
+<ul>
+<li><a href="#org2b8921b">27.1. Q37: Update — line 1020</a></li>
+</ul>
+</li>
+<li><a href="#org6155f3a">28. SetWorkerBusy()</a>
+<ul>
+<li><a href="#orgbf535a5">28.1. Q38: Update — line 1033</a></li>
+</ul>
+</li>
+<li><a href="#org3b889b9">29. SetWorkerIdle()</a>
+<ul>
+<li><a href="#org49619e6">29.1. Q39: Update — line 1048</a></li>
+</ul>
+</li>
+<li><a href="#orgc229a52">30. ClaimJob()</a>
+<ul>
+<li><a href="#org5844b46">30.1. Q40: Query — line 1072</a></li>
+<li><a href="#org084903c">30.2. Q41: Update — line 1087</a></li>
+<li><a href="#orgd6410a3">30.3. Q42: Update — line 1097</a></li>
+<li><a href="#org092f51d">30.4. Q43: Query — line 1108</a></li>
+</ul>
+</li>
+<li><a href="#org4043000">31. CompleteJob()</a>
+<ul>
+<li><a href="#org2090b12">31.1. Q44: Update — line 1139</a></li>
+<li><a href="#org27c3f1a">31.2. Q45: Update — line 1148</a></li>
+</ul>
+</li>
+<li><a href="#org4397998">32. TryAdvisoryLock()</a>
+<ul>
+<li><a href="#org4f0fcda">32.1. Q46: Advisory Lock — line 1168</a></li>
+</ul>
+</li>
+<li><a href="#org47f5510">33. AdvisoryUnlock()</a>
+<ul>
+<li><a href="#org0505216">33.1. Q47: Advisory Unlock — line 1179</a></li>
+</ul>
+</li>
+<li><a href="#org7ab9ab5">34. TransitionJobsToQueued()</a>
+<ul>
+<li><a href="#org40074e3">34.1. Q48: Update — line 1187</a></li>
+</ul>
+</li>
+<li><a href="#org1b82608">35. GetQueuedJobCount()</a>
+<ul>
+<li><a href="#org5cc71fe">35.1. Q49: Query — line 1207</a></li>
+</ul>
+</li>
+<li><a href="#org8bf37d9">36. CountWorkersByStatus()</a>
+<ul>
+<li><a href="#orgca73d6d">36.1. Q50: Query — line 1229</a></li>
+</ul>
+</li>
+<li><a href="#org8bba178">37. GetStaleWorkers()</a>
+<ul>
+<li><a href="#org83089e9">37.1. Q51: Query — line 1241</a></li>
+</ul>
+</li>
+<li><a href="#orgc6d09ff">38. RequeueWorkerJob()</a>
+<ul>
+<li><a href="#orgc47a1e7">38.1. Q52: Update — line 1267</a></li>
+<li><a href="#org55f9b92">38.2. Q53: Update — line 1283</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<p>
+53 SQL fragments from <code>pkg/state/state_postgres.go</code>, grouped by Go function.
+</p>
+<div id="outline-container-org66db3a1" class="outline-2">
+<a id="SetupSchemas"></a>
+<h2 id="org66db3a1"><span class="section-number-2">1.</span> SetupSchemas()</h2>
+<div class="outline-text-2" id="text-1">
+</div>
+<div id="outline-container-org41bf3ba" class="outline-3">
+<h3 id="org41bf3ba"><span class="section-number-3">1.1.</span> Q01: DDL — line 126</h3>
+<div class="outline-text-3" id="text-1-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">CREATE</span> <span style="color: #a020f0;">TABLE</span> IF <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">EXISTS</span> <span style="color: #0000ff;">job_repo_map</span> (
+    job_repo_id SERIAL <span style="color: #a020f0;">PRIMARY</span> <span style="color: #a020f0;">KEY</span>,
+    owner       TEXT <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">NULL</span>,
+    repo        TEXT <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">NULL</span>,
+    <span style="color: #a020f0;">UNIQUE</span>(owner, repo)
+);
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-orgb1120aa" class="outline-3">
+<h3 id="orgb1120aa"><span class="section-number-3">1.2.</span> Q02: DDL — line 137</h3>
+<div class="outline-text-3" id="text-1-2">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">CREATE</span> <span style="color: #a020f0;">SEQUENCE</span> IF <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">EXISTS</span> <span style="color: #0000ff;">session_id_seq</span>;
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-org518fe69" class="outline-3">
+<h3 id="org518fe69"><span class="section-number-3">1.3.</span> Q03: DDL — line 143</h3>
+<div class="outline-text-3" id="text-1-3">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">CREATE</span> <span style="color: #a020f0;">TABLE</span> IF <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">EXISTS</span> <span style="color: #0000ff;">analyze_results</span> (
+    session_id <span style="color: #228b22;">INTEGER</span> <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">NULL</span>,
+    owner TEXT <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">NULL</span>,
+    repo TEXT <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">NULL</span>,
+    <span style="color: #a020f0;">result</span> JSONB <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">NULL</span>,
+    <span style="color: #a020f0;">PRIMARY</span> <span style="color: #a020f0;">KEY</span> (session_id, owner, repo)
+);
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-org947459d" class="outline-3">
+<h3 id="org947459d"><span class="section-number-3">1.4.</span> Q04: DDL — line 155</h3>
+<div class="outline-text-3" id="text-1-4">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">CREATE</span> <span style="color: #a020f0;">TABLE</span> IF <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">EXISTS</span> <span style="color: #0000ff;">analyze_jobs</span> (
+    session_id <span style="color: #228b22;">INTEGER</span> <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">NULL</span>,
+    owner TEXT <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">NULL</span>,
+    repo TEXT <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">NULL</span>,
+    payload JSONB <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">NULL</span>,
+    <span style="color: #a020f0;">PRIMARY</span> <span style="color: #a020f0;">KEY</span> (session_id, owner, repo)
+);
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-org2154c60" class="outline-3">
+<h3 id="org2154c60"><span class="section-number-3">1.5.</span> Q05: DDL — line 167</h3>
+<div class="outline-text-3" id="text-1-5">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">CREATE</span> <span style="color: #a020f0;">TABLE</span> IF <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">EXISTS</span> <span style="color: #0000ff;">job_info</span> (
+    session_id <span style="color: #228b22;">INTEGER</span> <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">NULL</span>,
+    owner TEXT <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">NULL</span>,
+    repo TEXT <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">NULL</span>,
+    payload JSONB <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">NULL</span>,
+    user_id TEXT <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">NULL</span> <span style="color: #a020f0;">DEFAULT</span> <span style="color: #8b2252;">''</span>,
+    started_at <span style="color: #228b22;">TIMESTAMP</span>,
+    completed_at <span style="color: #228b22;">TIMESTAMP</span>,
+    argo_workflow_id TEXT <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">NULL</span> <span style="color: #a020f0;">DEFAULT</span> <span style="color: #8b2252;">''</span>,
+    <span style="color: #a020f0;">PRIMARY</span> <span style="color: #a020f0;">KEY</span> (session_id, owner, repo)
+);
+
+<span style="color: #b22222;">-- </span><span style="color: #b22222;">Add indices for scheduler queries</span>
+<span style="color: #a020f0;">CREATE</span> INDEX IF <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">EXISTS</span> idx_job_info_user_started
+    <span style="color: #a020f0;">ON</span> job_info(user_id, started_at);
+<span style="color: #a020f0;">CREATE</span> INDEX IF <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">EXISTS</span> idx_job_info_workflow
+    <span style="color: #a020f0;">ON</span> job_info(argo_workflow_id) <span style="color: #a020f0;">WHERE</span> argo_workflow_id != <span style="color: #8b2252;">''</span>;
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-org91613b7" class="outline-3">
+<h3 id="org91613b7"><span class="section-number-3">1.6.</span> Q06: DDL — line 189</h3>
+<div class="outline-text-3" id="text-1-6">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">CREATE</span> <span style="color: #a020f0;">TABLE</span> IF <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">EXISTS</span> <span style="color: #0000ff;">job_status</span> (
+    session_id <span style="color: #228b22;">INTEGER</span> <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">NULL</span>,
+    owner TEXT <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">NULL</span>,
+    repo TEXT <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">NULL</span>,
+    status <span style="color: #228b22;">INTEGER</span> <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">NULL</span>,
+    <span style="color: #a020f0;">PRIMARY</span> <span style="color: #a020f0;">KEY</span> (session_id, owner, repo)
+);
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-org8b2bb6a" class="outline-3">
+<h3 id="org8b2bb6a"><span class="section-number-3">1.7.</span> Q07: DDL — line 201</h3>
+<div class="outline-text-3" id="text-1-7">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">CREATE</span> <span style="color: #a020f0;">TABLE</span> IF <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">EXISTS</span> <span style="color: #0000ff;">scheduler_lock</span> (
+    lock_name TEXT <span style="color: #a020f0;">PRIMARY</span> <span style="color: #a020f0;">KEY</span>,
+    instance_id TEXT <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">NULL</span>,
+    acquired_at <span style="color: #228b22;">TIMESTAMP</span> <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">NULL</span>,
+    expires_at <span style="color: #228b22;">TIMESTAMP</span> <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">NULL</span>,
+    heartbeat_at <span style="color: #228b22;">TIMESTAMP</span> <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">NULL</span>
+);
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-org823a2e9" class="outline-3">
+<h3 id="org823a2e9"><span class="section-number-3">1.8.</span> Q08: DDL — line 213</h3>
+<div class="outline-text-3" id="text-1-8">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">CREATE</span> <span style="color: #a020f0;">TABLE</span> IF <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">EXISTS</span> <span style="color: #0000ff;">worker_pool</span> (
+    worker_id TEXT <span style="color: #a020f0;">PRIMARY</span> <span style="color: #a020f0;">KEY</span>,
+    status <span style="color: #228b22;">INTEGER</span> <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">NULL</span> <span style="color: #a020f0;">DEFAULT</span> 0,
+    registered_at <span style="color: #228b22;">TIMESTAMP</span> <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">NULL</span> <span style="color: #a020f0;">DEFAULT</span> NOW(),
+    heartbeat_at <span style="color: #228b22;">TIMESTAMP</span> <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">NULL</span> <span style="color: #a020f0;">DEFAULT</span> NOW(),
+    current_job TEXT,
+    jobs_completed <span style="color: #228b22;">INTEGER</span> <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">NULL</span> <span style="color: #a020f0;">DEFAULT</span> 0,
+    argo_pod_name TEXT <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">NULL</span> <span style="color: #a020f0;">DEFAULT</span> <span style="color: #8b2252;">''</span>
+);
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-org3035a52" class="outline-3">
+<h3 id="org3035a52"><span class="section-number-3">1.9.</span> Q09: DDL (ALTER) — line 227</h3>
+<div class="outline-text-3" id="text-1-9">
+<div class="org-src-container">
+<pre class="src src-sql">DO $$ <span style="color: #a020f0;">BEGIN</span>
+    <span style="color: #a020f0;">ALTER</span> <span style="color: #a020f0;">TABLE</span> <span style="color: #0000ff;">job_info</span> <span style="color: #a020f0;">ADD</span> <span style="color: #a020f0;">COLUMN</span> IF <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">EXISTS</span> worker_id TEXT <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">NULL</span> <span style="color: #a020f0;">DEFAULT</span> <span style="color: #8b2252;">''</span>;
+<span style="color: #a020f0;">EXCEPTION</span> <span style="color: #a020f0;">WHEN</span> duplicate_column <span style="color: #a020f0;">THEN</span> <span style="color: #a020f0;">NULL</span>;
+<span style="color: #a020f0;">END</span> $$;
+
+<span style="color: #a020f0;">CREATE</span> INDEX IF <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">EXISTS</span> idx_job_status_status_queued
+    <span style="color: #a020f0;">ON</span> job_status(status) <span style="color: #a020f0;">WHERE</span> status <span style="color: #a020f0;">IN</span> (0, 6);
+
+<span style="color: #a020f0;">CREATE</span> INDEX IF <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">EXISTS</span> idx_worker_pool_heartbeat
+    <span style="color: #a020f0;">ON</span> worker_pool(heartbeat_at) <span style="color: #a020f0;">WHERE</span> status <span style="color: #a020f0;">IN</span> (0, 1);
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org65cbf7c" class="outline-2">
+<a id="NextID"></a>
+<h2 id="org65cbf7c"><span class="section-number-2">2.</span> NextID()</h2>
+<div class="outline-text-2" id="text-2">
+</div>
+<div id="outline-container-org39271ab" class="outline-3">
+<h3 id="org39271ab"><span class="section-number-3">2.1.</span> Q10: Query — line 257</h3>
+<div class="outline-text-3" id="text-2-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">SELECT</span> nextval(<span style="color: #8b2252;">'session_id_seq'</span>)
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org29f01c6" class="outline-2">
+<a id="SetResult"></a>
+<h2 id="org29f01c6"><span class="section-number-2">3.</span> SetResult()</h2>
+<div class="outline-text-2" id="text-3">
+</div>
+<div id="outline-container-org7a04b1e" class="outline-3">
+<h3 id="org7a04b1e"><span class="section-number-3">3.1.</span> Q11: Upsert — line 278</h3>
+<div class="outline-text-3" id="text-3-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">INSERT</span> <span style="color: #a020f0;">INTO</span> analyze_results (session_id, owner, repo, <span style="color: #a020f0;">result</span>)
+<span style="color: #a020f0;">VALUES</span> ($1, $2, $3, $4)
+<span style="color: #a020f0;">ON</span> CONFLICT (session_id, owner, repo)
+DO <span style="color: #a020f0;">UPDATE</span> <span style="color: #a020f0;">SET</span> <span style="color: #a020f0;">result</span> = EXCLUDED.<span style="color: #a020f0;">result</span>
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-orgd4d7722" class="outline-2">
+<a id="GetResult"></a>
+<h2 id="orgd4d7722"><span class="section-number-2">4.</span> GetResult()</h2>
+<div class="outline-text-2" id="text-4">
+</div>
+<div id="outline-container-org384aba7" class="outline-3">
+<h3 id="org384aba7"><span class="section-number-3">4.1.</span> Q12: Query — line 300</h3>
+<div class="outline-text-3" id="text-4-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">SELECT</span> <span style="color: #a020f0;">result</span> <span style="color: #a020f0;">FROM</span> analyze_results
+<span style="color: #a020f0;">WHERE</span> session_id = $1 <span style="color: #a020f0;">AND</span> owner = $2 <span style="color: #a020f0;">AND</span> repo = $3
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org5808166" class="outline-2">
+<a id="SetJobInfo"></a>
+<h2 id="org5808166"><span class="section-number-2">5.</span> SetJobInfo()</h2>
+<div class="outline-text-2" id="text-5">
+</div>
+<div id="outline-container-org861120a" class="outline-3">
+<h3 id="org861120a"><span class="section-number-3">5.1.</span> Q13: Upsert — line 333</h3>
+<div class="outline-text-3" id="text-5-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">INSERT</span> <span style="color: #a020f0;">INTO</span> job_info (session_id, owner, repo, payload, user_id, started_at, completed_at, argo_workflow_id)
+<span style="color: #a020f0;">VALUES</span> ($1, $2, $3, $4, $5, $6, $7, $8)
+<span style="color: #a020f0;">ON</span> CONFLICT (session_id, owner, repo)
+DO <span style="color: #a020f0;">UPDATE</span> <span style="color: #a020f0;">SET</span>
+    payload = EXCLUDED.payload,
+    user_id = EXCLUDED.user_id,
+    started_at = EXCLUDED.started_at,
+    completed_at = EXCLUDED.completed_at,
+    argo_workflow_id = EXCLUDED.argo_workflow_id
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org457a55c" class="outline-2">
+<a id="GetJobInfo"></a>
+<h2 id="org457a55c"><span class="section-number-2">6.</span> GetJobInfo()</h2>
+<div class="outline-text-2" id="text-6">
+</div>
+<div id="outline-container-org2985f72" class="outline-3">
+<h3 id="org2985f72"><span class="section-number-3">6.1.</span> Q14: Query — line 363</h3>
+<div class="outline-text-3" id="text-6-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">SELECT</span> payload, user_id, started_at, completed_at, argo_workflow_id
+<span style="color: #a020f0;">FROM</span> job_info
+<span style="color: #a020f0;">WHERE</span> session_id = $1 <span style="color: #a020f0;">AND</span> owner = $2 <span style="color: #a020f0;">AND</span> repo = $3
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org0e7db3a" class="outline-2">
+<a id="SetStatus"></a>
+<h2 id="org0e7db3a"><span class="section-number-2">7.</span> SetStatus()</h2>
+<div class="outline-text-2" id="text-7">
+</div>
+<div id="outline-container-orgcd3fa6c" class="outline-3">
+<h3 id="orgcd3fa6c"><span class="section-number-3">7.1.</span> Q15: Upsert — line 401</h3>
+<div class="outline-text-3" id="text-7-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">INSERT</span> <span style="color: #a020f0;">INTO</span> job_status (session_id, owner, repo, status)
+<span style="color: #a020f0;">VALUES</span> ($1, $2, $3, $4)
+<span style="color: #a020f0;">ON</span> CONFLICT (session_id, owner, repo)
+DO <span style="color: #a020f0;">UPDATE</span> <span style="color: #a020f0;">SET</span> status = EXCLUDED.status
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org1cdec3b" class="outline-2">
+<a id="GetSessionStatus"></a>
+<h2 id="org1cdec3b"><span class="section-number-2">8.</span> GetSessionStatus()</h2>
+<div class="outline-text-2" id="text-8">
+</div>
+<div id="outline-container-org3a4dc0f" class="outline-3">
+<h3 id="org3a4dc0f"><span class="section-number-3">8.1.</span> Q16: Query — line 421</h3>
+<div class="outline-text-3" id="text-8-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">SELECT</span> status
+<span style="color: #a020f0;">FROM</span> job_status
+<span style="color: #a020f0;">WHERE</span> session_id = $1
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org342c41c" class="outline-2">
+<a id="GetStatus"></a>
+<h2 id="org342c41c"><span class="section-number-2">9.</span> GetStatus()</h2>
+<div class="outline-text-2" id="text-9">
+</div>
+<div id="outline-container-orgaadadaa" class="outline-3">
+<h3 id="orgaadadaa"><span class="section-number-3">9.1.</span> Q17: Query — line 481</h3>
+<div class="outline-text-3" id="text-9-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">SELECT</span> status
+<span style="color: #a020f0;">FROM</span> job_status
+<span style="color: #a020f0;">WHERE</span> session_id = $1 <span style="color: #a020f0;">AND</span> owner = $2 <span style="color: #a020f0;">AND</span> repo = $3
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-orga07e8c7" class="outline-2">
+<a id="GetRepoId"></a>
+<h2 id="orga07e8c7"><span class="section-number-2">10.</span> GetRepoId()</h2>
+<div class="outline-text-2" id="text-10">
+</div>
+<div id="outline-container-org7d7b2c5" class="outline-3">
+<h3 id="org7d7b2c5"><span class="section-number-3">10.1.</span> Q18: Upsert — line 500</h3>
+<div class="outline-text-3" id="text-10-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">INSERT</span> <span style="color: #a020f0;">INTO</span> job_repo_map (owner, repo)
+<span style="color: #a020f0;">VALUES</span> ($1, $2)
+<span style="color: #a020f0;">ON</span> CONFLICT (owner, repo) DO <span style="color: #a020f0;">UPDATE</span> <span style="color: #a020f0;">SET</span> owner = EXCLUDED.owner
+RETURNING job_repo_id
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-orge263653" class="outline-2">
+<a id="AddJob"></a>
+<h2 id="orge263653"><span class="section-number-2">11.</span> AddJob()</h2>
+<div class="outline-text-2" id="text-11">
+</div>
+<div id="outline-container-org0cbe970" class="outline-3">
+<h3 id="org0cbe970"><span class="section-number-3">11.1.</span> Q19: Upsert — line 534</h3>
+<div class="outline-text-3" id="text-11-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">INSERT</span> <span style="color: #a020f0;">INTO</span> analyze_jobs (session_id, owner, repo, payload)
+<span style="color: #a020f0;">VALUES</span> ($1, $2, $3, $4)
+<span style="color: #a020f0;">ON</span> CONFLICT DO NOTHING
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org0492338" class="outline-2">
+<a id="GetJobList"></a>
+<h2 id="org0492338"><span class="section-number-2">12.</span> GetJobList()</h2>
+<div class="outline-text-2" id="text-12">
+</div>
+<div id="outline-container-orgc098a3b" class="outline-3">
+<h3 id="orgc098a3b"><span class="section-number-3">12.1.</span> Q20: Query — line 561</h3>
+<div class="outline-text-3" id="text-12-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">SELECT</span> payload <span style="color: #a020f0;">FROM</span> analyze_jobs
+<span style="color: #a020f0;">WHERE</span> session_id = $1
+<span style="color: #a020f0;">ORDER</span> <span style="color: #a020f0;">BY</span> owner, repo
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org9275694" class="outline-2">
+<a id="GetJobSpecByRepoId"></a>
+<h2 id="org9275694"><span class="section-number-2">13.</span> GetJobSpecByRepoId()</h2>
+<div class="outline-text-2" id="text-13">
+</div>
+<div id="outline-container-orgc477b42" class="outline-3">
+<h3 id="orgc477b42"><span class="section-number-3">13.1.</span> Q21: Query — line 599</h3>
+<div class="outline-text-3" id="text-13-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">SELECT</span> owner, repo
+<span style="color: #a020f0;">FROM</span> job_repo_map
+<span style="color: #a020f0;">WHERE</span> job_repo_id = $1
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org0698a96" class="outline-2">
+<a id="GetJobsByStatus"></a>
+<h2 id="org0698a96"><span class="section-number-2">14.</span> GetJobsByStatus()</h2>
+<div class="outline-text-2" id="text-14">
+</div>
+<div id="outline-container-orgb091279" class="outline-3">
+<h3 id="orgb091279"><span class="section-number-3">14.1.</span> Q22: Query — line 629</h3>
+<div class="outline-text-3" id="text-14-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">SELECT</span> aj.payload
+<span style="color: #a020f0;">FROM</span> analyze_jobs aj
+<span style="color: #a020f0;">JOIN</span> job_status js <span style="color: #a020f0;">ON</span>
+    aj.session_id = js.session_id <span style="color: #a020f0;">AND</span>
+    aj.owner = js.owner <span style="color: #a020f0;">AND</span>
+    aj.repo = js.repo
+<span style="color: #a020f0;">WHERE</span> js.status = $1
+<span style="color: #a020f0;">ORDER</span> <span style="color: #a020f0;">BY</span> aj.session_id, aj.owner, aj.repo
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-orgedb137c" class="outline-2">
+<a id="GetUserJobCounts"></a>
+<h2 id="orgedb137c"><span class="section-number-2">15.</span> GetUserJobCounts()</h2>
+<div class="outline-text-2" id="text-15">
+</div>
+<div id="outline-container-org2c3901c" class="outline-3">
+<h3 id="org2c3901c"><span class="section-number-3">15.1.</span> Q23: Query — line 671</h3>
+<div class="outline-text-3" id="text-15-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">SELECT</span> ji.user_id, <span style="color: #483d8b;">COUNT</span>(*)
+<span style="color: #a020f0;">FROM</span> job_info ji
+<span style="color: #a020f0;">JOIN</span> job_status js <span style="color: #a020f0;">ON</span>
+    ji.session_id = js.session_id <span style="color: #a020f0;">AND</span>
+    ji.owner = js.owner <span style="color: #a020f0;">AND</span>
+    ji.repo = js.repo
+<span style="color: #a020f0;">WHERE</span> js.status = $1 <span style="color: #a020f0;">AND</span> ji.user_id != <span style="color: #8b2252;">''</span>
+<span style="color: #a020f0;">GROUP</span> <span style="color: #a020f0;">BY</span> ji.user_id
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-orgc2e0cad" class="outline-2">
+<a id="GetUserRecentRuntime"></a>
+<h2 id="orgc2e0cad"><span class="section-number-2">16.</span> GetUserRecentRuntime()</h2>
+<div class="outline-text-2" id="text-16">
+</div>
+<div id="outline-container-org089f973" class="outline-3">
+<h3 id="org089f973"><span class="section-number-3">16.1.</span> Q24: Query — line 710</h3>
+<div class="outline-text-3" id="text-16-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">SELECT</span> <span style="color: #483d8b;">COALESCE</span>(<span style="color: #483d8b;">SUM</span>(
+    <span style="color: #483d8b;">EXTRACT</span>(EPOCH <span style="color: #a020f0;">FROM</span> (completed_at - started_at))
+), 0)
+<span style="color: #a020f0;">FROM</span> job_info
+<span style="color: #a020f0;">WHERE</span> user_id = $1
+    <span style="color: #a020f0;">AND</span> completed_at <span style="color: #a020f0;">IS</span> <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">NULL</span>
+    <span style="color: #a020f0;">AND</span> started_at <span style="color: #a020f0;">IS</span> <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">NULL</span>
+    <span style="color: #a020f0;">AND</span> completed_at &gt; NOW() - <span style="color: #228b22;">INTERVAL</span> <span style="color: #8b2252;">'1 second'</span> * $2
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-orga29c137" class="outline-2">
+<a id="GetRecentSessions"></a>
+<h2 id="orga29c137"><span class="section-number-2">17.</span> GetRecentSessions()</h2>
+<div class="outline-text-2" id="text-17">
+</div>
+<div id="outline-container-org80fad04" class="outline-3">
+<h3 id="org80fad04"><span class="section-number-3">17.1.</span> Q25: Query — line 733</h3>
+<div class="outline-text-3" id="text-17-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">SELECT</span> <span style="color: #a020f0;">DISTINCT</span>
+    ji.session_id,
+    <span style="color: #483d8b;">COALESCE</span>(<span style="color: #483d8b;">MAX</span>(ji.user_id), <span style="color: #8b2252;">''</span>) <span style="color: #a020f0;">as</span> user_id,
+    <span style="color: #483d8b;">COALESCE</span>(<span style="color: #483d8b;">MAX</span>(ji.payload-&gt;&gt;<span style="color: #8b2252;">'QueryLanguage'</span>), <span style="color: #8b2252;">''</span>) <span style="color: #a020f0;">as</span> <span style="color: #a020f0;">language</span>,
+    <span style="color: #483d8b;">COALESCE</span>(<span style="color: #483d8b;">MAX</span>(ji.payload-&gt;&gt;<span style="color: #8b2252;">'CreatedAt'</span>), <span style="color: #8b2252;">''</span>) <span style="color: #a020f0;">as</span> created_at
+<span style="color: #a020f0;">FROM</span> job_info ji
+<span style="color: #a020f0;">WHERE</span> ji.payload-&gt;&gt;<span style="color: #8b2252;">'CreatedAt'</span> <span style="color: #a020f0;">IS</span> <span style="color: #a020f0;">NOT</span> <span style="color: #a020f0;">NULL</span>
+  <span style="color: #a020f0;">AND</span> ji.payload-&gt;&gt;<span style="color: #8b2252;">'CreatedAt'</span> != <span style="color: #8b2252;">''</span>
+  <span style="color: #a020f0;">AND</span> (ji.payload-&gt;&gt;<span style="color: #8b2252;">'CreatedAt'</span>)::<span style="color: #228b22;">timestamp</span> &gt; NOW() - <span style="color: #228b22;">INTERVAL</span> <span style="color: #8b2252;">'1 day'</span> * $1
+<span style="color: #a020f0;">GROUP</span> <span style="color: #a020f0;">BY</span> ji.session_id
+<span style="color: #a020f0;">ORDER</span> <span style="color: #a020f0;">BY</span> ji.session_id <span style="color: #a020f0;">DESC</span>
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org0ac47d3" class="outline-2">
+<a id="CancelSession"></a>
+<h2 id="org0ac47d3"><span class="section-number-2">18.</span> CancelSession()</h2>
+<div class="outline-text-2" id="text-18">
+</div>
+<div id="outline-container-org87e14f0" class="outline-3">
+<h3 id="org87e14f0"><span class="section-number-3">18.1.</span> Q26: Update — line 793</h3>
+<div class="outline-text-3" id="text-18-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">UPDATE</span> job_status
+<span style="color: #a020f0;">SET</span> status = $1
+<span style="color: #a020f0;">WHERE</span> session_id = $2
+  <span style="color: #a020f0;">AND</span> (status = $3 <span style="color: #a020f0;">OR</span> status = $4)
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org37ee5ef" class="outline-2">
+<a id="GetSessionOwnerRepo"></a>
+<h2 id="org37ee5ef"><span class="section-number-2">19.</span> GetSessionOwnerRepo()</h2>
+<div class="outline-text-2" id="text-19">
+</div>
+<div id="outline-container-org14f85f3" class="outline-3">
+<h3 id="org14f85f3"><span class="section-number-3">19.1.</span> Q27: Query — line 817</h3>
+<div class="outline-text-3" id="text-19-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">SELECT</span> owner, repo
+<span style="color: #a020f0;">FROM</span> analyze_jobs
+<span style="color: #a020f0;">WHERE</span> session_id = $1
+<span style="color: #a020f0;">ORDER</span> <span style="color: #a020f0;">BY</span> owner, repo
+<span style="color: #a020f0;">LIMIT</span> 1
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org917d37b" class="outline-2">
+<a id="AcquireSchedulerLock"></a>
+<h2 id="org917d37b"><span class="section-number-2">20.</span> AcquireSchedulerLock()</h2>
+<div class="outline-text-2" id="text-20">
+</div>
+<div id="outline-container-orgdfea3db" class="outline-3">
+<h3 id="orgdfea3db"><span class="section-number-3">20.1.</span> Q28: Insert — line 841</h3>
+<div class="outline-text-3" id="text-20-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">INSERT</span> <span style="color: #a020f0;">INTO</span> scheduler_lock (lock_name, instance_id, acquired_at, expires_at, heartbeat_at)
+<span style="color: #a020f0;">VALUES</span> ($1, $2,
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-orgfee1f76" class="outline-3">
+<h3 id="orgfee1f76"><span class="section-number-3">20.2.</span> Q29: ) — line 843</h3>
+<div class="outline-text-3" id="text-20-2">
+<div class="org-src-container">
+<pre class="src src-sql">)
+        <span style="color: #a020f0;">ON</span> CONFLICT (lock_name) DO <span style="color: #a020f0;">UPDATE</span>
+        <span style="color: #a020f0;">SET</span> instance_id = EXCLUDED.instance_id,
+            acquired_at = EXCLUDED.acquired_at,
+            expires_at = EXCLUDED.expires_at,
+            heartbeat_at = EXCLUDED.heartbeat_at
+        <span style="color: #a020f0;">WHERE</span> scheduler_lock.expires_at &lt; NOW()
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-orgca65677" class="outline-3">
+<h3 id="orgca65677"><span class="section-number-3">20.3.</span> Q30: Query — line 859</h3>
+<div class="outline-text-3" id="text-20-3">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">SELECT</span> instance_id
+<span style="color: #a020f0;">FROM</span> scheduler_lock
+<span style="color: #a020f0;">WHERE</span> lock_name = $1 <span style="color: #a020f0;">AND</span> expires_at &gt; NOW()
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-orgf967db5" class="outline-2">
+<a id="RenewSchedulerLock"></a>
+<h2 id="orgf967db5"><span class="section-number-2">21.</span> RenewSchedulerLock()</h2>
+<div class="outline-text-2" id="text-21">
+</div>
+<div id="outline-container-org52ec81b" class="outline-3">
+<h3 id="org52ec81b"><span class="section-number-3">21.1.</span> Q31: Update — line 891</h3>
+<div class="outline-text-3" id="text-21-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">UPDATE</span> scheduler_lock
+<span style="color: #a020f0;">SET</span> heartbeat_at = NOW(),
+    expires_at =
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-orgd2132a3" class="outline-2">
+<a id="ReleaseSchedulerLock"></a>
+<h2 id="orgd2132a3"><span class="section-number-2">22.</span> ReleaseSchedulerLock()</h2>
+<div class="outline-text-2" id="text-22">
+</div>
+<div id="outline-container-orge6dcadc" class="outline-3">
+<h3 id="orge6dcadc"><span class="section-number-3">22.1.</span> Q32: Delete — line 922</h3>
+<div class="outline-text-3" id="text-22-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">DELETE</span> <span style="color: #a020f0;">FROM</span> scheduler_lock
+<span style="color: #a020f0;">WHERE</span> lock_name = $1 <span style="color: #a020f0;">AND</span> instance_id = $2
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-orga9c7613" class="outline-2">
+<a id="GetSchedulerLockHolder"></a>
+<h2 id="orga9c7613"><span class="section-number-2">23.</span> GetSchedulerLockHolder()</h2>
+<div class="outline-text-2" id="text-23">
+</div>
+<div id="outline-container-orgf82afbe" class="outline-3">
+<h3 id="orgf82afbe"><span class="section-number-3">23.1.</span> Q33: Query — line 946</h3>
+<div class="outline-text-3" id="text-23-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">SELECT</span> instance_id
+<span style="color: #a020f0;">FROM</span> scheduler_lock
+<span style="color: #a020f0;">WHERE</span> lock_name = $1 <span style="color: #a020f0;">AND</span> expires_at &gt; NOW()
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org5740d14" class="outline-2">
+<a id="RegisterWorker"></a>
+<h2 id="org5740d14"><span class="section-number-2">24.</span> RegisterWorker()</h2>
+<div class="outline-text-2" id="text-24">
+</div>
+<div id="outline-container-org4e7758e" class="outline-3">
+<h3 id="org4e7758e"><span class="section-number-3">24.1.</span> Q34: Upsert — line 965</h3>
+<div class="outline-text-3" id="text-24-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">INSERT</span> <span style="color: #a020f0;">INTO</span> worker_pool (worker_id, status, registered_at, heartbeat_at, argo_pod_name)
+<span style="color: #a020f0;">VALUES</span> ($1, $2, NOW(), NOW(), $3)
+<span style="color: #a020f0;">ON</span> CONFLICT (worker_id) DO <span style="color: #a020f0;">UPDATE</span> <span style="color: #a020f0;">SET</span>
+    status = EXCLUDED.status,
+    heartbeat_at = EXCLUDED.heartbeat_at,
+    argo_pod_name = EXCLUDED.argo_pod_name
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org1a19ade" class="outline-2">
+<a id="WorkerHeartbeat"></a>
+<h2 id="org1a19ade"><span class="section-number-2">25.</span> WorkerHeartbeat()</h2>
+<div class="outline-text-2" id="text-25">
+</div>
+<div id="outline-container-org77daa50" class="outline-3">
+<h3 id="org77daa50"><span class="section-number-3">25.1.</span> Q35: Update — line 986</h3>
+<div class="outline-text-3" id="text-25-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">UPDATE</span> worker_pool <span style="color: #a020f0;">SET</span> heartbeat_at = NOW()
+<span style="color: #a020f0;">WHERE</span> worker_id = $1 <span style="color: #a020f0;">AND</span> status != $2
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org424f857" class="outline-2">
+<a id="GetWorkerStatus"></a>
+<h2 id="org424f857"><span class="section-number-2">26.</span> GetWorkerStatus()</h2>
+<div class="outline-text-2" id="text-26">
+</div>
+<div id="outline-container-org32d716c" class="outline-3">
+<h3 id="org32d716c"><span class="section-number-3">26.1.</span> Q36: Query — line 1006</h3>
+<div class="outline-text-3" id="text-26-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">SELECT</span> status <span style="color: #a020f0;">FROM</span> worker_pool <span style="color: #a020f0;">WHERE</span> worker_id = $1
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org8be573f" class="outline-2">
+<a id="SetWorkerStatus"></a>
+<h2 id="org8be573f"><span class="section-number-2">27.</span> SetWorkerStatus()</h2>
+<div class="outline-text-2" id="text-27">
+</div>
+<div id="outline-container-org2b8921b" class="outline-3">
+<h3 id="org2b8921b"><span class="section-number-3">27.1.</span> Q37: Update — line 1020</h3>
+<div class="outline-text-3" id="text-27-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">UPDATE</span> worker_pool <span style="color: #a020f0;">SET</span> status = $2 <span style="color: #a020f0;">WHERE</span> worker_id = $1
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org6155f3a" class="outline-2">
+<a id="SetWorkerBusy"></a>
+<h2 id="org6155f3a"><span class="section-number-2">28.</span> SetWorkerBusy()</h2>
+<div class="outline-text-2" id="text-28">
+</div>
+<div id="outline-container-orgbf535a5" class="outline-3">
+<h3 id="orgbf535a5"><span class="section-number-3">28.1.</span> Q38: Update — line 1033</h3>
+<div class="outline-text-3" id="text-28-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">UPDATE</span> worker_pool
+<span style="color: #a020f0;">SET</span> status = $2, current_job = $3, heartbeat_at = NOW()
+<span style="color: #a020f0;">WHERE</span> worker_id = $1
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org3b889b9" class="outline-2">
+<a id="SetWorkerIdle"></a>
+<h2 id="org3b889b9"><span class="section-number-2">29.</span> SetWorkerIdle()</h2>
+<div class="outline-text-2" id="text-29">
+</div>
+<div id="outline-container-org49619e6" class="outline-3">
+<h3 id="org49619e6"><span class="section-number-3">29.1.</span> Q39: Update — line 1048</h3>
+<div class="outline-text-3" id="text-29-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">UPDATE</span> worker_pool
+<span style="color: #a020f0;">SET</span> status = $2, current_job = <span style="color: #a020f0;">NULL</span>, jobs_completed = jobs_completed + 1, heartbeat_at = NOW()
+<span style="color: #a020f0;">WHERE</span> worker_id = $1
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-orgc229a52" class="outline-2">
+<a id="ClaimJob"></a>
+<h2 id="orgc229a52"><span class="section-number-2">30.</span> ClaimJob()</h2>
+<div class="outline-text-2" id="text-30">
+</div>
+<div id="outline-container-org5844b46" class="outline-3">
+<h3 id="org5844b46"><span class="section-number-3">30.1.</span> Q40: Query — line 1072</h3>
+<div class="outline-text-3" id="text-30-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">SELECT</span> js.session_id, js.owner, js.repo
+<span style="color: #a020f0;">FROM</span> job_status js
+<span style="color: #a020f0;">WHERE</span> js.status = $1
+<span style="color: #a020f0;">ORDER</span> <span style="color: #a020f0;">BY</span> js.session_id, js.owner, js.repo
+<span style="color: #a020f0;">LIMIT</span> 1
+<span style="color: #a020f0;">FOR</span> <span style="color: #a020f0;">UPDATE</span> SKIP LOCKED
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-org084903c" class="outline-3">
+<h3 id="org084903c"><span class="section-number-3">30.2.</span> Q41: Update — line 1087</h3>
+<div class="outline-text-3" id="text-30-2">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">UPDATE</span> job_status
+<span style="color: #a020f0;">SET</span> status = $4
+<span style="color: #a020f0;">WHERE</span> session_id = $1 <span style="color: #a020f0;">AND</span> owner = $2 <span style="color: #a020f0;">AND</span> repo = $3
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-orgd6410a3" class="outline-3">
+<h3 id="orgd6410a3"><span class="section-number-3">30.3.</span> Q42: Update — line 1097</h3>
+<div class="outline-text-3" id="text-30-3">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">UPDATE</span> job_info
+<span style="color: #a020f0;">SET</span> worker_id = $4, started_at = NOW()
+<span style="color: #a020f0;">WHERE</span> session_id = $1 <span style="color: #a020f0;">AND</span> owner = $2 <span style="color: #a020f0;">AND</span> repo = $3
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-org092f51d" class="outline-3">
+<h3 id="org092f51d"><span class="section-number-3">30.4.</span> Q43: Query — line 1108</h3>
+<div class="outline-text-3" id="text-30-4">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">SELECT</span> payload <span style="color: #a020f0;">FROM</span> analyze_jobs
+<span style="color: #a020f0;">WHERE</span> session_id = $1 <span style="color: #a020f0;">AND</span> owner = $2 <span style="color: #a020f0;">AND</span> repo = $3
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org4043000" class="outline-2">
+<a id="CompleteJob"></a>
+<h2 id="org4043000"><span class="section-number-2">31.</span> CompleteJob()</h2>
+<div class="outline-text-2" id="text-31">
+</div>
+<div id="outline-container-org2090b12" class="outline-3">
+<h3 id="org2090b12"><span class="section-number-3">31.1.</span> Q44: Update — line 1139</h3>
+<div class="outline-text-3" id="text-31-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">UPDATE</span> job_status <span style="color: #a020f0;">SET</span> status = $4
+<span style="color: #a020f0;">WHERE</span> session_id = $1 <span style="color: #a020f0;">AND</span> owner = $2 <span style="color: #a020f0;">AND</span> repo = $3
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-org27c3f1a" class="outline-3">
+<h3 id="org27c3f1a"><span class="section-number-3">31.2.</span> Q45: Update — line 1148</h3>
+<div class="outline-text-3" id="text-31-2">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">UPDATE</span> job_info <span style="color: #a020f0;">SET</span> completed_at = NOW()
+<span style="color: #a020f0;">WHERE</span> session_id = $1 <span style="color: #a020f0;">AND</span> owner = $2 <span style="color: #a020f0;">AND</span> repo = $3
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org4397998" class="outline-2">
+<a id="TryAdvisoryLock"></a>
+<h2 id="org4397998"><span class="section-number-2">32.</span> TryAdvisoryLock()</h2>
+<div class="outline-text-2" id="text-32">
+</div>
+<div id="outline-container-org4f0fcda" class="outline-3">
+<h3 id="org4f0fcda"><span class="section-number-3">32.1.</span> Q46: Advisory Lock — line 1168</h3>
+<div class="outline-text-3" id="text-32-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">SELECT</span> pg_try_advisory_lock($1)
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org47f5510" class="outline-2">
+<a id="AdvisoryUnlock"></a>
+<h2 id="org47f5510"><span class="section-number-2">33.</span> AdvisoryUnlock()</h2>
+<div class="outline-text-2" id="text-33">
+</div>
+<div id="outline-container-org0505216" class="outline-3">
+<h3 id="org0505216"><span class="section-number-3">33.1.</span> Q47: Advisory Unlock — line 1179</h3>
+<div class="outline-text-3" id="text-33-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">SELECT</span> pg_advisory_unlock($1)
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org7ab9ab5" class="outline-2">
+<a id="TransitionJobsToQueued"></a>
+<h2 id="org7ab9ab5"><span class="section-number-2">34.</span> TransitionJobsToQueued()</h2>
+<div class="outline-text-2" id="text-34">
+</div>
+<div id="outline-container-org40074e3" class="outline-3">
+<h3 id="org40074e3"><span class="section-number-3">34.1.</span> Q48: Update — line 1187</h3>
+<div class="outline-text-3" id="text-34-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">UPDATE</span> job_status <span style="color: #a020f0;">SET</span> status = $4
+<span style="color: #a020f0;">WHERE</span> session_id = $1 <span style="color: #a020f0;">AND</span> owner = $2 <span style="color: #a020f0;">AND</span> repo = $3 <span style="color: #a020f0;">AND</span> status = $5
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org1b82608" class="outline-2">
+<a id="GetQueuedJobCount"></a>
+<h2 id="org1b82608"><span class="section-number-2">35.</span> GetQueuedJobCount()</h2>
+<div class="outline-text-2" id="text-35">
+</div>
+<div id="outline-container-org5cc71fe" class="outline-3">
+<h3 id="org5cc71fe"><span class="section-number-3">35.1.</span> Q49: Query — line 1207</h3>
+<div class="outline-text-3" id="text-35-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">SELECT</span> <span style="color: #483d8b;">COUNT</span>(*) <span style="color: #a020f0;">FROM</span> job_status <span style="color: #a020f0;">WHERE</span> status = $1
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org8bf37d9" class="outline-2">
+<a id="CountWorkersByStatus"></a>
+<h2 id="org8bf37d9"><span class="section-number-2">36.</span> CountWorkersByStatus()</h2>
+<div class="outline-text-2" id="text-36">
+</div>
+<div id="outline-container-orgca73d6d" class="outline-3">
+<h3 id="orgca73d6d"><span class="section-number-3">36.1.</span> Q50: Query — line 1229</h3>
+<div class="outline-text-3" id="text-36-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">SELECT</span> <span style="color: #483d8b;">COUNT</span>(*) <span style="color: #a020f0;">FROM</span> worker_pool <span style="color: #a020f0;">WHERE</span> status <span style="color: #a020f0;">IN</span> (%s)
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org8bba178" class="outline-2">
+<a id="GetStaleWorkers"></a>
+<h2 id="org8bba178"><span class="section-number-2">37.</span> GetStaleWorkers()</h2>
+<div class="outline-text-2" id="text-37">
+</div>
+<div id="outline-container-org83089e9" class="outline-3">
+<h3 id="org83089e9"><span class="section-number-3">37.1.</span> Q51: Query — line 1241</h3>
+<div class="outline-text-3" id="text-37-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">SELECT</span> worker_id <span style="color: #a020f0;">FROM</span> worker_pool
+<span style="color: #a020f0;">WHERE</span> heartbeat_at &lt; NOW() - $1::<span style="color: #228b22;">interval</span>
+  <span style="color: #a020f0;">AND</span> status <span style="color: #a020f0;">IN</span> ($2, $3)
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-orgc6d09ff" class="outline-2">
+<a id="RequeueWorkerJob"></a>
+<h2 id="orgc6d09ff"><span class="section-number-2">38.</span> RequeueWorkerJob()</h2>
+<div class="outline-text-2" id="text-38">
+</div>
+<div id="outline-container-orgc47a1e7" class="outline-3">
+<h3 id="orgc47a1e7"><span class="section-number-3">38.1.</span> Q52: Update — line 1267</h3>
+<div class="outline-text-3" id="text-38-1">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">UPDATE</span> job_status <span style="color: #a020f0;">SET</span> status = $1
+<span style="color: #a020f0;">WHERE</span> (session_id, owner, repo) <span style="color: #a020f0;">IN</span> (
+    <span style="color: #a020f0;">SELECT</span> ji.session_id, ji.owner, ji.repo
+    <span style="color: #a020f0;">FROM</span> job_info ji
+    <span style="color: #a020f0;">JOIN</span> job_status js <span style="color: #a020f0;">ON</span> ji.session_id = js.session_id <span style="color: #a020f0;">AND</span> ji.owner = js.owner <span style="color: #a020f0;">AND</span> ji.repo = js.repo
+    <span style="color: #a020f0;">WHERE</span> ji.worker_id = $2 <span style="color: #a020f0;">AND</span> js.status = $3
+)
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-org55f9b92" class="outline-3">
+<h3 id="org55f9b92"><span class="section-number-3">38.2.</span> Q53: Update — line 1283</h3>
+<div class="outline-text-3" id="text-38-2">
+<div class="org-src-container">
+<pre class="src src-sql"><span style="color: #a020f0;">UPDATE</span> job_info <span style="color: #a020f0;">SET</span> worker_id = <span style="color: #8b2252;">''</span>, started_at = <span style="color: #a020f0;">NULL</span>
+<span style="color: #a020f0;">WHERE</span> worker_id = $1
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="author">Author: (extracted from source)</p>
+<p class="date">Created: 2026-05-18 Mon 14:41</p>
+<p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
+</div>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../agent-commander-argo"
+		},
+		{
+			"path": "../server-commander"
+		}
+	],
+	"settings": {
+		"sarif-viewer.connectToGithubCodeScanning": "off",
+        "codeQL.githubDatabase.download": "never",
+        "makefile.configureOnOpen": false,
+        "git.ignoreLimitWarning": true
+	}
+}

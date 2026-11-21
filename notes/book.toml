@@ -1,0 +1,15 @@
+[book]
+title = "MRVA Investigation Notes"
+description = "Early design material, investigations, and special operational findings for MRVA."
+# The files under src/ are symlinks to the canonical Markdown beside this
+# configuration. Editing a note updates the book on the next build.
+src = "src"
+
+[build]
+build-dir = "book"
+create-missing = false
+
+[output.html]
+mathjax-support = true
+# Requires mdBook >= 0.5. Show headings from the current note in the sidebar.
+sidebar-header-nav = true

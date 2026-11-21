@@ -1,0 +1,42 @@
+--- a/add-user.c
++++ b/add-user.c
+@@ -67,22 +67,31 @@
+ 
+ void write_info(int id, char* info) {
+     sqlite3 *db;
++    sqlite3_stmt *statement;
+     int rc;
+-    int bufsize = 1024;
+-    char *zErrMsg = 0;
+-    char query[bufsize];
++    const char *query = "INSERT INTO users VALUES (?, ?)";
+     
+     /* open db */
+     rc = sqlite3_open("users.sqlite", &db);
+     abort_on_error(rc, db);
+ 
+-    /* Format query */
+-    snprintf(query, bufsize, "INSERT INTO users VALUES (%d, '%s')", id, info);
++    rc = sqlite3_prepare_v2(db, query, -1, &statement, NULL);
++    abort_on_error(rc, db);
+     write_log("query: %s\n", query);
+ 
+-    /* Write info */
+-    rc = sqlite3_exec(db, query, NULL, 0, &zErrMsg);
+-    abort_on_exec_error(rc, db, zErrMsg);
++    rc = sqlite3_bind_int(statement, 1, id);
++    if (rc == SQLITE_OK)
++        rc = sqlite3_bind_text(statement, 2, info, -1, SQLITE_TRANSIENT);
++    if (rc == SQLITE_OK)
++        rc = sqlite3_step(statement);
++    if (rc != SQLITE_DONE) {
++        fprintf(stderr, "SQL error: %s\n", sqlite3_errmsg(db));
++        sqlite3_finalize(statement);
++        sqlite3_close(db);
++        abort();
++    }
++    rc = sqlite3_finalize(statement);
++    abort_on_error(rc, db);
+ 
+     sqlite3_close(db);
+ }

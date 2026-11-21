@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Single Machine MRVA</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="docs/readme-fonts.css" />
+  <link rel="stylesheet" href="docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Single Machine MRVA</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#single-machine-mrva" id="toc-single-machine-mrva">Single
+Machine MRVA</a>
+<ul>
+<li><a href="#installed-open-cga" id="toc-installed-open-cga">Installed?
+Open CGA</a></li>
+<li><a href="#documentation"
+id="toc-documentation">Documentation</a></li>
+<li><a href="#cga-command-line-interface"
+id="toc-cga-command-line-interface">CGA command-line interface</a></li>
+<li><a href="#sample-workflows-and-system-tests"
+id="toc-sample-workflows-and-system-tests">Sample workflows and system
+tests</a></li>
+<li><a href="#related-documentation"
+id="toc-related-documentation">Related documentation</a></li>
+<li><a href="#mrva-repository-component-layout"
+id="toc-mrva-repository-component-layout">MRVA repository / component
+layout</a>
+<ul>
+<li><a href="#top-level-components-deployable-binaries"
+id="toc-top-level-components-deployable-binaries">Top-level components
+(deployable binaries)</a></li>
+<li><a href="#library-packages-mrvacommanderpkg-core-components"
+id="toc-library-packages-mrvacommanderpkg-core-components">Library
+packages (<code>mrvacommander/pkg/*</code>) — core components</a></li>
+<li><a href="#support-libraries-cross-cutting-concerns"
+id="toc-support-libraries-cross-cutting-concerns">Support libraries /
+cross-cutting concerns</a></li>
+<li><a href="#mapping-to-user-supplied-example"
+id="toc-mapping-to-user-supplied-example">Mapping to user-supplied
+example</a></li>
+</ul></li>
+<li><a href="#this-code-is-based-on-imported-git-revisions"
+id="toc-this-code-is-based-on-imported-git-revisions">This code is based
+on imported git revisions</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="single-machine-mrva">Single Machine MRVA</h1>
+<h2 id="installed-open-cga">Installed? Open CGA</h2>
+<p>On the machine where <code>cga</code> is installed, start the
+documentation gateway:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> gateway start</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> gateway status</span></code></pre></div>
+<p>For a remote VM, keep an SSH tunnel open from your workstation.
+Replace <code>hohn@svm</code> with your SSH destination:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> <span class="at">-o</span> ExitOnForwardFailure=yes <span class="at">-o</span> ServerAliveInterval=60 <span class="dt">\</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">-L</span> 8599:127.0.0.1:8599 hohn@svm</span></code></pre></div>
+<p>Open <strong>http://127.0.0.1:8599/</strong> in your workstation’s
+browser, or directly on the CGA machine for local use. Choose
+<strong>CGA overview</strong> and follow <strong>Sample 05 in section
+03</strong> for a first analysis.</p>
+<p>No initialized workflow, running MRVA, or configured viewers are
+needed. The overview and help are already rendered; no documentation
+build is required. The reference manual is optional and built
+separately.</p>
+<p>Reconnect with the same SSH command. Stop only the gateway with
+<code>cga gateway stop</code>.</p>
+<h2 id="documentation">Documentation</h2>
+<p>Choose the depth you need:</p>
+<ol type="1">
+<li><strong><a href="docs/cga-overview.html">CGA overview</a></strong> —
+understand the appliance, follow the fixed Sample 05 worked example, and
+install CGA.</li>
+<li><strong><a href="docs/cga-help.html">CGA help</a></strong> — choose
+a task and look up instructions and commands.</li>
+<li><strong><a href="docs/book/index.html">Reference manual
+(book)</a></strong> — consult detailed workflows, components, and
+operations; it is reference, not required introductory reading.</li>
+</ol>
+<p>The repository and implementation reference follows below. The <a
+href="READING-GUIDE.html">advanced reading guide</a> supplies deeper
+task-based paths.</p>
+<p>This repository is a science experiment and prototype for handling
+CodeQL databases and queries, applying queries to databases, and
+supporting human/LLM investigation. Code, examples, and usage
+documentation evolve together. Examples leave room for experimentation;
+e2e tests are fixed examples that test the code.</p>
+<p>This repository is:</p>
+<ul>
+<li>a <strong>single-machine MRVA system</strong> — a complete
+Multi-Repository Variant Analysis (MRVA) stack (server, agents, state,
+stores) that runs on one host with no Docker required, and</li>
+<li>the <strong>testbed for large-scale deployment</strong> — the same
+Go modules deploy to a cluster via Argo Workflows; the single-machine
+setup keeps the moving parts visible so the system can be developed,
+exercised, and debugged locally.</li>
+</ul>
+<p>MRVA takes one CodeQL query and runs it across many CodeQL databases
+in parallel. Here a single Go server (the “commander”) accepts
+submissions, schedules jobs onto a pool of local worker subprocesses
+(the “agents”), and records everything in a host PostgreSQL database.
+Results are written back as SARIF. A live system view is served at
+<code>http://localhost:8081/sysview</code>.</p>
+<h2 id="cga-command-line-interface">CGA command-line interface</h2>
+<p><strong>CGA is the recommended end-to-end interface to this
+repository.</strong> It selects prepared CodeQL databases and queries,
+submits MRVA analyses, tracks and downloads results, ingests SARIF,
+exports findings, and manages the combined analysis/preparation
+dashboard.</p>
+<p>Install the repository’s unified <code>cga</code> dispatcher on your
+user <code>PATH</code> from anywhere inside the checkout:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="va">repo_root</span><span class="op">=</span><span class="va">$(</span><span class="fu">git</span> rev-parse <span class="at">--show-toplevel</span><span class="va">)</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">install</span> <span class="at">-d</span> <span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/.local/bin&quot;</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">ln</span> <span class="at">-sfn</span> <span class="st">&quot;</span><span class="va">$repo_root</span><span class="st">/cga/cga&quot;</span> <span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/.local/bin/cga&quot;</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="fu">install</span> <span class="at">-d</span> <span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/.local/share/bash-completion/completions&quot;</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="fu">ln</span> <span class="at">-sfn</span> <span class="st">&quot;</span><span class="va">$repo_root</span><span class="st">/cga/completions/cga.bash&quot;</span> <span class="dt">\</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/.local/share/bash-completion/completions/cga&quot;</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> <span class="at">--help</span></span></code></pre></div>
+<p>If <code>$HOME/.local/bin</code> is not already on <code>PATH</code>,
+add <code>export PATH="$HOME/.local/bin:$PATH"</code> to your shell
+profile. A system-wide alternative on a dedicated development machine
+is:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> ln <span class="at">-sfn</span> <span class="st">&quot;</span><span class="va">$(</span><span class="fu">git</span> rev-parse <span class="at">--show-toplevel</span><span class="va">)</span><span class="st">/cga/cga&quot;</span> /usr/local/bin/cga</span></code></pre></div>
+<p>The completion installation is discovered automatically by
+<code>bash-completion</code> in new Bash shells. For the current shell,
+either start a new shell or run:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> <span class="st">&quot;</span><span class="va">$(</span><span class="fu">git</span> rev-parse <span class="at">--show-toplevel</span><span class="va">)</span><span class="st">/cga/completions/cga.bash&quot;</span></span></code></pre></div>
+<p>See <a href="cga/README.html"><code>cga/README.md</code></a> for
+command completion, the dashboard, component commands, and the starting
+single-user <a href="cga/mrva-flow/README.html"><code>mrva-flow</code></a>
+example. The earlier two-user <a
+href="cga/sample-05-i/README.html"><code>sample-05-i</code></a> remains
+available for experimentation.</p>
+<p>For shell-based assistant discovery, use
+<code>cga llm context --help</code>, then
+<code>cga llm context bench</code> (alias <code>cga llm cb</code>) for
+experiment/session state or <code>cga llm context unified</code> (alias
+<code>cga llm cu</code>) for the workflow outline. These read local
+state without requiring a web server. Add
+<code>--show-html-endpoint</code>, <code>--show-json-endpoint</code>, or
+<code>--show-docs</code> to print the corresponding viewer URL, JSON
+URL, or local documentation paths.</p>
+<p>Bench, Unified View, shell commands, and assistant context also share
+opaque visual element IDs, such as <code>:f3a,1,J</code> for session 1’s
+job stage. Use <code>cga show --registry</code>,
+<code>cga show :f3a,1,J</code>, <code>cga related :f3a,1,J</code>, or
+<code>cga open :f3a,1,J</code>. Clicking a UI badge opens a pinned fact
+inspector with its own terminal; pasting its Copilot command never
+executes it automatically. See the <a
+href="cga/README.html#visual-element-identifiers-vids">VID reference
+contract</a>.</p>
+<p>The canonical way to bring the whole thing up, submit work, and
+verify it is the phase-based driver
+<code>cga/system-tests/run-system-02</code> (see <a
+href="cga/system-tests/README.html"><code>cga/system-tests/README.md</code></a>).</p>
+<h2 id="sample-workflows-and-system-tests">Sample workflows and system
+tests</h2>
+<p>The sample end-to-end workflows (bringing the stack up, submitting
+work, verifying, capturing/replaying sysview dumps) and the
+state-inspection recipes live with the harness that drives them. See <a
+href="cga/system-tests/README.html"><code>cga/system-tests/README.md</code></a>
+for the configuration tables, the <code>run-system-*</code> sample
+workflow, the replayable-dump workflow, and the MinIO/PostgreSQL
+state-inspection samples.</p>
+<h2 id="related-documentation">Related documentation</h2>
+<ul>
+<li><a href="cga/README.html"><code>cga/README.md</code></a> — the
+recommended unified CLI for database and query selection, MRVA
+execution, SARIF ingestion, and result export.</li>
+<li><a href="cga/cgamr/README.html"><code>cga/cgamr/README.md</code></a> —
+the MRVA HTTP client for submission, status, and result downloads.</li>
+<li><a
+href="cga/system-tests/README.html"><code>cga/system-tests/README.md</code></a>
+— configuration, sample workflows, replay, and state-inspection
+recipes.</li>
+<li><a
+href="server-commander/README.html"><code>server-commander/README.md</code></a>
+— the commander (server) binary.</li>
+<li><a
+href="agent-commander-argo/README.html"><code>agent-commander-argo/README.md</code></a>
+— the worker/agent binary.</li>
+<li><a
+href="mrvacommander/README.html"><code>mrvacommander/README.md</code></a>
+— the shared library module.</li>
+<li><a
+href="sysview-view/README.html"><code>sysview-view/README.md</code></a> —
+offline sysview replay tool.</li>
+</ul>
+<p><a id="mrva-component-map"></a></p>
+<h2 id="mrva-repository-component-layout">MRVA repository / component
+layout</h2>
+<p>The workspace is composed of three sibling Go modules. Two of them
+(<code>server-commander</code>, <code>agent-commander-argo</code>) are
+thin <code>main</code> wrappers that wire together components from the
+shared library module <code>mrvacommander</code>.</p>
+<h3 id="top-level-components-deployable-binaries">Top-level components
+(deployable binaries)</h3>
+<h4 id="server-commander-server-commandermain.go">server-commander
+(<code>server-commander/main.go</code>)</h4>
+<ul>
+<li>Long-running HTTP server: the MRVA “commander”.</li>
+<li><code>--mode</code> selects the deployment (default
+<code>container</code>):
+<ul>
+<li><code>standalone</code> — single-VM dev mode, no Docker. Uses host
+PostgreSQL (<code>POSTGRES_*</code>), a filesystem artifact store
+(<code>MRVA_ARTIFACT_DIR</code>), a filesystem CodeQL DB store
+(<code>--dbpath</code>), and a <code>LocalArgoClient</code> that spawns
+<code>agent-commander-argo</code> as a local subprocess. This is the
+mode <code>run-system-02</code> and the live single-machine deployment
+use.</li>
+<li><code>container</code> — MinIO/S3 artifact store, HEPC CodeQL DB
+store, host PostgreSQL, and either the real Argo client or a local
+client when <code>MRVA_ENVSIM=true</code>.</li>
+<li><code>cluster</code> — accepted by the <code>--mode</code> help text
+but <strong>not implemented</strong>; it falls through to an error.
+Cluster deployment is done with <code>container</code> mode plus Argo
+Workflows.</li>
+</ul></li>
+<li>Neither mode uses a message broker: both construct a <strong>no-op
+queue</strong> (<code>deploy.InitNoopQueue</code>); agents coordinate
+with the server through PostgreSQL only.</li>
+<li>Entry point constructs <code>server.NewVisibles(...)</code> then
+<code>server.NewCommanderSingle(...)</code> and blocks on signals.</li>
+<li>Built locally (e.g. <code>make</code> / <code>go build</code>) to
+<code>server-commander/mrvaserver</code>; the binary is gitignored, not
+tracked.</li>
+</ul>
+<h4
+id="agent-commander-argo-agent-commander-argomain.go">agent-commander-argo
+(<code>agent-commander-argo/main.go</code>)</h4>
+<ul>
+<li>Worker process. Two modes:
+<ol type="1">
+<li>Pool worker loop: register in the Postgres worker pool, heartbeat,
+claim jobs (<code>pgState.ClaimJob</code>), run analysis
+(<code>agent.RunAnalysisJob</code>), and <strong>persist the result
+directly to Postgres</strong> (<code>pgState.SetResultAndStatus</code>
+<ul>
+<li><code>pgState.CompleteJob</code>).</li>
+</ul></li>
+<li>Single-job mode (<code>--job &lt;JSON&gt;</code>): used inside Argo
+Workflow pods; runs one job and exits.</li>
+</ol></li>
+<li>Built locally to <code>agent-commander-argo/mrvaagent</code>; the
+binary is gitignored, not tracked.</li>
+</ul>
+<h4
+id="mrvacommander-shared-library-module-auxiliary-tooling">mrvacommander
+(shared library module + auxiliary tooling)</h4>
+<ul>
+<li>Hosts <code>pkg/...</code> used by both binaries above.</li>
+<li>Also contains: <code>cmd/server/doc.go</code>, <code>client/</code>
+(containers, <code>Plan.ipynb</code>, qldbtools),
+<code>config/mcc</code>, <code>init/rabbitmq</code> boot files,
+<code>tools/</code> (curl recorder &amp; captures), <code>utils/</code>
+(archive/download helpers plus PR/version-bump shell scripts),
+<code>doc/</code>, <code>demo/</code>, <code>db_schema_changes/</code>,
+<code>docker-compose*.yml</code>, <code>Makefile</code>, etc.
+<strong>Note:</strong> <code>docker-compose*.yml</code> and the
+<code>cmd/{server,agent}</code> Docker containers are legacy/deprecated
+and kept only as structural guidance; the live deployment is Argo
+Workflows + <code>--mode=standalone</code>.</li>
+</ul>
+<h3 id="library-packages-mrvacommanderpkg-core-components">Library
+packages (<code>mrvacommander/pkg/*</code>) — core components</h3>
+<h4 id="server-pkgserver">server (<code>pkg/server</code>)</h4>
+<ul>
+<li>HTTP front end of the commander. Files: <code>server.go</code>,
+<code>auth.go</code>, <code>interfaces.go</code>, <code>types.go</code>,
+<code>sysview.go</code>.</li>
+<li>Defines <code>CommanderSingle</code>, <code>Visibles</code> (bundle
+of injected dependencies: Queue, State, Artifacts, Databases,
+ArgoClient, PoolManager), and the gorilla/mux router
+(<code>setupEndpoints</code>).</li>
+<li>Endpoints: variant-analysis submit / status / cancel / download,
+plus the system view (<code>/sysview</code>,
+<code>/sysview/data</code>).</li>
+<li><code>auth.go</code> provides <code>AuthMiddleware</code> for the
+submission routes.</li>
+</ul>
+<h4 id="agent-pkgagent">agent (<code>pkg/agent</code>)</h4>
+<ul>
+<li>Analysis execution engine used by
+<code>agent-commander-argo</code>.</li>
+<li><code>agent.go</code>: <code>RunAnalysisJob</code> (drives codeql,
+uploads results).</li>
+<li><code>pool_worker.go</code>: worker-pool helpers (used in
+conjunction with the <code>state</code> worker-pool tables).</li>
+<li><code>interfaces.go</code>: agent-side contracts.</li>
+</ul>
+<h4 id="pool-pkgpool">pool (<code>pkg/pool</code>)</h4>
+<ul>
+<li>Pool manager / autoscaler. <code>Config</code> read from
+<code>MRVA_POOL_*</code> env vars (MaxWorkers, MinWorkers, RampFactor,
+DecayRate, IdleTimeout, HeartbeatExpiry, ScaleCheckInterval,
+DecayInterval, RecentRuntimeWindow).</li>
+<li>Uses a Postgres advisory lock
+(<code>queueAdvisoryLockID = 73001</code>) for leader-elected fair
+queueing.</li>
+</ul>
+<h4 id="scheduler-pkgscheduler">scheduler
+(<code>pkg/scheduler</code>)</h4>
+<ul>
+<li>Fair scheduler that promotes Pending -&gt; Queued and dispatches
+jobs to workers / Argo workflows.</li>
+<li><code>scheduler.go</code>: fair-share logic (per-user job counts and
+recent runtime window).</li>
+<li><code>argo_client.go</code>: real <code>ArgoWorkflowClient</code>
+(spawns Argo Workflows = “argo pod spawner”).</li>
+<li><code>local_client.go</code>: in-process/local stand-in
+(<code>NewLocalArgoClient</code>), used in <code>standalone</code> mode
+and in <code>container</code> mode when
+<code>MRVA_ENVSIM=true</code>.</li>
+<li>Config via <code>MRVA_SCHEDULER_*</code> env vars.</li>
+</ul>
+<h4 id="state-pkgstate-postgres-for-state">state
+(<code>pkg/state</code>) — “postgres for state”</h4>
+<ul>
+<li><code>interfaces.go</code>: <code>ServerState</code> interface, the
+central state contract (jobs, sessions, results, worker pool, scheduler
+locks, advisory locks, etc.).</li>
+<li><code>state_postgres.go</code>: Postgres-backed implementation
+(<code>NewPGState</code>). Backs the job queue, worker pool,
+fair-scheduler bookkeeping, and leader election.</li>
+</ul>
+<h4 id="queue-pkgqueue">queue (<code>pkg/queue</code>)</h4>
+<ul>
+<li>Message queue abstraction. <code>interfaces.go</code> defines
+<code>Queue</code> and <code>QueueWithSync</code>.</li>
+<li><code>queue_rabbitmq.go</code>: RabbitMQ implementation.
+<strong>Present in the library but not wired into the live
+binaries</strong> — both server modes use the no-op queue.</li>
+<li><code>queue_single.go</code>: in-process single-host
+implementation.</li>
+<li><code>types.go</code>: <code>AnalyzeJob</code>,
+<code>AnalyzeResult</code>, <code>QueryLanguage</code>.</li>
+</ul>
+<h4 id="artifactstore-pkgartifactstore">artifactstore
+(<code>pkg/artifactstore</code>)</h4>
+<ul>
+<li>Storage for query packs and analysis result artifacts.</li>
+<li><code>interfaces.go</code>, <code>common.go</code>.</li>
+<li><code>store_minio.go</code>: MinIO / S3-compatible (BCS) backend
+(container mode).</li>
+<li><code>store_memory.go</code>: in-memory backend for tests.</li>
+<li>A filesystem-backed store is used in standalone mode
+(<code>deploy.InitFilesystemArtifactStore</code>, rooted at
+<code>MRVA_ARTIFACT_DIR</code>).</li>
+</ul>
+<h4 id="qldbstore-pkgqldbstore-codeql-database-store">qldbstore
+(<code>pkg/qldbstore</code>) — CodeQL database store</h4>
+<ul>
+<li><code>interfaces.go</code>: <code>Store</code> contract for serving
+CodeQL DBs.</li>
+<li><code>qldbstore_hepc.go</code>: HEPC-backed implementation
+(<code>NewHepcStore</code>, used in container/production mode).</li>
+<li><code>qldbstore_local.go</code>: local filesystem implementation
+(standalone mode, <code>deploy.InitFilesystemDatabaseStore</code>,
+rooted at <code>--dbpath</code>).</li>
+</ul>
+<h4 id="codeql-pkgcodeql">codeql (<code>pkg/codeql</code>)</h4>
+<ul>
+<li>Wrapper around the CodeQL CLI (<code>codeql.go</code>,
+<code>types.go</code>). Used by the agent to execute analyses.</li>
+</ul>
+<h4 id="common-pkgcommon">common (<code>pkg/common</code>)</h4>
+<ul>
+<li>Cross-cutting types and helpers: <code>types.go</code> (Status,
+WorkerStatus, NameWithOwner, StatusSummary, …), <code>jobspec.go</code>
+(JobSpec, JobInfo), <code>extapi.go</code> (external API types),
+<code>minio.go</code> (shared minio helpers).</li>
+</ul>
+<h4 id="deploy-pkgdeploy">deploy (<code>pkg/deploy</code>)</h4>
+<ul>
+<li>Composition root used by both <code>main</code> binaries.
+<code>init.go</code> exposes <code>InitMinIOArtifactStore</code>,
+<code>InitHEPCDatabaseStore</code>,
+<code>InitFilesystemArtifactStore</code>,
+<code>InitFilesystemDatabaseStore</code>, and
+<code>InitNoopQueue</code>, plus <code>validateEnvVars</code>. Reads
+<code>MRVA_*</code> env vars and constructs concrete implementations of
+the library interfaces.</li>
+</ul>
+<h3 id="support-libraries-cross-cutting-concerns">Support libraries /
+cross-cutting concerns</h3>
+<h4 id="logging">Logging</h4>
+<ul>
+<li>Uses Go standard <code>log/slog</code> throughout (level configured
+by <code>--loglevel</code> in both binaries;
+<code>slog.SetLogLoggerLevel</code>).</li>
+<li>Legacy <code>log</code> package used for a few startup
+messages.</li>
+</ul>
+<h4 id="http-request-handling">HTTP request handling</h4>
+<ul>
+<li><code>gorilla/mux</code> router in <code>pkg/server/server.go</code>
+(<code>setupEndpoints</code>).</li>
+<li><code>pkg/server/auth.go</code> provides <code>AuthMiddleware</code>
+applied to the submission/cancel subrouter.</li>
+<li><code>CommanderAPI</code> interface (in
+<code>pkg/server/interfaces.go</code>) lists the handler methods
+(<code>MRVARequest</code>, <code>MRVAStatus</code>,
+<code>CancelVariantAnalysis</code>, <code>RootHandler</code>, …).</li>
+</ul>
+<h4 id="configuration">Configuration</h4>
+<ul>
+<li>All runtime config via <code>MRVA_*</code> (and
+<code>POSTGRES_*</code>) environment variables. The Go code computes
+sane defaults only when a value is unset; the harness and local runs
+keep full override flexibility.</li>
+<li><code>mrvacommander/config/mcc</code> holds (commented-out) TOML
+config loader scaffolding.</li>
+</ul>
+<h4 id="concurrency-coordination-primitives">Concurrency / coordination
+primitives</h4>
+<ul>
+<li>Postgres advisory locks (<code>pkg/pool</code>) for leader-elected
+scheduling.</li>
+<li>Named scheduler locks (<code>AcquireSchedulerLock</code> /
+<code>RenewSchedulerLock</code> / <code>ReleaseSchedulerLock</code>) for
+distributed leader election with TTL.</li>
+<li>Worker pool registry &amp; heartbeats in Postgres
+(<code>RegisterWorker</code>, <code>WorkerHeartbeat</code>,
+<code>ClaimJob</code>, <code>CompleteJob</code>,
+<code>GetStaleWorkers</code>, <code>RequeueWorkerJob</code>,
+<code>CleanupExitedWorkers</code>).</li>
+</ul>
+<h4 id="external-integrations">External integrations</h4>
+<ul>
+<li>PostgreSQL (state, fair scheduling, worker pool, locks) — the one
+hard dependency of the single-machine system.</li>
+<li>MinIO / BCS S3 (artifact store: query packs + results) — container
+mode.</li>
+<li>External HEPC servers (CodeQL DB store) — container mode. Local
+standalone workflows use CGA’s plain HTTP database serving instead.</li>
+<li>Argo Workflows (<code>pkg/scheduler/argo_client.go</code>) for
+spawning per-job pods in cluster deployments; the local client stands in
+for standalone/envsim.</li>
+<li>CodeQL CLI (<code>pkg/codeql</code>) invoked from the agent.</li>
+<li>RabbitMQ (<code>pkg/queue/queue_rabbitmq.go</code>) exists in the
+library but is not used by the current single-machine binaries.</li>
+</ul>
+<h3 id="mapping-to-user-supplied-example">Mapping to user-supplied
+example</h3>
+<ul>
+<li>agent -&gt; <code>agent-commander-argo</code> +
+<code>pkg/agent</code></li>
+<li>server -&gt; <code>server-commander</code> +
+<code>pkg/server</code></li>
+<li>library -&gt; <code>mrvacommander/pkg/*</code>
+<ul>
+<li>postgres for state -&gt; <code>pkg/state</code>
+(<code>state_postgres.go</code>)</li>
+<li>argo pod spawner -&gt; <code>pkg/scheduler/argo_client.go</code> (+
+<code>local_client.go</code> fallback)</li>
+<li>fair scheduler -&gt; <code>pkg/scheduler/scheduler.go</code> (+
+<code>pkg/pool</code> for autoscaling)</li>
+</ul></li>
+<li>support libraries
+<ul>
+<li>loggers -&gt; <code>log/slog</code> (configured in each
+<code>main.go</code>)</li>
+<li>request handlers -&gt; <code>pkg/server</code> (gorilla/mux router +
+<code>AuthMiddleware</code>)</li>
+</ul></li>
+</ul>
+<h2 id="this-code-is-based-on-imported-git-revisions">This code is based
+on imported git revisions</h2>
+<pre class="text"><code>==== /home/hohn/c/example/psa-mrva/agent-commander-argo
+1d8e498 (HEAD -&gt; pool-patches, tag: v1.0.19-mh-pool-patches-20260623124738, origin/pool-patches)
+==== /home/hohn/c/example/psa-mrva/mrvacommander
+c36f339 (HEAD -&gt; pool-patches, tag: v1.0.19-mh-pool-patches-20260623124738, origin/pool-patches)
+==== /home/hohn/c/example/psa-mrva/server-commander
+2f9d021 (HEAD -&gt; pool-patches, tag: v1.0.19-mh-pool-patches-20260623124738, origin/pool-patches)</code></pre>
+</body>
+</html>

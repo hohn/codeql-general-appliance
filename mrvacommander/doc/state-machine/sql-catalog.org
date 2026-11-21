@@ -1,0 +1,690 @@
+# -*- coding: utf-8 -*-
+#+OPTIONS: H:2 num:t \n:nil @:t ::t |:t ^:{} f:t *:t TeX:t LaTeX:t skip:nil p:nil
+#+TITLE: SQL Catalog: state_postgres.go
+#+AUTHOR: (extracted from source)
+
+53 SQL fragments from =pkg/state/state_postgres.go=, grouped by Go function.
+
+* SetupSchemas()
+:PROPERTIES:
+:CUSTOM_ID: SetupSchemas
+:END:
+
+** Q01: DDL — line 126
+
+#+begin_src sql
+CREATE TABLE IF NOT EXISTS job_repo_map (
+	job_repo_id SERIAL PRIMARY KEY,
+	owner       TEXT NOT NULL,
+	repo        TEXT NOT NULL,
+	UNIQUE(owner, repo)
+);
+#+end_src
+
+** Q02: DDL — line 137
+
+#+begin_src sql
+CREATE SEQUENCE IF NOT EXISTS session_id_seq;
+#+end_src
+
+** Q03: DDL — line 143
+
+#+begin_src sql
+CREATE TABLE IF NOT EXISTS analyze_results (
+	session_id INTEGER NOT NULL,
+	owner TEXT NOT NULL,
+	repo TEXT NOT NULL,
+	result JSONB NOT NULL,
+	PRIMARY KEY (session_id, owner, repo)
+);
+#+end_src
+
+** Q04: DDL — line 155
+
+#+begin_src sql
+CREATE TABLE IF NOT EXISTS analyze_jobs (
+	session_id INTEGER NOT NULL,
+	owner TEXT NOT NULL,
+	repo TEXT NOT NULL,
+	payload JSONB NOT NULL,
+	PRIMARY KEY (session_id, owner, repo)
+);
+#+end_src
+
+** Q05: DDL — line 167
+
+#+begin_src sql
+CREATE TABLE IF NOT EXISTS job_info (
+	session_id INTEGER NOT NULL,
+	owner TEXT NOT NULL,
+	repo TEXT NOT NULL,
+	payload JSONB NOT NULL,
+	user_id TEXT NOT NULL DEFAULT '',
+	started_at TIMESTAMP,
+	completed_at TIMESTAMP,
+	argo_workflow_id TEXT NOT NULL DEFAULT '',
+	PRIMARY KEY (session_id, owner, repo)
+);
+
+-- Add indices for scheduler queries
+CREATE INDEX IF NOT EXISTS idx_job_info_user_started
+	ON job_info(user_id, started_at);
+CREATE INDEX IF NOT EXISTS idx_job_info_workflow
+	ON job_info(argo_workflow_id) WHERE argo_workflow_id != '';
+#+end_src
+
+** Q06: DDL — line 189
+
+#+begin_src sql
+CREATE TABLE IF NOT EXISTS job_status (
+	session_id INTEGER NOT NULL,
+	owner TEXT NOT NULL,
+	repo TEXT NOT NULL,
+	status INTEGER NOT NULL,
+	PRIMARY KEY (session_id, owner, repo)
+);
+#+end_src
+
+** Q07: DDL — line 201
+
+#+begin_src sql
+CREATE TABLE IF NOT EXISTS scheduler_lock (
+	lock_name TEXT PRIMARY KEY,
+	instance_id TEXT NOT NULL,
+	acquired_at TIMESTAMP NOT NULL,
+	expires_at TIMESTAMP NOT NULL,
+	heartbeat_at TIMESTAMP NOT NULL
+);
+#+end_src
+
+** Q08: DDL — line 213
+
+#+begin_src sql
+CREATE TABLE IF NOT EXISTS worker_pool (
+	worker_id TEXT PRIMARY KEY,
+	status INTEGER NOT NULL DEFAULT 0,
+	registered_at TIMESTAMP NOT NULL DEFAULT NOW(),
+	heartbeat_at TIMESTAMP NOT NULL DEFAULT NOW(),
+	current_job TEXT,
+	jobs_completed INTEGER NOT NULL DEFAULT 0,
+	argo_pod_name TEXT NOT NULL DEFAULT ''
+);
+#+end_src
+
+** Q09: DDL (ALTER) — line 227
+
+#+begin_src sql
+DO $$ BEGIN
+	ALTER TABLE job_info ADD COLUMN IF NOT EXISTS worker_id TEXT NOT NULL DEFAULT '';
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_job_status_status_queued
+	ON job_status(status) WHERE status IN (0, 6);
+
+CREATE INDEX IF NOT EXISTS idx_worker_pool_heartbeat
+	ON worker_pool(heartbeat_at) WHERE status IN (0, 1);
+#+end_src
+
+* NextID()
+:PROPERTIES:
+:CUSTOM_ID: NextID
+:END:
+
+** Q10: Query — line 257
+
+#+begin_src sql
+SELECT nextval('session_id_seq')
+#+end_src
+
+* SetResult()
+:PROPERTIES:
+:CUSTOM_ID: SetResult
+:END:
+
+** Q11: Upsert — line 278
+
+#+begin_src sql
+INSERT INTO analyze_results (session_id, owner, repo, result)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (session_id, owner, repo)
+DO UPDATE SET result = EXCLUDED.result
+#+end_src
+
+* GetResult()
+:PROPERTIES:
+:CUSTOM_ID: GetResult
+:END:
+
+** Q12: Query — line 300
+
+#+begin_src sql
+SELECT result FROM analyze_results
+WHERE session_id = $1 AND owner = $2 AND repo = $3
+#+end_src
+
+* SetJobInfo()
+:PROPERTIES:
+:CUSTOM_ID: SetJobInfo
+:END:
+
+** Q13: Upsert — line 333
+
+#+begin_src sql
+INSERT INTO job_info (session_id, owner, repo, payload, user_id, started_at, completed_at, argo_workflow_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+ON CONFLICT (session_id, owner, repo)
+DO UPDATE SET
+	payload = EXCLUDED.payload,
+	user_id = EXCLUDED.user_id,
+	started_at = EXCLUDED.started_at,
+	completed_at = EXCLUDED.completed_at,
+	argo_workflow_id = EXCLUDED.argo_workflow_id
+#+end_src
+
+* GetJobInfo()
+:PROPERTIES:
+:CUSTOM_ID: GetJobInfo
+:END:
+
+** Q14: Query — line 363
+
+#+begin_src sql
+SELECT payload, user_id, started_at, completed_at, argo_workflow_id
+FROM job_info
+WHERE session_id = $1 AND owner = $2 AND repo = $3
+#+end_src
+
+* SetStatus()
+:PROPERTIES:
+:CUSTOM_ID: SetStatus
+:END:
+
+** Q15: Upsert — line 401
+
+#+begin_src sql
+INSERT INTO job_status (session_id, owner, repo, status)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (session_id, owner, repo)
+DO UPDATE SET status = EXCLUDED.status
+#+end_src
+
+* GetSessionStatus()
+:PROPERTIES:
+:CUSTOM_ID: GetSessionStatus
+:END:
+
+** Q16: Query — line 421
+
+#+begin_src sql
+SELECT status
+FROM job_status
+WHERE session_id = $1
+#+end_src
+
+* GetStatus()
+:PROPERTIES:
+:CUSTOM_ID: GetStatus
+:END:
+
+** Q17: Query — line 481
+
+#+begin_src sql
+SELECT status
+FROM job_status
+WHERE session_id = $1 AND owner = $2 AND repo = $3
+#+end_src
+
+* GetRepoId()
+:PROPERTIES:
+:CUSTOM_ID: GetRepoId
+:END:
+
+** Q18: Upsert — line 500
+
+#+begin_src sql
+INSERT INTO job_repo_map (owner, repo)
+VALUES ($1, $2)
+ON CONFLICT (owner, repo) DO UPDATE SET owner = EXCLUDED.owner
+RETURNING job_repo_id
+#+end_src
+
+* AddJob()
+:PROPERTIES:
+:CUSTOM_ID: AddJob
+:END:
+
+** Q19: Upsert — line 534
+
+#+begin_src sql
+INSERT INTO analyze_jobs (session_id, owner, repo, payload)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT DO NOTHING
+#+end_src
+
+* GetJobList()
+:PROPERTIES:
+:CUSTOM_ID: GetJobList
+:END:
+
+** Q20: Query — line 561
+
+#+begin_src sql
+SELECT payload FROM analyze_jobs
+WHERE session_id = $1
+ORDER BY owner, repo
+#+end_src
+
+* GetJobSpecByRepoId()
+:PROPERTIES:
+:CUSTOM_ID: GetJobSpecByRepoId
+:END:
+
+** Q21: Query — line 599
+
+#+begin_src sql
+SELECT owner, repo
+FROM job_repo_map
+WHERE job_repo_id = $1
+#+end_src
+
+* GetJobsByStatus()
+:PROPERTIES:
+:CUSTOM_ID: GetJobsByStatus
+:END:
+
+** Q22: Query — line 629
+
+#+begin_src sql
+SELECT aj.payload
+FROM analyze_jobs aj
+JOIN job_status js ON
+	aj.session_id = js.session_id AND
+	aj.owner = js.owner AND
+	aj.repo = js.repo
+WHERE js.status = $1
+ORDER BY aj.session_id, aj.owner, aj.repo
+#+end_src
+
+* GetUserJobCounts()
+:PROPERTIES:
+:CUSTOM_ID: GetUserJobCounts
+:END:
+
+** Q23: Query — line 671
+
+#+begin_src sql
+SELECT ji.user_id, COUNT(*)
+FROM job_info ji
+JOIN job_status js ON
+	ji.session_id = js.session_id AND
+	ji.owner = js.owner AND
+	ji.repo = js.repo
+WHERE js.status = $1 AND ji.user_id != ''
+GROUP BY ji.user_id
+#+end_src
+
+* GetUserRecentRuntime()
+:PROPERTIES:
+:CUSTOM_ID: GetUserRecentRuntime
+:END:
+
+** Q24: Query — line 710
+
+#+begin_src sql
+SELECT COALESCE(SUM(
+	EXTRACT(EPOCH FROM (completed_at - started_at))
+), 0)
+FROM job_info
+WHERE user_id = $1
+	AND completed_at IS NOT NULL
+	AND started_at IS NOT NULL
+	AND completed_at > NOW() - INTERVAL '1 second' * $2
+#+end_src
+
+* GetRecentSessions()
+:PROPERTIES:
+:CUSTOM_ID: GetRecentSessions
+:END:
+
+** Q25: Query — line 733
+
+#+begin_src sql
+SELECT DISTINCT
+	ji.session_id,
+	COALESCE(MAX(ji.user_id), '') as user_id,
+	COALESCE(MAX(ji.payload->>'QueryLanguage'), '') as language,
+	COALESCE(MAX(ji.payload->>'CreatedAt'), '') as created_at
+FROM job_info ji
+WHERE ji.payload->>'CreatedAt' IS NOT NULL
+  AND ji.payload->>'CreatedAt' != ''
+  AND (ji.payload->>'CreatedAt')::timestamp > NOW() - INTERVAL '1 day' * $1
+GROUP BY ji.session_id
+ORDER BY ji.session_id DESC
+#+end_src
+
+* CancelSession()
+:PROPERTIES:
+:CUSTOM_ID: CancelSession
+:END:
+
+** Q26: Update — line 793
+
+#+begin_src sql
+UPDATE job_status
+SET status = $1
+WHERE session_id = $2
+  AND (status = $3 OR status = $4)
+#+end_src
+
+* GetSessionOwnerRepo()
+:PROPERTIES:
+:CUSTOM_ID: GetSessionOwnerRepo
+:END:
+
+** Q27: Query — line 817
+
+#+begin_src sql
+SELECT owner, repo
+FROM analyze_jobs
+WHERE session_id = $1
+ORDER BY owner, repo
+LIMIT 1
+#+end_src
+
+* AcquireSchedulerLock()
+:PROPERTIES:
+:CUSTOM_ID: AcquireSchedulerLock
+:END:
+
+** Q28: Insert — line 841
+
+#+begin_src sql
+INSERT INTO scheduler_lock (lock_name, instance_id, acquired_at, expires_at, heartbeat_at)
+VALUES ($1, $2,
+#+end_src
+
+** Q29: ) — line 843
+
+#+begin_src sql
+)
+		ON CONFLICT (lock_name) DO UPDATE
+		SET instance_id = EXCLUDED.instance_id,
+		    acquired_at = EXCLUDED.acquired_at,
+		    expires_at = EXCLUDED.expires_at,
+		    heartbeat_at = EXCLUDED.heartbeat_at
+		WHERE scheduler_lock.expires_at < NOW()
+#+end_src
+
+** Q30: Query — line 859
+
+#+begin_src sql
+SELECT instance_id
+FROM scheduler_lock
+WHERE lock_name = $1 AND expires_at > NOW()
+#+end_src
+
+* RenewSchedulerLock()
+:PROPERTIES:
+:CUSTOM_ID: RenewSchedulerLock
+:END:
+
+** Q31: Update — line 891
+
+#+begin_src sql
+UPDATE scheduler_lock
+SET heartbeat_at = NOW(),
+    expires_at =
+#+end_src
+
+* ReleaseSchedulerLock()
+:PROPERTIES:
+:CUSTOM_ID: ReleaseSchedulerLock
+:END:
+
+** Q32: Delete — line 922
+
+#+begin_src sql
+DELETE FROM scheduler_lock
+WHERE lock_name = $1 AND instance_id = $2
+#+end_src
+
+* GetSchedulerLockHolder()
+:PROPERTIES:
+:CUSTOM_ID: GetSchedulerLockHolder
+:END:
+
+** Q33: Query — line 946
+
+#+begin_src sql
+SELECT instance_id
+FROM scheduler_lock
+WHERE lock_name = $1 AND expires_at > NOW()
+#+end_src
+
+* RegisterWorker()
+:PROPERTIES:
+:CUSTOM_ID: RegisterWorker
+:END:
+
+** Q34: Upsert — line 965
+
+#+begin_src sql
+INSERT INTO worker_pool (worker_id, status, registered_at, heartbeat_at, argo_pod_name)
+VALUES ($1, $2, NOW(), NOW(), $3)
+ON CONFLICT (worker_id) DO UPDATE SET
+	status = EXCLUDED.status,
+	heartbeat_at = EXCLUDED.heartbeat_at,
+	argo_pod_name = EXCLUDED.argo_pod_name
+#+end_src
+
+* WorkerHeartbeat()
+:PROPERTIES:
+:CUSTOM_ID: WorkerHeartbeat
+:END:
+
+** Q35: Update — line 986
+
+#+begin_src sql
+UPDATE worker_pool SET heartbeat_at = NOW()
+WHERE worker_id = $1 AND status != $2
+#+end_src
+
+* GetWorkerStatus()
+:PROPERTIES:
+:CUSTOM_ID: GetWorkerStatus
+:END:
+
+** Q36: Query — line 1006
+
+#+begin_src sql
+SELECT status FROM worker_pool WHERE worker_id = $1
+#+end_src
+
+* SetWorkerStatus()
+:PROPERTIES:
+:CUSTOM_ID: SetWorkerStatus
+:END:
+
+** Q37: Update — line 1020
+
+#+begin_src sql
+UPDATE worker_pool SET status = $2 WHERE worker_id = $1
+#+end_src
+
+* SetWorkerBusy()
+:PROPERTIES:
+:CUSTOM_ID: SetWorkerBusy
+:END:
+
+** Q38: Update — line 1033
+
+#+begin_src sql
+UPDATE worker_pool
+SET status = $2, current_job = $3, heartbeat_at = NOW()
+WHERE worker_id = $1
+#+end_src
+
+* SetWorkerIdle()
+:PROPERTIES:
+:CUSTOM_ID: SetWorkerIdle
+:END:
+
+** Q39: Update — line 1048
+
+#+begin_src sql
+UPDATE worker_pool
+SET status = $2, current_job = NULL, jobs_completed = jobs_completed + 1, heartbeat_at = NOW()
+WHERE worker_id = $1
+#+end_src
+
+* ClaimJob()
+:PROPERTIES:
+:CUSTOM_ID: ClaimJob
+:END:
+
+** Q40: Query — line 1072
+
+#+begin_src sql
+SELECT js.session_id, js.owner, js.repo
+FROM job_status js
+WHERE js.status = $1
+ORDER BY js.session_id, js.owner, js.repo
+LIMIT 1
+FOR UPDATE SKIP LOCKED
+#+end_src
+
+** Q41: Update — line 1087
+
+#+begin_src sql
+UPDATE job_status
+SET status = $4
+WHERE session_id = $1 AND owner = $2 AND repo = $3
+#+end_src
+
+** Q42: Update — line 1097
+
+#+begin_src sql
+UPDATE job_info
+SET worker_id = $4, started_at = NOW()
+WHERE session_id = $1 AND owner = $2 AND repo = $3
+#+end_src
+
+** Q43: Query — line 1108
+
+#+begin_src sql
+SELECT payload FROM analyze_jobs
+WHERE session_id = $1 AND owner = $2 AND repo = $3
+#+end_src
+
+* CompleteJob()
+:PROPERTIES:
+:CUSTOM_ID: CompleteJob
+:END:
+
+** Q44: Update — line 1139
+
+#+begin_src sql
+UPDATE job_status SET status = $4
+WHERE session_id = $1 AND owner = $2 AND repo = $3
+#+end_src
+
+** Q45: Update — line 1148
+
+#+begin_src sql
+UPDATE job_info SET completed_at = NOW()
+WHERE session_id = $1 AND owner = $2 AND repo = $3
+#+end_src
+
+* TryAdvisoryLock()
+:PROPERTIES:
+:CUSTOM_ID: TryAdvisoryLock
+:END:
+
+** Q46: Advisory Lock — line 1168
+
+#+begin_src sql
+SELECT pg_try_advisory_lock($1)
+#+end_src
+
+* AdvisoryUnlock()
+:PROPERTIES:
+:CUSTOM_ID: AdvisoryUnlock
+:END:
+
+** Q47: Advisory Unlock — line 1179
+
+#+begin_src sql
+SELECT pg_advisory_unlock($1)
+#+end_src
+
+* TransitionJobsToQueued()
+:PROPERTIES:
+:CUSTOM_ID: TransitionJobsToQueued
+:END:
+
+** Q48: Update — line 1187
+
+#+begin_src sql
+UPDATE job_status SET status = $4
+WHERE session_id = $1 AND owner = $2 AND repo = $3 AND status = $5
+#+end_src
+
+* GetQueuedJobCount()
+:PROPERTIES:
+:CUSTOM_ID: GetQueuedJobCount
+:END:
+
+** Q49: Query — line 1207
+
+#+begin_src sql
+SELECT COUNT(*) FROM job_status WHERE status = $1
+#+end_src
+
+* CountWorkersByStatus()
+:PROPERTIES:
+:CUSTOM_ID: CountWorkersByStatus
+:END:
+
+** Q50: Query — line 1229
+
+#+begin_src sql
+SELECT COUNT(*) FROM worker_pool WHERE status IN (%s)
+#+end_src
+
+* GetStaleWorkers()
+:PROPERTIES:
+:CUSTOM_ID: GetStaleWorkers
+:END:
+
+** Q51: Query — line 1241
+
+#+begin_src sql
+SELECT worker_id FROM worker_pool
+WHERE heartbeat_at < NOW() - $1::interval
+  AND status IN ($2, $3)
+#+end_src
+
+* RequeueWorkerJob()
+:PROPERTIES:
+:CUSTOM_ID: RequeueWorkerJob
+:END:
+
+** Q52: Update — line 1267
+
+#+begin_src sql
+UPDATE job_status SET status = $1
+WHERE (session_id, owner, repo) IN (
+	SELECT ji.session_id, ji.owner, ji.repo
+	FROM job_info ji
+	JOIN job_status js ON ji.session_id = js.session_id AND ji.owner = js.owner AND ji.repo = js.repo
+	WHERE ji.worker_id = $2 AND js.status = $3
+)
+#+end_src
+
+** Q53: Update — line 1283
+
+#+begin_src sql
+UPDATE job_info SET worker_id = '', started_at = NULL
+WHERE worker_id = $1
+#+end_src

@@ -1,0 +1,408 @@
+#+TITLE: MRVA Commander: Initialization and Execution Algorithm
+#+AUTHOR: (generated from source)
+#+OPTIONS: toc:2 num:t ^:t
+
+* MRVA Commander: Initialization and Execution Algorithm
+:PROPERTIES:
+:CUSTOM_ID: overview
+:END:
+
+The system has two binaries: the *server* (=server-commander=) and the
+*agent* (=agent-commander-argo=).  Let /Q/ = message queue, /A/ = artifact
+store, /D/ = database store, /S/ = persistent state, /W/ = workflow client,
+/P/ = pool manager, /C/ = server.
+
+* Algorithm 1: Server =main()=
+:PROPERTIES:
+:CUSTOM_ID: alg1
+:END:
+
+Source: =server-commander/main.go=
+
+Uses: [[*Algorithm 2: =InitRabbitMQ=][Alg 2]], [[*Algorithm 3: =InitMinIOArtifactStore=][Alg 3]], [[*Algorithm 4: =InitHEPCDatabaseStore=][Alg 4]], [[*Algorithm 5: =NewPGState=][Alg 5]], [[*Algorithm 6: =NewArgoClientFromEnv=][Alg 6]], [[*Algorithm 7: =NewCommanderSingle=][Alg 7]]
+
+#+begin_src
+Input : mode = "container", env
+Output: running server C
+
+1.  Q, err  <-  deploy.InitRabbitMQ(isAgent=false)           [Alg 2]
+2.  A, err  <-  deploy.InitMinIOArtifactStore()               [Alg 3]
+3.  D, err  <-  deploy.InitHEPCDatabaseStore()                [Alg 4]
+4.  S       <-  state.NewPGState()                            [Alg 5]
+5.  W, err  <-  scheduler.NewArgoClientFromEnv()              [Alg 6]
+6.  V       <-  server.NewVisibles(Q, S, A, D, W)
+7.  C       <-  server.NewCommanderSingle(V)                  [Alg 7]
+8.  block on sigChan
+#+end_src
+
+* Algorithm 2: =InitRabbitMQ=
+:PROPERTIES:
+:CUSTOM_ID: alg2
+:END:
+
+Source: =pkg/deploy/init.go= -> =pkg/queue/queue_rabbitmq.go=
+
+=InitRabbitMQ(isAgent)= delegates to =initRabbitMQCommon=, which validates
+env vars and calls =NewRabbitMQQueue=.  Inside =NewRabbitMQQueue=:
+
+#+begin_src
+Input : host, port, user, pass, isAgent
+Output: Q with AMQP conn, ch, jobs chan, results chan
+
+1.  url <- "amqp://user:pass@host:port/user"
+2.  conn <- amqp.Dial(url)                      -- up to 5 retries, 3s apart
+3.  ch   <- conn.Channel()
+4.  ch.QueueDeclare("tasks",   durable=F, autoDelete=F,
+                     exclusive=F, noWait=T)                   /* SA */
+5.  ch.QueueDeclare("results", durable=F, autoDelete=F,
+                     exclusive=F, noWait=T)                   /* SA */
+6.  ch.Qos(prefetch=1)
+7.  if isAgent:  go ConsumeJobs; go PublishResults
+    else:        go PublishJobs; go ConsumeResults
+#+end_src
+
+* Algorithm 3: =InitMinIOArtifactStore=
+:PROPERTIES:
+:CUSTOM_ID: alg3
+:END:
+
+Source: =pkg/deploy/init.go=
+
+#+begin_src
+Input : env
+Output: A : Store
+
+1.  Validate env: MRVA_BCS_{ENDPOINT, ACCESS_KEY, SECRET_KEY},
+                  MRVA_MINIO_VIRTUAL_HOST
+2.  if virtualHost:
+        bucket, host <- split(endpoint, ".")
+        lookup <- DNS
+    else:
+        bucket <- "mrvabucket"; host <- endpoint
+        lookup <- Path
+3.  A <- NewMinIOArtifactStore(host, id, secret, lookup)
+#+end_src
+
+* Algorithm 4: =InitHEPCDatabaseStore=
+:PROPERTIES:
+:CUSTOM_ID: alg4
+:END:
+
+Source: =pkg/deploy/init.go=
+
+#+begin_src
+Input : env
+Output: D : Store
+
+1.  Validate env: MRVA_HEPC_{ENDPOINT, CACHE_DURATION, DATAVIACLI, OUTDIR, TOOL}
+2.  D <- NewHepcStore(env(MRVA_HEPC_ENDPOINT))
+#+end_src
+
+* Algorithm 5: =NewPGState=
+:PROPERTIES:
+:CUSTOM_ID: alg5
+:END:
+
+Source: =pkg/state/state_postgres.go=
+
+#+begin_src
+Input : env
+Output: S : PGState (pgxpool)
+
+1.  Validate env: POSTGRES_{USER, PASSWORD, DB, HOST, PORT}
+2.  url <- "postgres://user:pass@host:port/db"
+3.  cfg <- pgxpool.ParseConfig(url)
+4.  if CA cert configured (file or env):
+        cfg.TLSConfig <- {RootCAs: certPool, ServerName: host}
+5.  cfg.MaxConns <- 10
+6.  pool <- pgxpool.NewWithConfig(cfg)
+7.  SetupSchemas(pool)   -- DDL for 8 tables (job_repo_map,
+       session_id_seq, analyze_{results,jobs}, job_{info,status},
+       scheduler_lock, worker_pool)
+#+end_src
+
+* Algorithm 6: =NewArgoClientFromEnv=
+:PROPERTIES:
+:CUSTOM_ID: alg6
+:END:
+
+Source: =pkg/scheduler/argo_client.go=
+
+#+begin_src
+Input : env
+Output: W : ArgoClient
+
+1.  tier     <- env(MRVA_TIER) or "dev"
+2.  poolMode <- env(MRVA_POOL_MODE) in {"true","1"}, default true
+3.  cfg <- {Tier, Namespace, ArgoAPIBaseURL, ProxyURL,
+            IdentityExchangeURL, PoolMode,
+            CodeQL/BCS/RabbitMQ/HEPC/Postgres params,
+            ADPRDUser, ADPRDPassword}
+4.  Require ADPRD credentials
+5.  httpClient <- {Proxy: proxyURL, Timeout: 30s}
+6.  W <- ArgoClient{cfg, httpClient}
+#+end_src
+
+* Algorithm 7: =NewCommanderSingle=
+:PROPERTIES:
+:CUSTOM_ID: alg7
+:END:
+
+Source: =pkg/server/types.go=, =pkg/server/server.go=
+
+Uses: [[*Algorithm 8: Pool Manager --- =Start()= and =cycle()=][Algorithm 8: Pool Manager --- =Start()= and =cycle()=]]
+
+#+begin_src
+Input : V = {Q, S, A, D, PoolMgr}
+Output: C : CommanderSingle (running)
+
+1.  C <- CommanderSingle{V}
+2.  go V.PoolManager.Start()                               [Alg 8]
+3.  setupEndpoints(C):
+        register routes (submit, status, cancel, download)
+        go ListenAndServe(port)
+4.  go C.ConsumeResults():
+        loop: r <- <-Q.Results()
+              S.SetResult(r.Spec, r)
+              S.SetStatus(r.Spec, r.Status)
+              PoolMgr.TriggerScheduling()
+#+end_src
+
+* Algorithm 8: Pool Manager --- =Start()= and =cycle()=
+:PROPERTIES:
+:CUSTOM_ID: alg8
+:END:
+
+Source: =pkg/pool/pool.go=
+
+Uses: [[*Algorithm 9: =reapDeadWorkers=][Alg 9]], [[*Algorithm 10: =queueJobs= --- fair scheduling and Argo submission][Alg 10]], [[*Algorithm 11: =pollArgoStatuses= --- reconciliation][Alg 11]]
+
+#+begin_src
+Input : cfg = {W_{max}, W_{min}, T_{scale}, T_{hb\_exp}}, S, W
+Output: background loop managing workers
+
+Start():
+1.  ticker <- NewTicker(T_{scale})               -- default 15s
+2.  loop:
+        on ticker or wakeChan: cycle()
+
+cycle():
+1.  reapDeadWorkers()                                      [Alg 9]
+2.  queueJobs()                                            [Alg 10]
+3.  pollArgoStatuses()                                     [Alg 11]
+#+end_src
+
+* Algorithm 9: =reapDeadWorkers=
+:PROPERTIES:
+:CUSTOM_ID: alg9
+:END:
+
+Source: =pkg/pool/pool.go:342-359=
+
+#+begin_src
+1.  stale <- S.GetStaleWorkers(T_{hb\_exp})
+       -- SELECT worker_id WHERE heartbeat_at < NOW() - T_{hb\_exp}
+          AND status IN (Idle, Busy)
+2.  for each w in stale:
+        S.RequeueWorkerJob(w)  -- InProgress -> Queued, clear worker_id
+        S.SetWorkerStatus(w, Exited)
+#+end_src
+
+* Algorithm 10: =queueJobs= --- fair scheduling and Argo submission
+:PROPERTIES:
+:CUSTOM_ID: alg10
+:END:
+
+Source: =pkg/pool/pool.go:210-303=
+
+Uses: [[*Algorithm 10a: =selectJobsFairly=][Alg 10a]], [[*Algorithm 10b: =submitJobToArgo=][Alg 10b]]
+
+#+begin_src
+1.  if not TryAdvisoryLock(73001): return   -- single-replica guard
+2.  busy   <- S.CountWorkersByStatus(Busy)
+3.  queued <- S.GetQueuedJobCount()
+4.  avail  <- W_{max} - busy - queued
+5.  if avail <= 0: return
+6.  pending <- S.GetPendingJobs()
+7.  Group pending by user
+8.  For each user u: get runningCount_u, recentRuntime_u
+9.  selected <- selectJobsFairly(...)                       [Alg 10a]
+10. S.TransitionJobsToQueued(selected)       -- Pending -> Queued
+11. for each job in selected:
+        submitJobToArgo(job)                                [Alg 10b]
+#+end_src
+
+** Algorithm 10a: =selectJobsFairly=
+:PROPERTIES:
+:CUSTOM_ID: alg10a
+:END:
+
+#+begin_src
+Input : jobsByUser, runningCounts, runtimes, slots
+Output: selected jobs (at most slots)
+
+1.  Sort users by: runningCount asc, recentRuntime asc, pendingCount desc
+2.  Round-robin: each user gets 1 slot per round
+       until slots exhausted or all users saturated
+#+end_src
+
+** Algorithm 10b: =submitJobToArgo=
+:PROPERTIES:
+:CUSTOM_ID: alg10b
+:END:
+
+Source: =pkg/pool/pool.go:309-339=, =pkg/scheduler/argo_client.go:502-623=
+
+#+begin_src
+1.  wfUID <- W.SubmitWorkflow(job):
+        token  <- getToken()               -- ADPRD identity exchange, cached
+        spec   <- createWorkflowSpec(job):
+            image  <- env(MRVA_ARGO_IMAGE)
+            if poolMode: args = []           -- worker claims from DB
+            else:        args = [--job, JSON] -- single-job mode
+            resources = {cpu: 4, mem: 16Gi}
+        POST spec to Argo API
+        return {name, uid, cluster} as JSON
+2.  S.SetJobInfo(job, {ArgoWorkflowID: wfUID, StartedAt: now})
+    -- status stays Queued; agent's ClaimJob does Queued -> InProgress
+#+end_src
+
+* Algorithm 11: =pollArgoStatuses= --- reconciliation
+:PROPERTIES:
+:CUSTOM_ID: alg11
+:END:
+
+Source: =pkg/pool/pool.go:370-473=
+
+#+begin_src
+1.  if not TryAdvisoryLock(73002): return
+2.  jobs <- S.GetRunningJobs() ++ S.GetQueuedJobs() with ArgoWorkflowID
+3.  for each job:
+        phase <- W.GetWorkflowStatus(job.ArgoWorkflowID)
+        if error and startedAt < 60s ago: skip  -- startup lag
+        if error and startedAt >= 60s:    phase <- "Error"
+        reconcile(job, phase):
+            if phase in {Succeeded, Failed, Error}:
+                S.SetStatus(job, mapPhase(phase))
+                S.SetJobInfo(job, {CompletedAt: now})
+            if phase in {Running, Pending}: no-op
+#+end_src
+
+* Algorithm 12: Agent =main()= --- pool mode worker
+:PROPERTIES:
+:CUSTOM_ID: alg12
+:END:
+
+Source: =agent-commander-argo/main.go=
+
+Uses: [[*Algorithm 13: =ClaimJob= --- atomic job acquisition][Alg 13]], [[*Algorithm 14: =RunAnalysisJob= --- CodeQL execution][Alg 14]]
+
+#+begin_src
+Input : env (no --job flag)
+Output: worker loop, exits on idle or drain
+
+ 1.  wID <- hostname-rand()
+ 2.  T_{poll} <- env or 2s;  T_{idle} <- env or 300s;  T_{hb} <- env or 10s
+ 3.  S <- NewPGState()
+ 4.  Q <- InitRabbitMQResultsOnly()       -- publish results only
+ 5.  A <- InitMinIOArtifactStore()
+ 6.  D <- InitHEPCDatabaseStore()
+ 7.  S.RegisterWorker(wID, podName)
+ 8.  go heartbeat(T_{hb}):
+         loop: S.WorkerHeartbeat(wID)     -- update heartbeat_at
+ 9.  t_{idle\_start} <- now()
+10.  loop:                                                  [Alg 12a]
+         if S.GetWorkerStatus(wID) = Draining: break
+         job <- S.ClaimJob(wID)                             [Alg 13]
+         if job = nil:
+             if now() - t_{idle\_start} > T_{idle}: break   -- idle exit
+             sleep(T_{poll}); continue
+         t_{idle\_start} <- now()                            -- reset
+         S.SetWorkerBusy(wID, jobKey)
+         result <- agent.RunAnalysisJob(job, A, D)          [Alg 14]
+         if err: S.CompleteJob(wID, job, Failed)
+         else:   S.CompleteJob(wID, job, result.Status)
+                 Q.PublishResultSync(result)
+         S.SetWorkerIdle(wID)
+11. S.SetWorkerStatus(wID, Exited)
+#+end_src
+
+** Algorithm 12a: Termination conditions
+:PROPERTIES:
+:CUSTOM_ID: alg12a
+:END:
+
+The worker exits the loop (step 10) on exactly two conditions:
+
+1. *Drain signal*: pool manager sets worker status to =Draining= in DB;
+   worker sees it on next poll.
+2. *Idle timeout*: no job claimed for T_{idle} (default 300s).
+   Timer resets each time a job is successfully claimed.
+
+After exiting, the worker marks itself =Exited= (step 11) and the process
+terminates.  If the process crashes instead (no =Exited= written), the
+pool manager's =reapDeadWorkers= ([[*Algorithm 9: =reapDeadWorkers=][Alg 9]]) detects the stale heartbeat and
+requeues the in-flight job.
+
+* Algorithm 13: =ClaimJob= --- atomic job acquisition
+:PROPERTIES:
+:CUSTOM_ID: alg13
+:END:
+
+Source: =pkg/state/state_postgres.go:1027-1094=
+
+#+begin_src
+Input : wID
+Output: job or nil
+
+1.  BEGIN tx
+2.  SELECT (session_id, owner, repo) FROM job_status
+       WHERE status = Queued
+       ORDER BY session_id, owner, repo
+       LIMIT 1
+       FOR UPDATE SKIP LOCKED              -- concurrent-safe
+3.  if no row: return nil
+4.  UPDATE job_status SET status = InProgress
+5.  UPDATE job_info   SET worker_id = wID, started_at = NOW()
+6.  SELECT payload FROM analyze_jobs
+7.  COMMIT
+8.  return unmarshal(payload)
+#+end_src
+
+* Algorithm 14: =RunAnalysisJob= --- CodeQL execution
+:PROPERTIES:
+:CUSTOM_ID: alg14
+:END:
+
+Source: =pkg/agent/agent.go:88-175=
+
+#+begin_src
+Input : job = {Spec, QueryPackLocation, QueryLanguage}, A, D
+Output: AnalyzeResult = {Spec, ResultCount, ResultLocation, Status, ...}
+
+1.  tmpDir <- mktemp()
+2.  qpData <- A.GetQueryPack(job.QueryPackLocation)
+3.  write qpData to tmpDir/query-pack.tar.gz
+4.  extract to tmpDir/pack/
+5.  dbData <- D.GetDatabase(job.Spec.NWO, job.QueryLanguage)
+6.  write dbData to tmpDir/database.zip
+7.  runResult <- codeql.RunQuery(dbPath, lang, packPath, tmpDir, NWO)
+8.  archive  <- codeql.GenerateResultsZipArchive(runResult)
+9.  loc      <- A.SaveResult(job.Spec, archive)
+10. return {Spec, runResult.ResultCount, loc, Succeeded, ...}
+#+end_src
+
+* Dependency Summary
+:PROPERTIES:
+:CUSTOM_ID: dep-summary
+:END:
+
+| Subsystem | Symbol | Backend    | Key Env Vars                             |
+|-----------+--------+------------+------------------------------------------|
+| Queue     | /Q/    | RabbitMQ   | MRVA_RABBITMQ_{HOST,PORT,USER,PASSWORD}  |
+| Artifacts | /A/    | MinIO/BCS  | MRVA_BCS_{ENDPOINT,ACCESS_KEY,SECRET_KEY}|
+| DB Store  | /D/    | HEPC       | MRVA_HEPC_{ENDPOINT,...}                 |
+| State     | /S/    | PostgreSQL | POSTGRES_{USER,PASSWORD,DB,HOST,PORT}    |
+| Workflows | /W/    | Argo       | MRVA_ARGO_*, MRVA_ADPRD_*               |
+| Server    | /C/    | /Q,S,A,D,W/| SERVER_PORT                             |
+| Pool      | /P/    | /S,W/      | MRVA_POOL_{MAX_WORKERS,IDLE_TIMEOUT,...} |

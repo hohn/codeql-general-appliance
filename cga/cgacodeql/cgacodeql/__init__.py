@@ -1,0 +1,1 @@
+"""CodeQL toolchain inspection component."""

@@ -1,0 +1,19 @@
+#!/usr/bin/env python3
+"""Launch the cgamrva CGAST filter."""
+import os
+from pathlib import Path
+import sys
+
+PROJECT = Path(__file__).resolve().parent.parent
+CGA_ROOT = PROJECT.parent
+REPO = CGA_ROOT.parent
+os.environ.setdefault("CGAST_ROOT", os.environ.get("CGA_PREP_ROOT", str(CGA_ROOT)))
+os.environ.setdefault("CGAST_TMPDIR", os.environ.get("CGA_PREP_TMPDIR", str(CGA_ROOT / "cga-prep-tmp")))
+os.environ.setdefault("CGAST_SESSION", os.environ.get(
+    "CGA_PREP_SESSION", str(Path(os.environ["CGAST_TMPDIR"]) / "session.json")))
+sys.path[:0] = [str(PROJECT), str(CGA_ROOT / "lib"), str(REPO / "cga/cgalib"),
+                str(REPO / "cga/cgamx")]
+from cgamrva.cli import main
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))

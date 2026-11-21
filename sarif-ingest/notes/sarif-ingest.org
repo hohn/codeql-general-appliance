@@ -1,0 +1,90 @@
+* sarif-ingest
+
+  A small SARIF ingestion tool. It turns CodeQL SARIF into queryable databases
+  and offers convenience queries for the two result kinds we care about
+  (=problem= and =path-problem=).
+
+  =srfi= is a thin shell wrapper around vendored Python helpers under =bin/=
+  and SQL under =scripts/=. The helpers are adapted from
+  =sarif-result-comparison/bin/= (=sarif-results-sqlite=, =sarif-cumulative=),
+  with the bmf/bmn-specific =build_mode= column dropped.
+
+** directory layout
+
+   Mirrors =sarif-result-comparison/=:
+
+   - =bin/srfi=                 -- the =srfi= command (shell wrapper)
+   - =bin/sarif-results-sqlite= -- single SARIF -> SQLite (Python)
+   - =bin/sarif-cumulative=     -- many SQLite -> one DuckDB (Python)
+   - =scripts/showprob.sql=     -- =kind = 'problem'= query
+   - =scripts/showpath.sql=     -- =kind = 'path-problem'= query
+
+** requirements
+
+   - =python3= (standard library only; used for =tolite=)
+   - =sqlite3= CLI (querying =.sqlite= databases)
+   - =duckdb=  CLI (=toduck=, and querying =.duckdb= databases)
+
+** commands
+
+*** srfi tolite <name.sarif> [out.sqlite] [--user USER]
+
+    Ingest one SARIF file into a SQLite database, keeping only =problem= and
+    =path-problem= results. Without an explicit output, writes =<stem>.sqlite=
+    next to the input. =--user= stores an MRVA user identity on every result;
+    it defaults to the empty string for callers without user context.
+
+    #+BEGIN_SRC sh
+      srfi tolite results.sarif            # -> results.sqlite
+      srfi tolite results.sarif out.sqlite
+      srfi tolite results.sarif out.sqlite --user bob
+    #+END_SRC
+
+    Table =sarif_results=:
+
+    : user, file_name, kind, rule_id, rule_name, uri, start_line, start_column, result_json
+
+*** srfi toduck <name> <a.sqlite> [b.sqlite ...]
+
+    Aggregate one or more per-SARIF SQLite databases into a single DuckDB
+    database. =<name>= gets a =.duckdb= suffix if absent.
+
+    #+BEGIN_SRC sh
+      srfi toduck all *.sqlite             # -> all.duckdb
+    #+END_SRC
+
+*** srfi showprob <name.[sqlite|duckdb]>
+
+    Show all =kind:problem= results. Picks =sqlite3= or =duckdb= from the file
+    extension.
+
+    #+BEGIN_SRC sh
+      srfi showprob results.sqlite
+      srfi showprob all.duckdb
+    #+END_SRC
+
+*** srfi showpath <name.[sqlite|duckdb]>
+
+    Show all =kind:path-problem= results (same engine selection as above).
+
+** example: ingest run-system-02 output
+
+   The =cga/system-tests/run-system-02= e2e run leaves result artifacts under
+   =$MRVA_ARTIFACT_DIR= (default =/tmp/mrva-standalone-multi/artifacts=), each a
+   zip containing =results.sarif=.
+
+   #+BEGIN_SRC sh
+     mkdir -p /tmp/srfi
+     for z in /tmp/mrva-standalone-multi/artifacts/mrvabucket/*-results-*; do
+         [ -f "$z" ] || continue
+         unzip -p "$z" results.sarif > "/tmp/srfi/$(basename "$z").sarif"
+     done
+
+     for f in /tmp/srfi/*.sarif; do
+         srfi tolite "$f" "/tmp/srfi/$(basename "$f" .sarif).sqlite"
+     done
+
+     srfi toduck /tmp/srfi/all /tmp/srfi/*.sqlite
+     srfi showprob /tmp/srfi/all.duckdb
+     srfi showpath /tmp/srfi/all.duckdb
+   #+END_SRC

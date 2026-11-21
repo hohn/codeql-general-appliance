@@ -1,0 +1,493 @@
+# -*- coding: utf-8 -*-
+#+OPTIONS: H:2 num:t \n:nil @:t ::t |:t ^:{} f:t *:t TeX:t LaTeX:t skip:nil p:nil
+
+* End-to-end example of CLI use
+  This document describes a complete cycle of the MRVA workflow, but using
+  pre-populated data.  The steps  included are 
+  1. aquiring CodeQL databases
+  2. selection of databases
+  3. configuration and use of the command-line client
+  4. server startup
+  5. submission of the jobs
+  6. retrieval of the results
+  7. examination of the results
+
+* Start the containers
+  #+BEGIN_SRC sh 
+    cd ~/work-gh/mrva/mrvacommander/
+
+    docker-compose -f docker-compose-demo.yml down --volumes --remove-orphans
+    docker-compose -f docker-compose-demo.yml up --build
+  #+END_SRC
+
+* Database Aquisition
+  General database aquisition is beyond the scope of this document as it is very specific
+  to an organization's environment.
+
+  For this demo, the data is preloaded via container.  To inspect it:
+
+  #+BEGIN_SRC sh 
+    # On host, run 
+    docker exec -it dbstore /bin/bash
+
+    # In the container
+    ls -la /data/mrvacommander/dbstore-data/qldb
+
+    # Or in one step
+    docker exec -it dbstore ls -la /data/mrvacommander/dbstore-data/qldb
+  #+END_SRC
+
+  Here we use a small sample of an example for open-source
+  repositories, 23 in all.
+
+* Repository Selection
+  When using all of the MRVA system, we select a small subset of repositories
+  available to you in [[*Database Aquisition][Database Aquisition]].  For this demo we include a small
+  collection -- 23 repositories -- and here we further narrow the selection to 12.
+
+  The full list
+  #+BEGIN_SRC text
+    ls -1 /data/dbstore-data/qldb/
+    'BoomingTech$Piccoloctsj6d7177.zip'
+    'KhronosGroup$OpenXR-SDKctsj984ee6.zip'
+    'OpenRCT2$OpenRCT2ctsj975d7c.zip'
+    'StanfordLegion$legionctsj39cbe4.zip'
+    'USCiLab$cerealctsj264953.zip'
+    'WinMerge$winmergectsj101305.zip'
+    'draios$sysdigctsj12c02d.zip'
+    'gildor2$UEViewerctsjfefdd8.zip'
+    'git-for-windows$gitctsjb7c2bd.zip'
+    'google$orbitctsj9bbeaf.zip'
+    'libfuse$libfusectsj7a66a4.zip'
+    'luigirizzo$netmapctsj6417fa.zip'
+    'mawww$kakounectsjc54fab.zip'
+    'microsoft$node-native-keymapctsj4cc9a2.zip'
+    'nem0$LumixEnginectsjfab756.zip'
+    'pocoproject$pococtsj26b932.zip'
+    'quickfix$quickfixctsjebfd13.zip'
+    'rui314$moldctsjfec16a.zip'
+    'swig$swigctsj78bcd3.zip'
+    'tdlib$telegram-bot-apictsj8529d9.zip'
+    'timescale$timescaledbctsjf617cf.zip'
+    'xoreaxeaxeax$movfuscatorctsj8f7e5b.zip'
+    'xrootd$xrootdctsje4b745.zip'
+  #+END_SRC
+
+  The selection of 12 repositories, from an initial collection of 6000 was made
+  using a collection of Python/pandas scripts made for the purpose, the [[https://github.com/hohn/mrvacommander/blob/hohn-0.1.21.2-improve-structure-and-docs/client/qldbtools/README.md#installation][qldbtools]]
+  package.  The resulting selection, in the format expected by the VS Code
+  extension, follows.
+  #+BEGIN_SRC text
+    cat  /data/qldbtools/scratch/vscode-selection.json
+    {
+        "version": 1,
+        "databases": {
+            "variantAnalysis": {
+                "repositoryLists": [
+                    {
+                        "name": "mirva-list",
+                        "repositories": [
+                            "xoreaxeaxeax/movfuscatorctsj8f7e5b",
+                            "microsoft/node-native-keymapctsj4cc9a2",
+                            "BoomingTech/Piccoloctsj6d7177",
+                            "USCiLab/cerealctsj264953",
+                            "KhronosGroup/OpenXR-SDKctsj984ee6",
+                            "tdlib/telegram-bot-apictsj8529d9",
+                            "WinMerge/winmergectsj101305",
+                            "timescale/timescaledbctsjf617cf",
+                            "pocoproject/pococtsj26b932",
+                            "quickfix/quickfixctsjebfd13",
+                            "libfuse/libfusectsj7a66a4"
+                        ]
+                    }
+                ],
+                "owners": [],
+                "repositories": []
+            }
+        },
+        "selected": {
+            "kind": "variantAnalysisUserDefinedList",
+            "listName": "mirva-list"
+        }
+  #+END_SRC
+
+  This selection is deceptively simple.  For a full explanation, see [[file:cli-end-to-end-detailed.org::*Repository Selection][Repository
+  Selection]] in the detailed version of this document.
+
+** Optional: The meaning of the names
+   The repository names all end with =ctsj= followed by 6 hex digits like
+   =ctsj4cc9a2=.
+
+   The information critial for selection of databases are the columns
+   1. owner
+   2. name
+   3. language
+   4. "sha"
+   5. "cliVersion"
+   6. "creationTime"
+
+   There are others that may be useful, but they are not strictly required.
+
+   The critical ones deserve more explanation:
+   1. "sha": The =git= commit SHA of the repository the CodeQL database was
+      created from.  Required to distinguish query results over the evolution of
+      a code base.
+   2. "cliVersion":  The version of the CodeQL CLI used to create the database.
+      Required to identify advances/regressions originating from the CodeQL binary.
+   3. "creationTime":  The time the database was created.  Required (or at least
+      very handy) for following the evolution of query results over time.
+
+   There is a computed column, CID. The CID column combines 
+   - cliVersion
+   - creationTime
+   - language
+   - sha
+   into a single 6-character string via hashing.  Together with (owner, repo) it
+   provides a unique index for every DB.
+
+
+   For this document, we simply use a pseudo-random selection of 11 databases via
+   #+BEGIN_SRC sh 
+     ./bin/mc-db-generate-selection -n 11 \
+                                    scratch/vscode-selection.json \
+                                    scratch/gh-mrva-selection.json \
+                                    < scratch/db-info-3.csv 
+   #+END_SRC
+
+   Note that these use pseudo-random numbers, so the selection is in fact
+   deterministic.  
+
+* Starting the server
+  Clone the full repository before continuing:
+  #+BEGIN_SRC sh 
+    mkdir -p ~/work-gh/mrva/
+    git clone git@github.com:hohn/mrvacommander.git
+  #+END_SRC
+
+  Make sure Docker is installed and running.
+  With docker-compose set up and this repository cloned, we just run
+  #+BEGIN_SRC sh 
+    cd ~/work-gh/mrva/mrvacommander
+    docker-compose -f docker-compose-demo.yml up -d
+  #+END_SRC
+  and wait until the log output no longer changes.
+  Should look like
+  #+BEGIN_SRC text
+    docker-compose -f docker-compose-demo.yml up -d
+    [+] Running 27/6
+     ✔ dbstore Pulled 1.1s
+     ✔ artifactstore Pulled 1.1s
+     ✔ mrvadata 3 layers [⣿⣿⣿]      0B/0B      Pulled 263.8s
+     ✔ server 2 layers [⣿⣿]      0B/0B      Pulled 25.2s
+     ✔ agent 5 layers [⣿⣿⣿⣿⣿]      0B/0B      Pulled 24.9s
+     ✔ client-qldbtools 11 layers [⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿]      0B/0B      Pulled 20.8s
+    [+] Running 9/9
+     ✔ Container mrvadata Started 0.3s
+     ✔ Container mrvacommander-client-qldbtools-1  Started 0.3s
+     ✔ Container mrvacommander-client-ghmrva-1     Running 0.0s
+     ✔ Container mrvacommander-code-server-1       Running 0.0s
+     ✔ Container artifactstore Running 0.0s
+     ✔ Container rabbitmq Running 0.0s
+     ✔ Container dbstore Started 0.4s
+     ✔ Container agent Started 0.5s
+     ✔ Container server Started 0.5s
+  #+END_SRC
+
+
+  The content is prepopulated in the =dbstore= container.  
+
+** Optional: Inspect the Backing Store
+   As completely optional step, you can inspect the backing store:
+   #+BEGIN_SRC sh 
+     docker exec -it dbstore /bin/bash
+     ls /data/qldb/
+     # 'BoomingTech$Piccoloctsj6d7177.zip'	 'mawww$kakounectsjc54fab.zip'
+     # 'KhronosGroup$OpenXR-SDKctsj984ee6.zip'  'microsoft$node-native-keymapctsj4cc9a2.zip'
+     # ...
+   #+END_SRC
+
+** Optional: Inspect the MinIO DB
+   Another completely optional step, you can inspect the minio DB contents if you
+   have the minio cli installed:
+   #+BEGIN_SRC sh 
+     # Configuration
+     MINIO_ALIAS="qldbminio"
+     MINIO_URL="http://localhost:9000"
+     MINIO_ROOT_USER="${MINIO_ROOT_USER-user}"
+     : "${MINIO_ROOT_PASSWORD:?Export MINIO_ROOT_PASSWORD before uploading}"
+     QL_DB_BUCKET_NAME="qldb"
+
+     # Check for MinIO client
+     if ! command -v mc &> /dev/null
+     then
+         echo "MinIO client (mc) not found."
+     fi
+
+     # Configure MinIO client
+     mc alias set "$MINIO_ALIAS" "$MINIO_URL" "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"
+
+     # Show contents
+     mc ls qldbminio/qldb
+   #+END_SRC
+  
+* Running the gh-mrva command-line client
+  The first run uses the test query to verify basic functionality, but it returns
+  no results.
+
+** Run MRVA from command line
+   # From ~/work-gh/mrva/gh-mrva
+   
+   1. Check mrva cli
+      #+BEGIN_SRC sh 
+        docker exec -it mrvacommander-client-ghmrva-1 /usr/local/bin/gh-mrva -h
+      #+END_SRC
+
+   2. Set up the configuration
+      #+BEGIN_SRC sh 
+        docker exec -i mrvacommander-client-ghmrva-1 \
+               sh -c 'mkdir -p /root/.config/gh-mrva/'
+
+        cat | docker exec -i mrvacommander-client-ghmrva-1 \
+                     sh -c 'cat > /root/.config/gh-mrva/config.yml' <<eof
+        codeql_path: not-used/$HOME/work-gh
+        controller: not-used/mirva-controller
+        list_file: /root/work-gh/mrva/gh-mrva/gh-mrva-selection.json
+        eof
+
+        # check:
+        docker exec -i mrvacommander-client-ghmrva-1 ls /root/.config/gh-mrva/config.yml
+        docker exec -i mrvacommander-client-ghmrva-1 cat /root/.config/gh-mrva/config.yml
+      #+END_SRC
+
+   3. Provide the repository list file
+      #+BEGIN_SRC sh 
+        docker exec -i mrvacommander-client-ghmrva-1 \
+               sh -c 'mkdir -p /root/work-gh/mrva/gh-mrva'
+
+        cat | docker exec -i mrvacommander-client-ghmrva-1 \
+                     sh -c 'cat > /root/work-gh/mrva/gh-mrva/gh-mrva-selection.json' <<eof
+        {
+            "mirva-list": [
+                "xoreaxeaxeax/movfuscatorctsj8f7e5b",
+                "microsoft/node-native-keymapctsj4cc9a2",
+                "BoomingTech/Piccoloctsj6d7177",
+                "USCiLab/cerealctsj264953",
+                "KhronosGroup/OpenXR-SDKctsj984ee6",
+                "tdlib/telegram-bot-apictsj8529d9",
+                "WinMerge/winmergectsj101305",
+                "timescale/timescaledbctsjf617cf",
+                "pocoproject/pococtsj26b932",
+                "quickfix/quickfixctsjebfd13",
+                "libfuse/libfusectsj7a66a4"
+            ]
+        }
+        eof
+      #+END_SRC
+
+   4. Provide the CodeQL query
+      #+BEGIN_SRC sh 
+        cat | docker exec -i mrvacommander-client-ghmrva-1 \
+                     sh -c 'cat > /root/work-gh/mrva/gh-mrva/FlatBuffersFunc.ql' <<eof
+        /**
+         ,* @name pickfun
+         ,* @description pick function from FlatBuffers
+         ,* @kind problem
+         ,* @id cpp-flatbuffer-func
+         ,* @problem.severity warning
+         ,*/
+
+        import cpp
+
+        from Function f
+        where
+          f.getName() = "MakeBinaryRegion" or
+          f.getName() = "microprotocols_add"
+        select f, "definition of MakeBinaryRegion"
+
+        eof
+
+      #+END_SRC
+
+   5. Submit the mrva job
+      #+BEGIN_SRC sh 
+        docker exec -i mrvacommander-client-ghmrva-1 /usr/local/bin/gh-mrva \
+               submit --language cpp --session mirva-session-1360           \
+               --list mirva-list                                            \
+               --query /root/work-gh/mrva/gh-mrva/FlatBuffersFunc.ql     
+      #+END_SRC
+
+   6. Check the status
+      #+BEGIN_SRC sh 
+        # Check the status
+        docker exec -i mrvacommander-client-ghmrva-1 /usr/local/bin/gh-mrva \
+               status --session mirva-session-1360
+      #+END_SRC
+
+   7. Download the sarif files, optionally also get databases.  For the current
+      query / database combination there are zero result hence no downloads.
+      #+BEGIN_SRC sh 
+        docker exec -i mrvacommander-client-ghmrva-1 /usr/local/bin/gh-mrva \
+               download --session mirva-session-1360                        \
+               --download-dbs                                               \
+               --output-dir mirva-session-1360
+      #+END_SRC
+
+** TODO Write query that has some results
+   XX:
+
+   In this case, the trivial =alu_mul=,
+alu_mul for https://github.com/xoreaxeaxeax/movfuscator/blob/master/movfuscator/movfuscator.c
+   #+BEGIN_SRC java
+     /**
+      ,* @name findalu
+      ,* @description find calls to a function
+      ,* @kind problem
+      ,* @id cpp-call
+      ,* @problem.severity warning
+      ,*/
+
+     import cpp
+
+     from FunctionCall fc
+     where
+       fc.getTarget().getName() = "alu_mul"
+     select fc, "call of alu_mul"
+   #+END_SRC
+
+
+   Repeat the submit steps with this query
+   1. [X] -- 
+   2. [X] --
+   3. [ ] Provide the CodeQL query
+      #+BEGIN_SRC sh 
+        cat | docker exec -i mrvacommander-client-ghmrva-1 \
+                     sh -c 'cat > /root/work-gh/mrva/gh-mrva/Alu_Mul.ql' <<eof
+        /**
+         ,* @name findalu
+         ,* @description find calls to a function
+         ,* @kind problem
+         ,* @id cpp-call
+         ,* @problem.severity warning
+         ,*/
+
+        import cpp
+
+        from FunctionCall fc
+        where
+          fc.getTarget().getName() = "alu_mul"
+        select fc, "call of alu_mul"
+        eof
+      #+END_SRC
+
+   4. [-] Submit the mrva job
+      #+BEGIN_SRC sh 
+        docker exec -i mrvacommander-client-ghmrva-1 /usr/local/bin/gh-mrva \
+               submit --language cpp --session mirva-session-1490           \
+               --list mirva-list                                            \
+               --query /root/work-gh/mrva/gh-mrva/Alu_Mul.ql
+      #+END_SRC
+
+      - [X] XX: 
+
+        server  | 2024/09/27 20:03:16 DEBUG Processed request info location="{Key:3 Bucket:packs}" language=cpp
+        server  | 2024/09/27 20:03:16 WARN No repositories found for analysis
+        server  | 2024/09/27 20:03:16 DEBUG Queueing analysis jobs count=0
+        server  | 2024/09/27 20:03:16 DEBUG Forming and sending response for submitted analysis job id=3
+
+        NO: debug in the server container
+        #+BEGIN_SRC sh 
+          docker exec -it server  /bin/bash
+
+          apt-get update
+          apt-get install delve
+
+          replace
+          ENTRYPOINT ["./mrva_server"]
+          CMD ["--mode=container"]
+
+        #+END_SRC
+
+      - [ ] XX: 
+        The dbstore is empty -- see http://localhost:9001/browser
+        must populate it properly, then save the image.
+
+   5. [ ] Check the status
+      #+BEGIN_SRC sh 
+        docker exec -i mrvacommander-client-ghmrva-1 /usr/local/bin/gh-mrva \
+               status --session mirva-session-1490
+      #+END_SRC
+
+      This time we have results
+      #+BEGIN_SRC text
+        ...
+        Run name: mirva-session-1490
+        Status: succeeded
+        Total runs: 1
+        Total successful scans: 11
+        Total failed scans: 0
+        Total skipped repositories: 0
+        Total skipped repositories due to access mismatch: 0
+        Total skipped repositories due to not found: 0
+        Total skipped repositories due to no database: 0
+        Total skipped repositories due to over limit: 0
+        Total repositories with findings: 7
+        Total findings: 618
+        Repositories with findings:
+          quickfix/quickfixctsjebfd13 (cpp-fprintf-call): 5
+          libfuse/libfusectsj7a66a4 (cpp-fprintf-call): 146
+          xoreaxeaxeax/movfuscatorctsj8f7e5b (cpp-fprintf-call): 80
+          pocoproject/pococtsj26b932 (cpp-fprintf-call): 17
+          BoomingTech/Piccoloctsj6d7177 (cpp-fprintf-call): 10
+          tdlib/telegram-bot-apictsj8529d9 (cpp-fprintf-call): 247
+          WinMerge/winmergectsj101305 (cpp-fprintf-call): 113
+      #+END_SRC
+   6. [ ] Download the sarif files, optionally also get databases.  
+      #+BEGIN_SRC sh 
+        docker exec -i mrvacommander-client-ghmrva-1 /usr/local/bin/gh-mrva \
+               download --session mirva-session-1490                        \
+               --download-dbs                                               \
+               --output-dir mirva-session-1490
+
+        # And list them:
+        \ls -la *1490*
+      #+END_SRC
+
+   7. [ ] Use the [[https://marketplace.visualstudio.com/items?itemName=MS-SarifVSCode.sarif-viewer][SARIF Viewer]] plugin in VS Code to open and review the results.
+
+      Prepare the source directory so the viewer can be pointed at it
+      #+BEGIN_SRC sh 
+        cd ~/work-gh/mrva/gh-mrva/mirva-session-1490
+
+        unzip -qd BoomingTech_Piccoloctsj6d7177_1_db BoomingTech_Piccoloctsj6d7177_1_db.zip 
+
+        cd BoomingTech_Piccoloctsj6d7177_1_db/codeql_db/
+        unzip -qd src src.zip
+      #+END_SRC
+
+      Use the viewer
+      #+BEGIN_SRC sh 
+        code BoomingTech_Piccoloctsj6d7177_1.sarif
+
+        # For lauxlib.c, point the source viewer to 
+        find ~/work-gh/mrva/gh-mrva/mirva-session-1490/BoomingTech_Piccoloctsj6d7177_1_db/codeql_db/src/home/runner/work/bulk-builder/bulk-builder -name lauxlib.c
+
+        # Here: ~/work-gh/mrva/gh-mrva/mirva-session-1490/BoomingTech_Piccoloctsj6d7177_1_db/codeql_db/src/home/runner/work/bulk-builder/bulk-builder/engine/3rdparty/lua-5.4.4/lauxlib.c
+      #+END_SRC
+
+   8. [ ] (optional) Large result sets are more easily filtered via
+      dataframes or spreadsheets.  Convert the SARIF to CSV if needed; see [[https://github.com/hohn/sarif-cli/][sarif-cli]].
+
+   
+
+* Running the CodeQL VS Code plugin
+  - [ ] XX: include the *custom* codeql plugin in the container.
+* Ending the session
+  Shut down docker via
+  #+BEGIN_SRC sh 
+    cd ~/work-gh/mrva/mrvacommander
+    docker-compose -f docker-compose-demo.yml down
+  #+END_SRC
+  
+* Footnotes
+[fn:1]The =csvkit= can be installed into the same Python virtual environment as
+the =qldbtools=.

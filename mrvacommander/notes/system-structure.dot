@@ -1,0 +1,127 @@
+digraph DockerComposeDemo {
+    rankdir=LR; // Left-to-right layout
+    node [shape=plaintext fontname="Helvetica"];
+    edge [arrowsize=0.5];
+    
+    // Title
+    label="Container Dependencies for Demo";
+    labelloc=top;
+    fontsize=20;
+    fontname="Helvetica";
+
+    // Define nodes with clickable Dockerfile references
+    dbssvc [
+        href="../demo/containers/dbsdata/Dockerfile"
+        target="_blank"
+        shape=plaintext
+        label=<
+            <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
+                <tr><td colspan="1" bgcolor="lightblue"><b>dbssvc</b></td></tr>
+                <tr><td align="left"><font point-size="10">Dockerfile: ./demo/containers/dbsdata/Dockerfile</font></td></tr>
+            </table>
+        >
+    ];
+
+    dbstore [
+        shape=plaintext
+        label=<
+            <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
+                <tr><td colspan="1" bgcolor="lightblue"><b>dbstore</b></td></tr>
+                <tr><td align="left"><font point-size="10">Image: minio/minio:RELEASE.2024-06-11T03-13-30Z</font></td></tr>
+            </table>
+        >
+    ];
+
+    client_ghmrva [
+        href="../client/containers/ghmrva/Dockerfile"
+        target="_blank"
+        shape=plaintext
+        label=<
+            <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
+                <tr><td colspan="1" bgcolor="lightblue"><b>client-ghmrva</b></td></tr>
+                <tr><td align="left"><font point-size="10">Dockerfile: ./client/containers/ghmrva/Dockerfile</font></td></tr>
+                <tr><td port="slot1"></td></tr>
+                <tr><td port="slot2"></td></tr>
+                <tr><td port="slot3"></td></tr>
+            </table>
+        >
+    ];
+
+    code_server [
+        href="../client/containers/vscode/Dockerfile"
+        target="_blank"
+        shape=plaintext
+        label=<
+            <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
+                <tr><td colspan="1" bgcolor="lightblue"><b>code-server</b></td></tr>
+                <tr><td align="left"><font point-size="10">Dockerfile: ./client/containers/vscode/Dockerfile</font></td></tr>
+            </table>
+        >
+    ];
+
+    rabbitmq [
+        shape=plaintext
+        label=<
+            <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
+                <tr><td colspan="1" bgcolor="lightblue"><b>rabbitmq</b></td></tr>
+                <tr><td align="left"><font point-size="10">Image: rabbitmq:3-management</font></td></tr>
+            </table>
+        >
+    ];
+
+    artifactstore [
+        shape=plaintext
+        label=<
+            <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
+                <tr><td colspan="1" bgcolor="lightblue"><b>artifactstore</b></td></tr>
+                <tr><td align="left"><font point-size="10">Image: minio/minio:RELEASE.2024-06-11T03-13-30Z</font></td></tr>
+            </table>
+        >
+    ];
+
+    agent [
+        href="../cmd/agent/Dockerfile"
+        target="_blank"
+        shape=plaintext
+        label=<
+            <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
+                <tr><td colspan="1" bgcolor="lightblue"><b>agent</b></td></tr>
+                <tr><td align="left"><font point-size="10">Dockerfile: ./cmd/agent/Dockerfile</font></td></tr>
+            </table>
+        >
+    ];
+
+    // Expanded 'server' node with handler names and Dockerfile reference
+    server [
+        href="../cmd/server/Dockerfile"
+        target="_blank"
+        shape=plaintext
+        label=<
+            <table border="1" cellborder="0" cellspacing="0" cellpadding="4">
+                <tr><td colspan="1" bgcolor="lightblue"><b>server</b></td></tr>
+                <tr><td align="left"><font point-size="10">Dockerfile: ./cmd/server/Dockerfile</font></td></tr>
+                <tr><td port="c_MRVARequest" align="left"><font point-size="10">c.MRVARequest</font></td></tr>
+                <tr><td port="c_MRVAStatus" align="left"><font point-size="10">c.MRVAStatus</font></td></tr>
+                <tr><td port="c_MRVADownloadArtifact" align="left"><font point-size="10">c.MRVADownloadArtifact</font></td></tr>
+                <tr><td align="left"><font point-size="10">c.MRVARequestID</font></td></tr>
+                <tr><td align="left"><font point-size="10">c.MRVADownloadQLDB</font></td></tr>
+                <tr><td align="left"><font point-size="10"><i>Not Found</i></font></td></tr>
+            </table>
+        >
+    ];
+
+    // Define edges (dependencies)
+    dbstore -> dbssvc;
+    server -> dbstore;
+    server -> rabbitmq;
+    server -> artifactstore;
+    agent -> dbstore;
+    agent -> artifactstore;
+    agent -> rabbitmq;
+
+    // Message links
+    client_ghmrva:slot1 -> server:c_MRVARequest [label="message" style=dashed penwidth=2 fontsize=8];
+    client_ghmrva:slot2 -> server:c_MRVAStatus [label="message" style=dashed  penwidth=2  fontsize=8];
+    client_ghmrva:slot3 -> server:c_MRVADownloadArtifact [label="message" style=dashed penwidth=2  fontsize=8];
+
+}

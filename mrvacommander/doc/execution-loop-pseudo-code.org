@@ -1,0 +1,163 @@
+#+TITLE: Execution Loop in Pseudo-Code
+#+AUTHOR: Michael Hohn
+#+DATE: 2026-03-09
+#+OPTIONS: ^:{}
+
+* Distributed Query Execution with Fair Scheduling and Argo Workflows
+
+#+BEGIN_VERSE
+# Distributed Query Execution with Argo Workflows, Fair Scheduling, and Postgres
+
+# Initialization
+R = set()  # Repository list
+U = set()  # User set
+D = PostgresDB()  # PostgreSQL database for job state and leader election
+S = Server()  # Server (API coordinator)
+Σ = Scheduler()  # Fair scheduler
+Ω = ArgoWorkflows()  # Argo Workflows orchestration
+MinIO = ObjectStore()  # MinIO storage for queries and results
+HEPC = DatabaseServer()  # HEPC serves CodeQL databases
+W = 10  # Maximum concurrent workers
+T_{w} = 3600  # Runtime window (seconds)
+
+# Client submits queries
+C submits (Q, R, u) to S
+
+# Server stores jobs in database
+for R_{i} in R:
+    J_{i} = JobSpec(session_id, owner, repo)
+    D.store_job(J_{i}, user=u, status="Pending", payload=Q)
+
+# Scheduler main loop (with leader election)
+while True:
+    # Leader election
+    if Σ.acquire_leader_lock(D):
+        is_leader = True
+    else:
+        is_leader = False
+        sleep(T_{poll})
+        continue
+
+    # Get running jobs count
+    J_{running} = D.get_jobs(status="InProgress")
+    W_{r} = len(J_{running})
+    W_{a} = W - W_{r}  # Available slots
+
+    if W_{a} > 0:
+        # Get pending jobs grouped by user
+        J_{pending} = D.get_jobs(status="Pending")
+        U_{pending} = {u_{i} for J_{i} in J_{pending}}
+
+        # Calculate fairness metrics for each user
+        user_metrics = {}
+        for u in U_{pending}:
+            n_{u}^{p} = D.count_jobs(user=u, status="Pending")
+            n_{u}^{r} = D.count_jobs(user=u, status="InProgress")
+            τ_{u} = D.sum_recent_runtime(user=u, window=T_{w})
+            user_metrics[u] = (n_{u}^{r}, τ_{u}, -n_{u}^{p})
+
+        # Sort users by priority (lexicographic ordering)
+        sorted_users = sorted(U_{pending}, key=lambda u: user_metrics[u])
+
+        # Fair allocation using round-robin
+        allocations = allocate_slots(sorted_users, user_metrics, W_{a})
+
+        # Submit jobs to Argo Workflows
+        for u in sorted_users:
+            jobs = D.get_jobs(user=u, status="Pending", limit=allocations[u])
+            for J_{i} in jobs:
+                # Create workflow spec with environment variables
+                # J_{i} contains query pack location reference (not the pack itself)
+                # Agent will fetch query pack from MinIO and DB from HEPC
+                workflow_spec = create_workflow_spec(
+                    job=J_{i},  # Contains Q.location reference
+                    env_vars={
+                        "MRVA_HEPC_ENDPOINT": HEPC.endpoint,
+                        "MRVA_BCS_ENDPOINT": MinIO.endpoint,
+                        "MRVA_BUCKET": MinIO.bucket,
+                        # ... other config
+                    }
+                )
+
+                # Submit to Argo
+                ω_{i}^{id} = Ω.submit_workflow(workflow_spec)
+
+                # Update job in database
+                D.update_job(J_{i},
+                    status="InProgress",
+                    started_at=t_{now},
+                    argo_workflow_id=ω_{i}^{id})
+
+    # Poll Argo for workflow status updates
+    for J_{i} in J_{running}:
+        ω_{i}^{id} = D.get_workflow_id(J_{i})
+        φ_{i} = Ω.get_workflow_status(ω_{i}^{id})
+
+        if φ_{i} == "Succeeded":
+            # Agent has stored results in MinIO
+            R_{i}^{Q} = MinIO.get_results(J_{i})
+            D.update_job(J_{i}, status="Succeeded", completed_at=t_{now})
+            S.send_results_to_client(C, R_{i}^{Q})
+
+        elif φ_{i} in ["Failed", "Error"]:
+            D.update_job(J_{i}, status="Failed", completed_at=t_{now})
+
+    sleep(T_{poll})
+
+#+END_VERSE
+
+
+* Agent Execution Inside Argo Workflow Pod
+
+#+BEGIN_VERSE
+# Agent execution inside Argo workflow pod
+# Receives job via command-line argument: --job '<job_json>'
+# Environment variables provide MinIO and HEPC configuration
+
+# Parse job from command-line argument
+J_{i} = parse_args()["--job"]  # Contains session_id, owner, repo, and Q.location
+
+# Get environment variables for MinIO and HEPC
+minio_endpoint = os.getenv("MRVA_BCS_ENDPOINT")
+minio_bucket = os.getenv("MRVA_BUCKET")
+minio_access_key = os.getenv("MRVA_BCS_ACCESS_KEY")  # From Kubernetes secret
+minio_secret_key = os.getenv("MRVA_BCS_SECRET_KEY")  # From Kubernetes secret
+hepc_endpoint = os.getenv("MRVA_HEPC_ENDPOINT")
+codeql_cli_path = os.getenv("CODEQL_CLI_PATH")
+
+# Initialize storage clients
+MinIO = MinIOClient(minio_endpoint, minio_bucket, minio_access_key, minio_secret_key)
+HEPC = HEPCClient(hepc_endpoint)
+
+# Fetch query pack from MinIO using reference in job
+Q = MinIO.get(J_{i}.query_pack_location)
+extract_query_pack(Q, "/tmp/queries")
+
+# Fetch CodeQL database from HEPC
+db_url = HEPC.get_database_url(J_{i}.owner, J_{i}.repo, J_{i}.language)
+DB_{i} = download_and_extract(db_url, "/tmp/databases")
+
+# Execute CodeQL queries against database
+R_{i}^{Q} = set()  # Results for this repository
+for Q_{j} in Q:
+    # Run CodeQL CLI
+    results = run_command([
+        codeql_cli_path, "database", "analyze",
+        DB_{i},
+        "/tmp/queries",
+        "--format=sarif-latest",
+        "--output=/tmp/results.sarif"
+    ])
+
+    # Parse SARIF results
+    for result in parse_sarif("/tmp/results.sarif"):
+        R_{i}^{Q}.add(result)
+
+# Store results back to MinIO
+results_location = f"{J_{i}.session_id}/{J_{i}.owner}/{J_{i}.repo}/results.json"
+MinIO.put(results_location, R_{i}^{Q})
+
+# Workflow pod exits with success status
+# Argo detects completion and updates workflow phase to "Succeeded"
+exit(0)
+#+END_VERSE

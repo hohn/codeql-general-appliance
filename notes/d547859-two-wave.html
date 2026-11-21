@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>d547859 two-wave queue stall</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">d547859 two-wave queue stall</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#d547859-two-wave-queue-stall"
+id="toc-d547859-two-wave-queue-stall">d547859 two-wave queue stall</a>
+<ul>
+<li><a href="#scenario" id="toc-scenario">Scenario</a></li>
+<li><a href="#historical-reproduction"
+id="toc-historical-reproduction">Historical reproduction</a></li>
+<li><a href="#verification-on-current-master"
+id="toc-verification-on-current-master">Verification on current
+master</a></li>
+<li><a href="#why-current-master-recovers"
+id="toc-why-current-master-recovers">Why current master
+recovers</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="d547859-two-wave-queue-stall">d547859 two-wave queue stall</h1>
+<p>Observed and rechecked on 2026-08-05.</p>
+<h2 id="scenario">Scenario</h2>
+<p>The scenario uses two standalone server instances and two workload
+waves. Each wave has two logical requests, one for <code>alice</code>
+and one for <code>bob</code>. Each request contains two repositories,
+for four jobs per wave.</p>
+<p>Delivery is <strong>exactly one</strong>: each logical request is
+sent once to one server, not copied to both servers. Wave 1 sends Alice
+to server A and Bob to server B. After all four workers exit, wave 2
+swaps the endpoints.</p>
+<p>The fault is injected only in wave 2:</p>
+<ol type="1">
+<li>Hold PostgreSQL advisory lock <code>73001</code> so request delivery
+and scheduling cannot interleave.</li>
+<li>Deliver both requests and confirm that they produce exactly two
+sessions and four Pending jobs.</li>
+<li>Release the advisory lock.</li>
+<li>Let the scheduling server transition all four jobs from Pending to
+Queued.</li>
+<li>Pause that server before its next scheduling action and kill it with
+<code>SIGKILL</code>.</li>
+</ol>
+<p>The marker used for step 5 is enabled only when
+<code>MRVA_TEST_QUEUE_TRANSITION_MARKER</code> is set. It is inert in
+ordinary runs.</p>
+<h2 id="historical-reproduction">Historical reproduction</h2>
+<p>Branch: <code>repro/d547859-two-wave</code></p>
+<p>Command:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> server-commander</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="va">CODEQL_JAVA_HOME</span><span class="op">=</span>/usr <span class="ex">./run-d547-two-wave.sh</span> queue-crash exactly-one</span></code></pre></div>
+<p>Wave 1 completed normally. Four workers processed sessions 1 and 2,
+produced four results, and exited.</p>
+<p>Wave 2 delivered Alice once to server B and Bob once to server A,
+creating sessions 3 and 4. Server A acquired the queue advisory lock,
+selected all four jobs, committed their Pending-to-Queued transitions,
+and paused before calling <code>SubmitWorkflow</code>.</p>
+<p>Routing requests to different servers is not sufficient to create
+this state. Both replicas share PostgreSQL, and the advisory lock
+ensures that only one pool manager performs the global queue transition
+at a time. If that process continues running, it proceeds to
+<code>SubmitWorkflow</code> regardless of which replica received each
+request.</p>
+<p>The required fault is interruption of the scheduling process inside
+the non-atomic window after the Queued transaction commits and before
+workflows are created. The harness uses <code>SIGKILL</code> to place
+the failure deterministically, but an unplanned process crash, OOM kill,
+container or host restart, or host loss at the same point can produce
+it. Split request routing only affects which replica is likely to enter
+the window; it does not replace the interruption.</p>
+<p>Killing server A at that point produced:</p>
+<pre class="text"><code>queued=4 blank_workflow=4 pending=0 agents=0</code></pre>
+<p>The surviving server continued a pool cycle every second, but each
+cycle computed:</p>
+<pre class="text"><code>available = max_workers - busy_workers - queued_jobs
+          = 4 - 0 - 4
+          = 0</code></pre>
+<p>It returned before selecting work. The workflow reconciler also
+ignored every job because no <code>SubmitWorkflow</code> call had
+produced a workflow ID. The jobs were neither Pending work nor
+reconcilable workflows, so no code path could recover them.</p>
+<p>The historical harness then applied a control, changing those four
+statuses from Queued back to Pending. The surviving server immediately
+submitted four workflows, four fresh workers completed the jobs, and all
+eight results across both waves downloaded successfully. The control
+demonstrated that the queued rows, rather than request delivery or
+worker startup, caused the stall.</p>
+<p>Historical evidence:</p>
+<pre class="text"><code>/tmp/mrva-d547-two-wave/queue-crash-exactly-one/evidence-stranded.txt
+/tmp/mrva-d547-two-wave/queue-crash-exactly-one/evidence-final.txt</code></pre>
+<h2 id="verification-on-current-master">Verification on current
+master</h2>
+<p>Verification branch: <code>verify/d547859-two-wave-fix</code>, based
+on master at <code>a380efb</code>.</p>
+<p>Command:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="va">CODEQL_JAVA_HOME</span><span class="op">=</span>/usr <span class="ex">cga/system-tests/run-system-08/run</span> crash-recovery</span></code></pre></div>
+<p>The test recreated the same boundary. Wave 1 completed, all four
+workers exited, and there were no pending spawns. In wave 2, server A
+was killed after all four jobs became Queued but before any workers
+existed:</p>
+<pre class="text"><code>queued=4 blank_workflow=4 agents=0</code></pre>
+<p>Unlike the historical run, the harness did not modify those rows.
+Server B acquired the scheduler lease about one lease interval later and
+recovered the work directly:</p>
+<pre class="text"><code>Scheduler lock acquired ... server=server-b
+Scaling up workers to_spawn=4 alive=0 pending=0 target=4</code></pre>
+<p>The four new workers claimed the existing Queued jobs from
+PostgreSQL. Both wave-2 sessions succeeded, all four archives downloaded
+through the surviving server, and final verification reported:</p>
+<pre class="text"><code>sessions:                    4/4
+succeeded job rows:          8/8
+result rows:                 8/8
+downloaded archives:         8/8
+pending spawns before wave2: 0
+worker generations disjoint: yes
+spawn log counts:            server-a=0 server-b=4
+PASS</code></pre>
+<h2 id="why-current-master-recovers">Why current master recovers</h2>
+<p>The relevant fix is the demand-based worker pool introduced by
+<code>091d3a8</code>
+(<code>Replace push-based Argo scheduling with demand-based worker pool</code>),
+together with the current scheduler lease failover.</p>
+<p>Historically, queueing and per-job workflow submission were one
+non-atomic sequence owned by a particular server:</p>
+<pre class="text"><code>Pending -&gt; Queued -&gt; SubmitWorkflow(job) -&gt; save workflow ID</code></pre>
+<p>If that server died between the first two durable actions, the
+surviving server had no workflow to reconcile and treated the Queued
+rows as consumed capacity.</p>
+<p>Current code separates durable job demand from worker creation:</p>
+<pre class="text"><code>queueJobs:    Pending -&gt; Queued
+scaleWorkers: target = min(max_workers, busy + queued)
+workers:      atomically claim any Queued job from PostgreSQL</code></pre>
+<p>A queued job no longer needs a per-job workflow ID. After failover,
+the new leader sees four queued jobs, calculates a target of four
+workers, starts four generic workers, and those workers claim the old
+leader’s queued rows. The Queued state is therefore recoverable demand
+rather than a stranded intermediate state.</p>
+<p>The result verifies the intended invariant: an exactly-one two-wave
+request pattern can lose the scheduling server after Pending-to-Queued
+and still complete without resetting or resubmitting any job.</p>
+</body>
+</html>

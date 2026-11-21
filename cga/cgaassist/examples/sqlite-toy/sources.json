@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "sqlite-toy-vulnerable",
+      "owner": "hohn",
+      "repo": "codeql-dataflow-sql-injection",
+      "upstream_repo": "codeql-dataflow-sql-injection",
+      "language": "cpp",
+      "variant": "vulnerable",
+      "version": "bc7cda527427917e7a68676911c16e7db407c25a",
+      "source": {
+        "strategy": "git",
+        "url": "https://github.com/hohn/codeql-dataflow-sql-injection.git",
+        "ref": "bc7cda527427917e7a68676911c16e7db407c25a"
+      },
+      "source_dir": "sources/vulnerable",
+      "build_command": "bash ./build.sh"
+    },
+    {
+      "id": "sqlite-toy-patched",
+      "owner": "hohn",
+      "repo": "codeql-dataflow-sql-injection",
+      "upstream_repo": "codeql-dataflow-sql-injection",
+      "language": "cpp",
+      "variant": "patched",
+      "version": "bc7cda527427917e7a68676911c16e7db407c25a+bound-parameters",
+      "source": {
+        "strategy": "git",
+        "url": "https://github.com/hohn/codeql-dataflow-sql-injection.git",
+        "ref": "bc7cda527427917e7a68676911c16e7db407c25a"
+      },
+      "patch": "bind-parameters.patch",
+      "source_dir": "sources/patched",
+      "build_command": "bash ./build.sh"
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CGA and MRVA</title>
+    <style id="vid-style">{{VID_STYLE}}</style>
+    <style>{{STYLE}}</style>
+  </head>
+  <body data-vid-surface="help" data-presentation="apple">
+    <header class="app-header">
+      <div class="app-title">
+        <h1>CGA and MRVA</h1>
+        <button id="collapse-all" type="button" title="Collapse all" aria-label="Collapse all">⊟</button>
+      </div>
+      <form id="help-search" role="search">
+        <input id="search-query" type="search" aria-label="Search all command help"
+          placeholder="Search all help" />
+        <label><input id="search-regex" type="checkbox" /> Regex</label>
+        <button type="submit">Search</button>
+      </form>
+      <strong id="selected-command">cga</strong>
+      <span class="read-only">Offline reference</span>
+    </header>
+    <main class="workspace">
+      <nav class="outline" aria-label="CGA and MRVA guides and command help">
+        <details id="start-outline" class="entry-group" open>
+          <summary>Start here</summary>
+          <ul id="start-tree"></ul>
+        </details>
+        <details id="llm-start-outline" class="entry-group" open>
+          <summary>LLM start here</summary>
+          <ul id="llm-start-tree"></ul>
+        </details>
+        <h2 id="task-heading" class="outline-heading">Task groups</h2>
+        <ul id="task-tree"></ul>
+        <p class="outline-note">Commands may serve several tasks. Shared workflow utilities are in Reference.</p>
+        <h2 id="reference-heading" class="outline-heading">Reference</h2>
+        <p id="search-status" role="status" aria-live="polite" hidden></p>
+        <ul id="command-tree"></ul>
+        <details id="system-tests" class="task-group">
+          <summary>system tests</summary>
+          <ul id="system-tests-tree"></ul>
+        </details>
+        <details id="tutorial-documents" class="task-group">
+          <summary>Original write-ups</summary>
+          <ul id="document-tree"></ul>
+        </details>
+        <p id="generated-at"></p>
+      </nav>
+      <div id="right-panes">
+        <section class="pane" aria-labelledby="top-title">
+          <div class="pane-header">
+            <span>Command</span>
+            <h2 id="top-title" tabindex="-1">cga</h2>
+          </div>
+          <div id="top-help" class="help-content"></div>
+        </section>
+        <div id="pane-divider" role="separator" tabindex="0"
+          aria-label="Resize command and subcommand panes"
+          aria-orientation="horizontal" aria-valuemin="0" aria-valuemax="100"
+          aria-valuenow="60"></div>
+        <section class="pane" aria-labelledby="bottom-title">
+          <div class="pane-header">
+            <span>Subcommand</span>
+            <h2 id="bottom-title" tabindex="-1">No subcommand selected</h2>
+          </div>
+          <div id="bottom-help" class="help-content">
+            <p class="placeholder">Click a subcommand in the command help above to inspect it here.</p>
+          </div>
+        </section>
+      </div>
+    </main>
+    <p id="status" role="status" aria-live="polite"></p>
+    <noscript>This offline help browser requires JavaScript for navigation.</noscript>
+    <script id="help-data" type="application/json">{{DATA}}</script>
+    <script>{{REFERENCE_SCRIPT}}</script>
+    <script>{{SCRIPT}}</script>
+    <script>{{VID_SCRIPT}}</script>
+  </body>
+</html>

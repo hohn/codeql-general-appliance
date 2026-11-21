@@ -1,0 +1,4 @@
+name: local/cgactl-smoke
+version: 0.0.0
+dependencies:
+  codeql/cpp-all: 6.1.4

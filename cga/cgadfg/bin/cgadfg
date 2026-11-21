@@ -1,0 +1,16 @@
+#!/usr/bin/env python3
+"""cgadfg launcher."""
+
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve()
+PROJECT_DIR = HERE.parent.parent
+
+sys.path.insert(0, str(PROJECT_DIR))
+sys.path.insert(0, str(PROJECT_DIR.parent / "cgalib"))
+
+from cgadfg.cli import main  # noqa: E402
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))

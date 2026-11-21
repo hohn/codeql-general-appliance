@@ -1,0 +1,4 @@
+
+# Exclude CodeQL database files from git archive (used by go mod download)
+# Generated database material should not be included when the repo is used as a Go module dependency
+client/containers/hepc/codeql-dbs/** export-ignore

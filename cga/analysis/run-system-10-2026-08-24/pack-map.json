@@ -1,0 +1,6 @@
+{
+  "cpp/tainted-arithmetic": 0,
+  "cga/cve-2016-9843-crc32-location": 1,
+  "cpp/overrun-write": 2,
+  "cpp/tainted-format-string": 3
+}

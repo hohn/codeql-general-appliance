@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ns2:dbinfo xmlns:ns2="https://semmle.com/schemas/dbinfo">
+    <sourceLocationPrefix>/mnt/common/tank/src-debian-12/libjsonparser-1.1.0</sourceLocationPrefix>
+    <baselineLinesOfCode>10043</baselineLinesOfCode>
+    <unicodeNewlines>false</unicodeNewlines>
+    <columnKind>utf8</columnKind>
+    <primaryLanguage>cpp</primaryLanguage>
+    <creationMetadata>
+        <cliVersion>2.23.8</cliVersion>
+        <creationTime>2026-01-18T07:41:24.228696291Z</creationTime>
+    </creationMetadata>
+</ns2:dbinfo>

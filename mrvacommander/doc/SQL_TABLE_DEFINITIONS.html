@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>SQL Table Definitions and Database Setup Code</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="../../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../../docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">SQL Table Definitions and Database Setup Code</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#sql-table-definitions-and-database-setup-code"
+id="toc-sql-table-definitions-and-database-setup-code">SQL Table
+Definitions and Database Setup Code</a>
+<ul>
+<li><a href="#overview" id="toc-overview">Overview</a></li>
+<li><a href="#file-locations" id="toc-file-locations">File Locations</a>
+<ul>
+<li><a href="#main-database-initialization-code"
+id="toc-main-database-initialization-code">1. Main Database
+Initialization Code</a></li>
+<li><a href="#database-migration-script"
+id="toc-database-migration-script">2. Database Migration Script</a></li>
+<li><a href="#schema-documentation" id="toc-schema-documentation">3.
+Schema Documentation</a></li>
+</ul></li>
+<li><a href="#table-definitions" id="toc-table-definitions">Table
+Definitions</a>
+<ul>
+<li><a href="#job_repo_map" id="toc-job_repo_map">1.
+job_repo_map</a></li>
+<li><a href="#session_id_seq" id="toc-session_id_seq">2.
+session_id_seq</a></li>
+<li><a href="#analyze_results" id="toc-analyze_results">3.
+analyze_results</a></li>
+<li><a href="#analyze_jobs" id="toc-analyze_jobs">4.
+analyze_jobs</a></li>
+<li><a href="#job_info" id="toc-job_info">5. job_info</a></li>
+<li><a href="#job_status" id="toc-job_status">6. job_status</a></li>
+<li><a href="#scheduler_lock" id="toc-scheduler_lock">7.
+scheduler_lock</a></li>
+</ul></li>
+<li><a href="#database-migration" id="toc-database-migration">Database
+Migration</a>
+<ul>
+<li><a href="#migration-script" id="toc-migration-script">Migration
+Script</a></li>
+</ul></li>
+<li><a href="#database-setup-flow" id="toc-database-setup-flow">Database
+Setup Flow</a>
+<ul>
+<li><a href="#initialization-process"
+id="toc-initialization-process">Initialization Process</a></li>
+<li><a href="#connection-details" id="toc-connection-details">Connection
+Details</a></li>
+</ul></li>
+<li><a href="#key-database-features" id="toc-key-database-features">Key
+Database Features</a>
+<ul>
+<li><a href="#user-based-fair-scheduling"
+id="toc-user-based-fair-scheduling">1. User-Based Fair
+Scheduling</a></li>
+<li><a href="#argo-workflows-integration"
+id="toc-argo-workflows-integration">2. Argo Workflows
+Integration</a></li>
+<li><a href="#job-execution-metrics" id="toc-job-execution-metrics">3.
+Job Execution Metrics</a></li>
+<li><a href="#high-availability-scheduler"
+id="toc-high-availability-scheduler">4. High Availability
+Scheduler</a></li>
+</ul></li>
+<li><a href="#schema-evolution" id="toc-schema-evolution">Schema
+Evolution</a>
+<ul>
+<li><a href="#version-history" id="toc-version-history">Version
+History</a></li>
+</ul></li>
+<li><a href="#best-practices" id="toc-best-practices">Best Practices</a>
+<ul>
+<li><a href="#schema-changes" id="toc-schema-changes">1. Schema
+Changes</a></li>
+<li><a href="#indexing-strategy" id="toc-indexing-strategy">2. Indexing
+Strategy</a></li>
+<li><a href="#data-integrity" id="toc-data-integrity">3. Data
+Integrity</a></li>
+</ul></li>
+<li><a href="#related-documentation"
+id="toc-related-documentation">Related Documentation</a></li>
+<li><a href="#future-considerations"
+id="toc-future-considerations">Future Considerations</a>
+<ul>
+<li><a href="#potential-enhancements"
+id="toc-potential-enhancements">Potential Enhancements</a></li>
+<li><a href="#scalability-considerations"
+id="toc-scalability-considerations">Scalability Considerations</a></li>
+</ul></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="sql-table-definitions-and-database-setup-code">SQL Table
+Definitions and Database Setup Code</h1>
+<h2 id="overview">Overview</h2>
+<p>This document provides a comprehensive overview of all SQL table
+definitions and database setup code in the MRVA Commander system. The
+system uses PostgreSQL as its primary database.</p>
+<h2 id="file-locations">File Locations</h2>
+<h3 id="main-database-initialization-code">1. Main Database
+Initialization Code</h3>
+<p><strong>File:</strong> <a
+href="../pkg/state/state_postgres.go">pkg/state/state_postgres.go</a></p>
+<p>This is the primary file containing database schema definitions. The
+<a href="../pkg/state/state_postgres.go#L109-L213">SetupSchemas()</a>
+function (lines 109-213) creates all database tables.</p>
+<h3 id="database-migration-script">2. Database Migration Script</h3>
+<p><strong>File:</strong> <a
+href="../db_schema_changes/scheduler/migrate_database_schema.sql">db_schema_changes/scheduler/migrate_database_schema.sql</a></p>
+<p>Idempotent migration script for adding scheduler-related schema
+changes.</p>
+<h3 id="schema-documentation">3. Schema Documentation</h3>
+<p><strong>File:</strong> <a
+href="../db_schema_changes/scheduler/SCHEDULER_DB_SCHEMA_CHANGES.html">db_schema_changes/scheduler/SCHEDULER_DB_SCHEMA_CHANGES.md</a></p>
+<p>Comprehensive documentation of schema changes for fair scheduling
+implementation.</p>
+<hr />
+<h2 id="table-definitions">Table Definitions</h2>
+<h3 id="job_repo_map">1. job_repo_map</h3>
+<p><strong>Source:</strong> <a
+href="../pkg/state/state_postgres.go#L119-L124">state_postgres.go:119-124</a></p>
+<p>Maps job identifiers to repository information.</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="cf">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> job_repo_map (</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    job_repo_id SERIAL <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    owner TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    repo TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">UNIQUE</span>(owner, repo)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>);</span></code></pre></div>
+<p><strong>Purpose:</strong> Lookup table for mapping repository owners
+and names to unique identifiers.</p>
+<p><strong>Columns:</strong> - <code>job_repo_id</code> -
+Auto-incrementing primary key - <code>owner</code> - Repository owner
+(e.g., GitHub username or organization) - <code>repo</code> - Repository
+name</p>
+<p><strong>Constraints:</strong> - UNIQUE constraint on (owner, repo)
+combination</p>
+<hr />
+<h3 id="session_id_seq">2. session_id_seq</h3>
+<p><strong>Source:</strong> <a
+href="../pkg/state/state_postgres.go#L130">state_postgres.go:130</a></p>
+<p>Sequence for generating unique session IDs.</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">SEQUENCE</span> <span class="cf">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> session_id_seq;</span></code></pre></div>
+<p><strong>Purpose:</strong> Provides unique identifiers for analysis
+sessions.</p>
+<hr />
+<h3 id="analyze_results">3. analyze_results</h3>
+<p><strong>Source:</strong> <a
+href="../pkg/state/state_postgres.go#L136-L142">state_postgres.go:136-142</a></p>
+<p>Stores analysis results in JSON format.</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="cf">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> analyze_results (</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    session_id <span class="dt">INTEGER</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    owner TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    repo TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    result JSONB,</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">PRIMARY</span> <span class="kw">KEY</span> (session_id, owner, repo)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>);</span></code></pre></div>
+<p><strong>Purpose:</strong> Stores the output/results from analysis
+jobs.</p>
+<p><strong>Columns:</strong> - <code>session_id</code> - Session
+identifier - <code>owner</code> - Repository owner - <code>repo</code> -
+Repository name - <code>result</code> - JSON blob containing analysis
+results</p>
+<p><strong>Primary Key:</strong> Composite key on (session_id, owner,
+repo)</p>
+<hr />
+<h3 id="analyze_jobs">4. analyze_jobs</h3>
+<p><strong>Source:</strong> <a
+href="../pkg/state/state_postgres.go#L148-L154">state_postgres.go:148-154</a></p>
+<p>Stores job specifications and payloads.</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="cf">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> analyze_jobs (</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    session_id <span class="dt">INTEGER</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    owner TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    repo TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    payload JSONB,</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">PRIMARY</span> <span class="kw">KEY</span> (session_id, owner, repo)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>);</span></code></pre></div>
+<p><strong>Purpose:</strong> Stores the job definition/specification for
+analysis tasks.</p>
+<p><strong>Columns:</strong> - <code>session_id</code> - Session
+identifier - <code>owner</code> - Repository owner - <code>repo</code> -
+Repository name - <code>payload</code> - JSON blob containing job
+configuration and parameters</p>
+<p><strong>Primary Key:</strong> Composite key on (session_id, owner,
+repo)</p>
+<hr />
+<h3 id="job_info">5. job_info</h3>
+<p><strong>Source:</strong> <a
+href="../pkg/state/state_postgres.go#L160-L176">state_postgres.go:160-176</a></p>
+<p>Stores detailed job information with scheduling metadata.</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="cf">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> job_info (</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    session_id <span class="dt">INTEGER</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    owner TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    repo TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    payload JSONB,</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    user_id TEXT <span class="kw">DEFAULT</span> <span class="st">&#39;&#39;</span>,</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    started_at <span class="dt">TIMESTAMP</span>,</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    completed_at <span class="dt">TIMESTAMP</span>,</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    argo_workflow_id TEXT <span class="kw">DEFAULT</span> <span class="st">&#39;&#39;</span>,</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">PRIMARY</span> <span class="kw">KEY</span> (session_id, owner, repo)</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> <span class="cf">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> idx_job_info_user_started</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">ON</span> job_info(user_id, started_at);</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> <span class="cf">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> idx_job_info_workflow</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">ON</span> job_info(argo_workflow_id)</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">WHERE</span> argo_workflow_id <span class="op">!=</span> <span class="st">&#39;&#39;</span>;</span></code></pre></div>
+<p><strong>Purpose:</strong> Central table for job metadata, user
+tracking, timing information, and Argo Workflows integration.</p>
+<p><strong>Columns:</strong> - <code>session_id</code> - Session
+identifier - <code>owner</code> - Repository owner - <code>repo</code> -
+Repository name - <code>payload</code> - JSON blob containing job
+details - <code>user_id</code> - User who submitted the job (defaults to
+empty string) - <code>started_at</code> - Timestamp when job execution
+began - <code>completed_at</code> - Timestamp when job execution
+finished - <code>argo_workflow_id</code> - Argo Workflows execution
+identifier (defaults to empty string)</p>
+<p><strong>Primary Key:</strong> Composite key on (session_id, owner,
+repo)</p>
+<p><strong>Indices:</strong> - <code>idx_job_info_user_started</code> -
+Optimizes queries for fair scheduling by user and start time -
+<code>idx_job_info_workflow</code> - Optimizes lookups by Argo workflow
+ID (partial index, only non-empty IDs)</p>
+<p><strong>Use Cases:</strong> - Fair scheduling: Uses
+<code>user_id</code> and <code>started_at</code> for round-robin
+scheduling - Job tracking: Monitors job lifecycle from start to
+completion - Argo integration: Links database records to Argo Workflows
+executions - Metrics: Calculates job duration via
+<code>completed_at - started_at</code></p>
+<hr />
+<h3 id="job_status">6. job_status</h3>
+<p><strong>Source:</strong> <a
+href="../pkg/state/state_postgres.go#L182-L188">state_postgres.go:182-188</a></p>
+<p>Tracks job execution status.</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="cf">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> job_status (</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    session_id <span class="dt">INTEGER</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    owner TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    repo TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    status <span class="dt">INTEGER</span>,</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">PRIMARY</span> <span class="kw">KEY</span> (session_id, owner, repo)</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>);</span></code></pre></div>
+<p><strong>Purpose:</strong> Tracks the current execution status of
+jobs.</p>
+<p><strong>Columns:</strong> - <code>session_id</code> - Session
+identifier - <code>owner</code> - Repository owner - <code>repo</code> -
+Repository name - <code>status</code> - Integer status code representing
+job state</p>
+<p><strong>Primary Key:</strong> Composite key on (session_id, owner,
+repo)</p>
+<p><strong>Status Values:</strong> (Defined in application code) -
+Typically represents states like: Pending, Running, Completed, Failed,
+etc.</p>
+<hr />
+<h3 id="scheduler_lock">7. scheduler_lock</h3>
+<p><strong>Source:</strong> <a
+href="../pkg/state/state_postgres.go#L194-L200">state_postgres.go:194-200</a></p>
+<p>Distributed lock table for scheduler leader election.</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="cf">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> scheduler_lock (</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    lock_name TEXT <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    instance_id TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    acquired_at <span class="dt">TIMESTAMP</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    expires_at <span class="dt">TIMESTAMP</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    heartbeat_at <span class="dt">TIMESTAMP</span> <span class="kw">NOT</span> <span class="kw">NULL</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>);</span></code></pre></div>
+<p><strong>Purpose:</strong> Implements distributed locking mechanism
+for high-availability scheduler coordination.</p>
+<p><strong>Columns:</strong> - <code>lock_name</code> - Name of the lock
+(primary key) - <code>instance_id</code> - Identifier of the scheduler
+instance holding the lock - <code>acquired_at</code> - Timestamp when
+lock was first acquired - <code>expires_at</code> - Timestamp when lock
+will expire (if not renewed) - <code>heartbeat_at</code> - Timestamp of
+last heartbeat update</p>
+<p><strong>Primary Key:</strong> <code>lock_name</code></p>
+<p><strong>Use Cases:</strong> - Leader election: Ensures only one
+scheduler instance is active at a time - High availability: Allows
+failover if leader instance crashes - Heartbeat mechanism: Detects
+failed scheduler instances via stale heartbeats</p>
+<hr />
+<h2 id="database-migration">Database Migration</h2>
+<h3 id="migration-script">Migration Script</h3>
+<p>The migration script at <a
+href="../db_schema_changes/scheduler/migrate_database_schema.sql">migrate_database_schema.sql</a>
+provides idempotent schema updates.</p>
+<p><strong>Features:</strong> - <strong>Idempotent:</strong> Safe to run
+multiple times without side effects - <strong>Transactional:</strong>
+All operations wrapped in transactions -
+<strong>Non-destructive:</strong> Preserves existing data -
+<strong>Backward compatible:</strong> Uses DEFAULT values for new
+columns</p>
+<p><strong>Changes Applied:</strong> 1. Adds columns to
+<code>job_info</code> table: - <code>user_id TEXT DEFAULT ''</code> -
+<code>started_at TIMESTAMP</code> - <code>completed_at TIMESTAMP</code>
+- <code>argo_workflow_id TEXT DEFAULT ''</code></p>
+<ol start="2" type="1">
+<li>Creates performance indices:
+<ul>
+<li><code>idx_job_info_user_started</code></li>
+<li><code>idx_job_info_workflow</code></li>
+</ul></li>
+<li>Creates <code>scheduler_lock</code> table</li>
+</ol>
+<p><strong>Migration Options:</strong> - <strong>Manual:</strong> Run
+via <code>psql</code> command line - <strong>Automatic:</strong>
+Application runs migration on startup via <a
+href="../pkg/state/state_postgres.go#L109-L213">SetupSchemas()</a></p>
+<hr />
+<h2 id="database-setup-flow">Database Setup Flow</h2>
+<h3 id="initialization-process">Initialization Process</h3>
+<ol type="1">
+<li><strong>Application Startup:</strong>
+<ul>
+<li>Connects to PostgreSQL database</li>
+<li>Calls <a
+href="../pkg/state/state_postgres.go#L109-L213">SetupSchemas()</a> in <a
+href="../pkg/state/state_postgres.go">state_postgres.go</a></li>
+</ul></li>
+<li><strong>Schema Creation:</strong>
+<ul>
+<li>Creates all tables using
+<code>CREATE TABLE IF NOT EXISTS</code></li>
+<li>Creates sequences and indices</li>
+<li>Idempotent operations allow safe re-runs</li>
+</ul></li>
+<li><strong>Migration (if needed):</strong>
+<ul>
+<li>Can be run manually via SQL script</li>
+<li>Or automatically handled by <a
+href="../pkg/state/state_postgres.go#L109-L213">SetupSchemas()</a></li>
+</ul></li>
+</ol>
+<h3 id="connection-details">Connection Details</h3>
+<p>Database connection is configured via environment variables or
+configuration files (see application configuration documentation).</p>
+<hr />
+<h2 id="key-database-features">Key Database Features</h2>
+<h3 id="user-based-fair-scheduling">1. User-Based Fair Scheduling</h3>
+<p><strong>Implementation:</strong> - <code>job_info.user_id</code>
+tracks which user submitted each job - <code>job_info.started_at</code>
+records when jobs begin execution -
+<code>idx_job_info_user_started</code> index optimizes fair scheduling
+queries - Scheduler uses round-robin algorithm based on user and
+timing</p>
+<h3 id="argo-workflows-integration">2. Argo Workflows Integration</h3>
+<p><strong>Implementation:</strong> -
+<code>job_info.argo_workflow_id</code> links database records to Argo
+executions - Allows tracking job lifecycle across both systems - Enables
+querying Argo API for detailed job status</p>
+<h3 id="job-execution-metrics">3. Job Execution Metrics</h3>
+<p><strong>Implementation:</strong> - <code>started_at</code> and
+<code>completed_at</code> timestamps enable duration calculations -
+Supports analytics and performance monitoring - Helps identify slow or
+stuck jobs</p>
+<h3 id="high-availability-scheduler">4. High Availability Scheduler</h3>
+<p><strong>Implementation:</strong> - <code>scheduler_lock</code> table
+provides distributed locking - Leader election ensures single active
+scheduler - Heartbeat mechanism detects failed instances - Automatic
+failover to standby instances</p>
+<hr />
+<h2 id="schema-evolution">Schema Evolution</h2>
+<h3 id="version-history">Version History</h3>
+<p><strong>Initial Schema:</strong> - Basic tables:
+<code>job_repo_map</code>, <code>analyze_results</code>,
+<code>analyze_jobs</code>, <code>job_status</code> - Simple job tracking
+without user context or timing</p>
+<p><strong>Scheduler Enhancement (Current):</strong> - Added
+<code>user_id</code>, <code>started_at</code>,
+<code>completed_at</code>, <code>argo_workflow_id</code> to
+<code>job_info</code> - Added <code>scheduler_lock</code> table -
+Created performance indices - Enabled fair scheduling and HA
+capabilities</p>
+<hr />
+<h2 id="best-practices">Best Practices</h2>
+<h3 id="schema-changes">1. Schema Changes</h3>
+<ul>
+<li>Always write idempotent migrations</li>
+<li>Use <code>IF NOT EXISTS</code> and <code>IF EXISTS</code>
+clauses</li>
+<li>Provide DEFAULT values for backward compatibility</li>
+<li>Test migrations on development environment first</li>
+<li>Document all schema changes</li>
+</ul>
+<h3 id="indexing-strategy">2. Indexing Strategy</h3>
+<ul>
+<li>Index columns used in WHERE clauses and JOINs</li>
+<li>Use partial indices for filtered queries</li>
+<li>Monitor index usage and performance</li>
+<li>Avoid over-indexing (impacts write performance)</li>
+</ul>
+<h3 id="data-integrity">3. Data Integrity</h3>
+<ul>
+<li>Use appropriate PRIMARY KEY constraints</li>
+<li>Add UNIQUE constraints where needed</li>
+<li>Use FOREIGN KEY constraints (if implementing cross-table
+references)</li>
+<li>Validate data at application layer as well</li>
+</ul>
+<hr />
+<h2 id="related-documentation">Related Documentation</h2>
+<ul>
+<li><a
+href="../db_schema_changes/scheduler/SCHEDULER_DB_SCHEMA_CHANGES.html">SCHEDULER_DB_SCHEMA_CHANGES.md</a>
+- Scheduler schema changes</li>
+<li><a href="ARCHITECTURE_MIGRATION.html">ARCHITECTURE_MIGRATION.md</a> -
+Overall architecture including database design</li>
+<li><a href="../pkg/state/state_postgres.go">state_postgres.go</a> -
+Database access layer implementation</li>
+</ul>
+<hr />
+<h2 id="future-considerations">Future Considerations</h2>
+<h3 id="potential-enhancements">Potential Enhancements</h3>
+<ol type="1">
+<li><strong>Partitioning:</strong> Consider table partitioning for
+high-volume tables</li>
+<li><strong>Archival:</strong> Implement data retention policies for old
+sessions</li>
+<li><strong>Foreign Keys:</strong> Add explicit foreign key constraints
+between tables</li>
+<li><strong>Audit Trail:</strong> Track schema version and migration
+history</li>
+<li><strong>Monitoring:</strong> Add database performance metrics and
+alerting</li>
+</ol>
+<h3 id="scalability-considerations">Scalability Considerations</h3>
+<ul>
+<li>Current schema supports horizontal scaling via multiple scheduler
+instances</li>
+<li>PostgreSQL connection pooling recommended for high concurrency</li>
+<li>Consider read replicas for analytics queries</li>
+<li>Monitor table growth and plan for archival strategy</li>
+</ul>
+</body>
+</html>

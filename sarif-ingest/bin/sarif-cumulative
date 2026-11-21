@@ -1,0 +1,162 @@
+#!/usr/bin/env python3
+"""Build one cumulative DuckDB database from per-SARIF SQLite databases.
+
+Adapted from sarif-result-comparison/bin/sarif-cumulative: this variant takes
+an explicit list of SQLite inputs and drops the bmf/bmn `build_mode` column.
+"""
+import argparse
+import shutil
+import sqlite3
+import subprocess
+import tempfile
+from contextlib import closing
+from pathlib import Path
+
+
+SCHEMA = """
+create table sarif_results (
+  user text not null,
+  file_name text not null,
+  kind text not null,
+  rule_id text,
+  rule_name text,
+  uri text,
+  start_line integer,
+  start_column integer,
+  result_json text not null
+);
+"""
+
+
+def sql_quote(value):
+    return "'" + str(value).replace("'", "''") + "'"
+
+
+def resolve_output(output):
+    if output.suffix == ".duckdb":
+        return output
+    return output / "sarif-results.duckdb"
+
+
+def build_sql(sqlite_inputs):
+    parts = [
+        "install sqlite;",
+        "load sqlite;",
+        SCHEMA,
+    ]
+
+    for sqlite_path in sqlite_inputs:
+        with closing(sqlite3.connect(sqlite_path)) as conn:
+            columns = {
+                row[1]
+                for row in conn.execute("pragma table_info(sarif_results)")
+            }
+        user_column = "user" if "user" in columns else "''"
+        parts.append(
+            """
+insert into sarif_results (
+  user,
+  file_name,
+  kind,
+  rule_id,
+  rule_name,
+  uri,
+  start_line,
+  start_column,
+  result_json
+)
+select
+  %s as user,
+  file_name,
+  kind,
+  rule_id,
+  rule_name,
+  uri,
+  start_line,
+  start_column,
+  result_json
+from sqlite_scan(%s, 'sarif_results');
+"""
+            % (user_column, sql_quote(sqlite_path))
+        )
+
+    parts.extend(
+        [
+            "create index idx_sarif_results_user on sarif_results(user);",
+            "create index idx_sarif_results_kind on sarif_results(kind);",
+            "create index idx_sarif_results_rule on sarif_results(rule_id);",
+            "create index idx_sarif_results_location "
+            "on sarif_results(uri, start_line, start_column);",
+            "select count(*) as sarif_result_rows from sarif_results;",
+        ]
+    )
+    return "\n".join(parts)
+
+
+def write_duckdb(output, sqlite_inputs):
+    output = resolve_output(output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+
+    with tempfile.TemporaryDirectory(dir=output.parent) as tmpdir:
+        tmp_output = Path(tmpdir) / output.name
+        proc = subprocess.run(
+            ["duckdb", str(tmp_output)],
+            input=build_sql(sqlite_inputs),
+            text=True,
+            capture_output=True,
+        )
+
+        if proc.returncode != 0:
+            raise RuntimeError(proc.stderr.strip() or proc.stdout.strip())
+
+        if output.exists():
+            output.unlink()
+        shutil.move(str(tmp_output), output)
+        return proc.stdout
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description=(
+            "Build one cumulative DuckDB database from per-SARIF SQLite "
+            "databases."
+        )
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        type=Path,
+        required=True,
+        help="DuckDB output file (.duckdb) or directory",
+    )
+    parser.add_argument(
+        "inputs",
+        type=Path,
+        nargs="+",
+        help="one or more per-SARIF SQLite databases",
+    )
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+
+    missing = [p for p in args.inputs if not p.is_file()]
+    if missing:
+        raise SystemExit(
+            "error: SQLite input(s) not found: " + ", ".join(str(p) for p in missing)
+        )
+
+    output = resolve_output(args.output)
+    stdout = write_duckdb(output, args.inputs)
+    print(output)
+    print(f"sqlite_inputs={len(args.inputs)}")
+    if stdout.strip():
+        print(stdout.strip())
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except RuntimeError as exc:
+        raise SystemExit(f"error: {exc}")

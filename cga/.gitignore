@@ -1,0 +1,15 @@
+.run/
+.run-prep/
+cga-tmp/
+cga-prep-tmp/
+**/.cga/
+cgasv/bin/cgasv
+cgamu/bin/cgamu
+cgasv/cgasv
+cgamu/cgamu
+web/cga-config.js
+web-prep/cga-prep-config.js
+db-collection.local
+examples/cves/*/tmp
+**/__pycache__/
+*.pyc

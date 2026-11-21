@@ -1,0 +1,674 @@
+#!/usr/bin/env bash
+#
+# run-system-07 -- two-server LEADER ELECTION / FAILOVER e2e test.
+#
+# One user submits one session containing multiple jobs. The payload is only
+# enough real work to exercise the pool; the axis under test is that two
+# mrvaserver processes sharing PostgreSQL have exactly one pool-manager leader
+# and one backup.
+#
+# The test:
+#   1. starts server-a and server-b on separate ports;
+#   2. observes exactly one leader and one backup through both /sysview/data
+#      endpoints;
+#   3. stops the leader, verifies backup promotion, restarts the old leader,
+#      and verifies it rejoins as backup;
+#   4. submits a three-job session for alice THROUGH THE BACKUP;
+#   5. polls while recording both sysview streams and requiring the elected
+#      roles to remain consistent; and
+#   6. verifies all jobs succeeded and only the leader spawned workers.
+#
+# Run from anywhere:
+#   cga/system-tests/run-system-07/run all
+#
+# Like sibling scenarios, "all" leaves both servers and PostgreSQL running for
+# inspection. Run "cleanup" when done. Run only one run-system-* at a time.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SYSTEM_TESTS_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+cd "$SYSTEM_TESTS_DIR"
+
+export MRVA_WORK_DIR="${MRVA_WORK_DIR:-/tmp/mrva-standalone-election}"
+export RUN_TAG="${RUN_TAG:-election}"
+export MRVA_STANDALONE_STORAGE="${MRVA_STANDALONE_STORAGE:-filesystem}"
+export MRVA_POOL_MAX_WORKERS="${MRVA_POOL_MAX_WORKERS:-3}"
+export MRVA_POOL_LEADER_LEASE_SECONDS="${MRVA_POOL_LEADER_LEASE_SECONDS:-6}"
+export MRVA_POOL_LEADER_CHECK_SECONDS="${MRVA_POOL_LEADER_CHECK_SECONDS:-1}"
+export MRVA_POOL_SCALE_CHECK_SECONDS="${MRVA_POOL_SCALE_CHECK_SECONDS:-1}"
+export MRVA_DBG_DUMP_SYSVIEW="${MRVA_DBG_DUMP_SYSVIEW:-1}"
+export QUERY_PATH="${QUERY_PATH:-../../sample-query/ReturnValueIgnored.ql}"
+
+PORT_A="${PORT_A:-8081}"
+PORT_B="${PORT_B:-8082}"
+export PORT="$PORT_A"
+
+DB_REPOS=(
+    "debian/iniparser-4.1"
+    "debian/libgmpada-1.5"
+    "debian/libjsonparser-1.1.0"
+)
+
+# shellcheck source=cga/system-tests/standalone-multi-agent-lib.sh
+. "${SYSTEM_TESTS_DIR}/standalone-multi-agent-lib.sh"
+
+load_state
+
+SERVER_A="http://127.0.0.1:${PORT_A}"
+SERVER_B="http://127.0.0.1:${PORT_B}"
+SERVER_ID_A="${SERVER_ID_A:-server-a}"
+SERVER_ID_B="${SERVER_ID_B:-server-b}"
+SERVER_LOG_A="${MRVA_TMP_DIR}/server-a.log"
+SERVER_LOG_B="${MRVA_TMP_DIR}/server-b.log"
+SERVER_PID_FILE_A="${MRVA_TMP_DIR}/server-a.pid"
+SERVER_PID_FILE_B="${MRVA_TMP_DIR}/server-b.pid"
+SYSVIEW_DUMP_A="${MRVA_WORK_DIR}/sysview-a.jsonl"
+SYSVIEW_DUMP_B="${MRVA_WORK_DIR}/sysview-b.jsonl"
+SYSVIEW_OBS_A="${MRVA_TMP_DIR}/sysview-a-observations.jsonl"
+SYSVIEW_OBS_B="${MRVA_TMP_DIR}/sysview-b-observations.jsonl"
+ROLE_PAIRS="${MRVA_TMP_DIR}/role-pairs.jsonl"
+PACK_TGZ="${MRVA_WORK_DIR}/query-pack.tgz"
+SUBMIT_BODY="${MRVA_WORK_DIR}/submit-body.json"
+SUBMIT_RESPONSE="${MRVA_TMP_DIR}/submit-response.json"
+TEST_USER="${TEST_USER:-alice}"
+LANGUAGE="${LANGUAGE:-cpp}"
+NJOBS="${#DB_REPOS[@]}"
+OBS_PHASE="manual"
+
+_mark() {
+    CURRENT_PHASE="$1"
+    save_state CURRENT_PHASE "$1"
+}
+
+_slot_value() {
+    local slot="$1" kind="$2"
+    case "${slot}:${kind}" in
+        A:url) echo "$SERVER_A" ;;
+        B:url) echo "$SERVER_B" ;;
+        A:port) echo "$PORT_A" ;;
+        B:port) echo "$PORT_B" ;;
+        A:id) echo "$SERVER_ID_A" ;;
+        B:id) echo "$SERVER_ID_B" ;;
+        A:log) echo "$SERVER_LOG_A" ;;
+        B:log) echo "$SERVER_LOG_B" ;;
+        A:pidfile) echo "$SERVER_PID_FILE_A" ;;
+        B:pidfile) echo "$SERVER_PID_FILE_B" ;;
+        A:dump) echo "$SYSVIEW_DUMP_A" ;;
+        B:dump) echo "$SYSVIEW_DUMP_B" ;;
+        A:obs) echo "$SYSVIEW_OBS_A" ;;
+        B:obs) echo "$SYSVIEW_OBS_B" ;;
+        *) echo "ERROR: invalid server slot/value ${slot}:${kind}" >&2; return 2 ;;
+    esac
+}
+
+_other_slot() {
+    [ "$1" = A ] && echo B || echo A
+}
+
+_start_server() {
+    local slot="$1" port id log pidfile dump url pid
+    port="$(_slot_value "$slot" port)"
+    id="$(_slot_value "$slot" id)"
+    log="$(_slot_value "$slot" log)"
+    pidfile="$(_slot_value "$slot" pidfile)"
+    dump="$(_slot_value "$slot" dump)"
+    url="$(_slot_value "$slot" url)"
+
+    mkdir -p "$MRVA_TMP_DIR" "$MRVA_WORK_DIR"
+    echo "--- starting ${id} on :${port} ---"
+    SERVER_PORT="$port" \
+    MRVA_SERVER_ID="$id" \
+    MRVA_SYSVIEW_DUMP_PATH="$dump" \
+        nohup ../../server-commander/mrvaserver --mode=standalone --loglevel=info \
+            --dbpath="$MRVA_QLDB_DIR" \
+            ${MRVA_DBG_DUMP_SYSVIEW:+--dbg-dump-sysview} \
+            > "$log" 2>&1 &
+    pid=$!
+    echo "$pid" > "$pidfile"
+    save_state "SERVER_${slot}_PID" "$pid"
+
+    local _
+    for _ in $(seq 1 30); do
+        curl -sf "${url}/sysview/data" >/dev/null 2>&1 && break
+        sleep 0.5
+    done
+    if ! curl -sf "${url}/sysview/data" >/dev/null 2>&1; then
+        echo "ERROR: ${id} did not start; log tail:" >&2
+        tail -30 "$log" >&2
+        return 1
+    fi
+    echo "  ${id} up (pid ${pid}, ${url})"
+}
+
+_stop_server() {
+    local slot="$1" signal="${2:-TERM}" port pidfile key pid="" p
+    port="$(_slot_value "$slot" port)"
+    pidfile="$(_slot_value "$slot" pidfile)"
+    key="SERVER_${slot}_PID"
+    load_state
+    pid="${!key:-}"
+    [ -n "$pid" ] || pid="$(cat "$pidfile" 2>/dev/null || true)"
+
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+        kill "-${signal}" "$pid"
+        echo "  sent SIG${signal} to $(_slot_value "$slot" id) pid ${pid}"
+        local _
+        for _ in $(seq 1 30); do
+            kill -0 "$pid" 2>/dev/null || break
+            sleep 0.1
+        done
+        wait "$pid" 2>/dev/null || true
+    fi
+    for p in $(pids_on_port "$port"); do
+        kill "$p" 2>/dev/null || true
+        echo "  stopped stale pid ${p} on :${port}"
+    done
+    rm -f "$pidfile"
+    save_state "$key" ""
+}
+
+_record_endpoint() {
+    local slot="$1" url obs json now
+    url="$(_slot_value "$slot" url)"
+    obs="$(_slot_value "$slot" obs)"
+    json="$(curl -sf "${url}/sysview/data")" || return 1
+    now="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    printf '%s' "$json" | jq -c \
+        --arg observed_at "$now" \
+        --arg endpoint "$url" \
+        --arg phase "$OBS_PHASE" \
+        '. + {observed_at:$observed_at, observed_endpoint:$endpoint, observed_phase:$phase}' \
+        >> "$obs"
+    printf '%s' "$json"
+}
+
+# Record a synchronized observation of both endpoints. On success, print the
+# slot (A or B) that is leader. The JSONL record includes a computed validity
+# bit requiring both endpoints to report the same two online servers with
+# opposite roles.
+_observe_pair() {
+    local a b pair now
+    a="$(_record_endpoint A)" || return 1
+    b="$(_record_endpoint B)" || return 1
+    now="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    pair="$(jq -cn \
+        --arg observed_at "$now" \
+        --arg phase "$OBS_PHASE" \
+        --arg server_id_a "$SERVER_ID_A" \
+        --arg server_id_b "$SERVER_ID_B" \
+        --argjson a "$a" \
+        --argjson b "$b" '
+        def compact($d):
+          [($d.servers // [])[] | {
+            instance_id: .instance_id,
+            role: .role,
+            online: .online
+          }] | sort_by(.instance_id);
+        (compact($a)) as $as
+        | (compact($b)) as $bs
+        | ([ $as[].instance_id ] | sort) as $ids
+        | ([ $as[].role ] | sort) as $roles
+        | (all($as[]; .online == true)) as $online
+        | ([ $as[] | select(.role == "leader") | .instance_id ][0] // "") as $leader
+        | {
+          observed_at: $observed_at,
+          phase: $phase,
+          a: {served_by: $a.served_by, servers: $as},
+          b: {served_by: $b.served_by, servers: $bs}
+        }
+        | .valid = (
+            (.a.served_by == $server_id_a) and
+            (.b.served_by == $server_id_b) and
+            ($as == $bs) and
+            ($ids == ([$server_id_a, $server_id_b] | sort)) and
+            ($roles == ["backup", "leader"]) and
+            $online
+          )
+        | .leader_slot = (if $leader == $server_id_a then "A" else "B" end)
+        ')"
+    echo "$pair" >> "$ROLE_PAIRS"
+    jq -e '.valid' >/dev/null <<< "$pair" || return 1
+    jq -r '.leader_slot' <<< "$pair"
+}
+
+_wait_roles() {
+    local expected="${1:-}" deadline leader ra rb
+    deadline=$(( $(date +%s) + 30 ))
+    while [ "$(date +%s)" -lt "$deadline" ]; do
+        if leader="$(_observe_pair)"; then
+            if [ -z "$expected" ] || [ "$leader" = "$expected" ]; then
+                echo "$leader"
+                return 0
+            fi
+        fi
+        ra="$(curl -sf "$SERVER_A/sysview/data" 2>/dev/null \
+            | jq -r --arg id "$SERVER_ID_A" \
+                '[.servers[]? | select(.instance_id==$id) | .role][0] // "down"' \
+                2>/dev/null || echo down)"
+        rb="$(curl -sf "$SERVER_B/sysview/data" 2>/dev/null \
+            | jq -r --arg id "$SERVER_ID_B" \
+                '[.servers[]? | select(.instance_id==$id) | .role][0] // "down"' \
+                2>/dev/null || echo down)"
+        echo "  waiting for roles${expected:+ (leader ${expected})}: A=${ra} B=${rb}" >&2
+        sleep 1
+    done
+    echo "ERROR: two-server leader/backup roles did not converge" >&2
+    return 1
+}
+
+_wait_single_leader() {
+    local slot="$1" expected_id json deadline
+    expected_id="$(_slot_value "$slot" id)"
+    deadline=$(( $(date +%s) + MRVA_POOL_LEADER_LEASE_SECONDS + 20 ))
+    while [ "$(date +%s)" -lt "$deadline" ]; do
+        if json="$(_record_endpoint "$slot")"; then
+            if jq -e --arg id "$expected_id" \
+                '(.servers | length) == 2 and
+                 any(.servers[]; .instance_id == $id and
+                     .role == "leader" and .online == true) and
+                 any(.servers[]; .instance_id != $id and
+                     .role == "backup" and .online == false)' \
+                >/dev/null <<< "$json"; then
+                return 0
+            fi
+        fi
+        sleep 1
+    done
+    echo "ERROR: ${expected_id} was not promoted after leader stopped" >&2
+    return 1
+}
+
+_fetch_session_status() {
+    local slot="$1" sid="$2" url
+    url="$(_slot_value "$slot" url)"
+    curl -sf "${url}/repos/${CONTROLLER_OWNER}/${CONTROLLER_REPO}/code-scanning/codeql/variant-analyses/${sid}" \
+        | jq -r '.status // ""'
+}
+
+_error_check() {
+    local bad=0 log
+    for log in "$SERVER_LOG_A" "$SERVER_LOG_B"; do
+        if grep -E "ERROR|panic|fatal" "$log" 2>/dev/null \
+            | grep -v 'mrva-project-resolver' >/dev/null; then
+            echo "errors in ${log}:"
+            grep -E "ERROR|panic|fatal" "$log" \
+                | grep -v 'mrva-project-resolver' | head -10
+            bad=1
+        fi
+    done
+    [ "$bad" -eq 0 ]
+}
+
+phase_preflight() {
+    echo "--- preflight ---"
+    for tool in codeql go curl jq psql pg_isready ss zip unzip python3; do
+        command -v "$tool" >/dev/null || {
+            echo "ERROR: '${tool}' required but not found" >&2
+            return 1
+        }
+    done
+    codeql version --format=terse | sed 's/^/codeql version: /'
+    go version | sed 's/^/go version: /'
+    pg_ensure_running
+    pg_ensure_role_db
+
+    local port p
+    for port in "$PORT_A" "$PORT_B"; do
+        for p in $(pids_on_port "$port"); do
+            echo "killing stale process on :${port}: ${p}"
+            kill "$p" 2>/dev/null || true
+        done
+    done
+    minio_reclaim_port
+    db_server_reclaim_port
+}
+
+phase_reset() {
+    echo "--- reset (clean slate) ---"
+    _stop_server A
+    _stop_server B
+    psql_mrva -q -c "
+DROP TABLE IF EXISTS $(IFS=,; echo "${MRVA_TABLES[*]}") CASCADE;
+DROP SEQUENCE IF EXISTS $(IFS=,; echo "${MRVA_SEQUENCES[*]}") CASCADE;
+" >/dev/null
+    rm -rf "$MRVA_WORK_DIR" "$MRVA_TMP_DIR"
+    mkdir -p "$MRVA_ARTIFACT_DIR" "$MRVA_QLDB_DIR" "$MRVA_DB_SERVE_DIR" "$MRVA_TMP_DIR"
+    echo "  dropped tables; wiped ${MRVA_WORK_DIR} and ${MRVA_TMP_DIR}"
+}
+
+phase_stage() {
+    echo "--- staging ${NJOBS} CodeQL DBs ---"
+    local repo owner name src zipf tmpd bundle
+    for repo in "${DB_REPOS[@]}"; do
+        owner="${repo%/*}"
+        name="${repo#*/}"
+        src="${SAMPLE_DB_ROOT}/${LANGUAGE}/${owner}/${name}"
+        if [ ! -d "$src" ]; then
+            zipf="${src}.zip"
+            [ -f "$zipf" ] || {
+                echo "ERROR: missing database ${src} (or ${zipf})" >&2
+                return 1
+            }
+            tmpd="$(mktemp -d "${TMPDIR:-/tmp}/mrva-db.XXXXXX")"
+            unzip -q "$zipf" -d "$tmpd"
+            bundle="$(find "$tmpd" -mindepth 1 -maxdepth 1 -type d | head -1)"
+            [ -n "$bundle" ] || {
+                rm -rf "$tmpd"
+                echo "ERROR: ${zipf} has no top-level database directory" >&2
+                return 1
+            }
+            mv "$bundle" "$src"
+            rm -rf "$tmpd"
+        fi
+        mkdir -p "$MRVA_DB_SERVE_DIR/${owner}/${name}"
+        cga db zip --db-dir "$src" \
+            --output "$MRVA_DB_SERVE_DIR/${owner}/${name}/${owner}_${name}_db.zip"
+        echo "  staged ${repo}"
+    done
+}
+
+phase_build() {
+    echo "--- building server + agent ---"
+    make -s -C ../../server-commander mrvaserver mrvaagent
+}
+
+phase_start() {
+    echo "--- starting shared infrastructure and two servers ---"
+    minio_start
+    db_server_start
+    _start_server A
+    _start_server B
+}
+
+phase_roles() {
+    echo "--- initial leader election ---"
+    OBS_PHASE="initial-election"
+    local leader backup
+    leader="$(_wait_roles)"
+    backup="$(_other_slot "$leader")"
+    save_state INITIAL_LEADER_SLOT "$leader"
+    save_state INITIAL_BACKUP_SLOT "$backup"
+    echo "  leader=$(_slot_value "$leader" id) backup=$(_slot_value "$backup" id)"
+}
+
+phase_failover() {
+    load_state
+    [ -n "${INITIAL_LEADER_SLOT:-}" ] || phase_roles
+    load_state
+    local old_leader="$INITIAL_LEADER_SLOT"
+    local promoted="$INITIAL_BACKUP_SLOT"
+
+    echo "--- failover: crash $(_slot_value "$old_leader" id) (lease must expire) ---"
+    _stop_server "$old_leader" KILL
+    local retained_holder
+    retained_holder="$(psql_mrva -t -A -c \
+        "SELECT COALESCE(server_id, '') FROM scheduler_lock
+          WHERE lock_name='mrva-scheduler';" | tr -d '[:space:]')"
+    if [ "$retained_holder" = "$(_slot_value "$old_leader" id)" ]; then
+        save_state CRASHED_LEASE_RETAINED 1
+    else
+        save_state CRASHED_LEASE_RETAINED 0
+        echo "ERROR: crashed leader's lease row was not retained for expiry" >&2
+        return 1
+    fi
+    OBS_PHASE="failover"
+    _wait_single_leader "$promoted"
+    echo "  promoted $(_slot_value "$promoted" id)"
+
+    echo "--- rejoin: restart $(_slot_value "$old_leader" id) ---"
+    _start_server "$old_leader"
+    OBS_PHASE="post-failover-election"
+    local leader
+    leader="$(_wait_roles "$promoted")"
+    [ "$leader" != "$old_leader" ] || {
+        echo "ERROR: leadership did not move during failover" >&2
+        return 1
+    }
+    save_state FINAL_LEADER_SLOT "$leader"
+    save_state FINAL_BACKUP_SLOT "$(_other_slot "$leader")"
+    echo "  leader=$(_slot_value "$leader" id) backup=$(_slot_value "$(_other_slot "$leader")" id)"
+}
+
+phase_pack() {
+    echo "--- building ${LANGUAGE} query pack ---"
+    cga_pack_query "$QUERY_PATH" "$PACK_TGZ" > "$REQ_LOG" 2>&1
+    ls -lh "$PACK_TGZ"
+}
+
+phase_submit() {
+    load_state
+    [ -n "${FINAL_BACKUP_SLOT:-}" ] || {
+        echo "ERROR: run failover before submit" >&2
+        return 1
+    }
+    local slot="$FINAL_BACKUP_SLOT" url
+    url="$(_slot_value "$slot" url)"
+    echo "--- submit via BACKUP $(_slot_value "$slot" id): ${TEST_USER}, ${NJOBS} jobs ---"
+    printf '    %s\n' "${DB_REPOS[@]}"
+
+    cga_submit election "$TEST_USER" "$LANGUAGE" "$PACK_TGZ" "$url" \
+        "${DB_REPOS[@]}" > "$SUBMIT_RESPONSE"
+    SID="$(jq -r '.id' "$SUBMIT_RESPONSE")"
+    save_state SID "$SID"
+    save_state SUBMIT_SLOT "$slot"
+    cat "$SUBMIT_RESPONSE"
+    echo
+    echo "  session=${SID}"
+}
+
+phase_poll() {
+    load_state
+    [ -n "${SID:-}" ] || {
+        echo "ERROR: no session id; run submit first" >&2
+        return 1
+    }
+    echo "--- poll session ${SID}; record both sysview endpoints ---"
+    OBS_PHASE="workload"
+    local deadline status="" slot=A leader
+    deadline=$(( $(date +%s) + POLL_DEADLINE_SECS ))
+    while [ "$(date +%s)" -lt "$deadline" ]; do
+        leader="$(_observe_pair)" || {
+            echo "ERROR: invalid leader/backup pair while jobs were active" >&2
+            return 1
+        }
+        status="$(_fetch_session_status "$slot" "$SID")"
+        printf '  [%s] status=%-12s status-server=%s leader=%s\n' \
+            "$(date +%T)" "${status:-?}" "$(_slot_value "$slot" id)" \
+            "$(_slot_value "$leader" id)"
+        case "$status" in
+            succeeded) return 0 ;;
+            failed|cancelled) return 1 ;;
+        esac
+        slot="$(_other_slot "$slot")"
+        sleep "$POLL_INTERVAL"
+    done
+    echo "ERROR: timed out after ${POLL_DEADLINE_SECS}s (last status ${status:-unknown})" >&2
+    return 1
+}
+
+phase_sysview() {
+    OBS_PHASE="manual"
+    local leader
+    leader="$(_observe_pair)"
+    echo "--- sysview server roles (leader slot ${leader}) ---"
+    curl -sf "$SERVER_A/sysview/data" | jq '{served_by, servers, generated_at, jobs:(.jobs|length), workers:(.workers|length)}'
+    curl -sf "$SERVER_B/sysview/data" | jq '{served_by, servers, generated_at, jobs:(.jobs|length), workers:(.workers|length)}'
+    echo "  observations: ${SYSVIEW_OBS_A}, ${SYSVIEW_OBS_B}"
+}
+
+phase_logs() {
+    echo "--- server-a log tail ---"
+    tail -20 "$SERVER_LOG_A"
+    echo "--- server-b log tail ---"
+    tail -20 "$SERVER_LOG_B"
+    echo "--- error scan ---"
+    _error_check && echo "NO ERRORS (mrva-project-resolver warnings excluded)"
+}
+
+phase_verify() {
+    load_state
+    echo "--- verify (leader election / backup / one-user workload) ---"
+    local ok=1
+    local succeeded results users claims holder leader_id
+    local obs_a obs_b workload_pairs invalid_workload backup_spawns leader_spawns
+
+    succeeded="$(psql_mrva -t -A -c \
+        "SELECT COUNT(*) FROM job_status WHERE session_id=${SID:-0} AND status=2;" \
+        | tr -d '[:space:]')"
+    results="$(psql_mrva -t -A -c \
+        "SELECT COUNT(*) FROM analyze_results WHERE session_id=${SID:-0};" \
+        | tr -d '[:space:]')"
+    users="$(psql_mrva -t -A -c \
+        "SELECT COALESCE(string_agg(DISTINCT user_id, ','), '') FROM job_info WHERE session_id=${SID:-0};" \
+        | tr -d '[:space:]')"
+    claims="$(psql_mrva -t -A -c \
+        "SELECT COUNT(DISTINCT owner || '/' || repo) FROM job_info
+          WHERE session_id=${SID:-0} AND worker_id != '';" \
+        | tr -d '[:space:]')"
+    holder="$(psql_mrva -t -A -c \
+        "SELECT COALESCE(server_id, '') FROM scheduler_lock
+          WHERE lock_name='mrva-scheduler' AND expires_at > NOW();" \
+        | tr -d '[:space:]')"
+    leader_id="$(_slot_value "${FINAL_LEADER_SLOT:-A}" id)"
+
+    obs_a="$(wc -l < "$SYSVIEW_OBS_A" 2>/dev/null | tr -d ' ' || echo 0)"
+    obs_b="$(wc -l < "$SYSVIEW_OBS_B" 2>/dev/null | tr -d ' ' || echo 0)"
+    workload_pairs="$(jq -s '[.[] | select(.phase=="workload")] | length' "$ROLE_PAIRS" 2>/dev/null || echo 0)"
+    invalid_workload="$(jq -s '[.[] | select(.phase=="workload" and (.valid|not))] | length' "$ROLE_PAIRS" 2>/dev/null || echo 1)"
+
+    local leader_log backup_log
+    leader_log="$(_slot_value "${FINAL_LEADER_SLOT:-A}" log)"
+    backup_log="$(_slot_value "${FINAL_BACKUP_SLOT:-B}" log)"
+    leader_spawns="$(grep -c "Spawned pool worker" "$leader_log" 2>/dev/null || true)"
+    backup_spawns="$(grep -c "Spawned pool worker" "$backup_log" 2>/dev/null || true)"
+
+    [ "${INITIAL_LEADER_SLOT:-}" != "${FINAL_LEADER_SLOT:-}" ] || ok=0
+    [ "${CRASHED_LEASE_RETAINED:-0}" -eq 1 ] || ok=0
+    [ "$succeeded" = "$NJOBS" ] || ok=0
+    [ "$results" = "$NJOBS" ] || ok=0
+    [ "$users" = "$TEST_USER" ] || ok=0
+    [ "$claims" = "$NJOBS" ] || ok=0
+    [ "$holder" = "$leader_id" ] || ok=0
+    [ "$obs_a" -gt 0 ] && [ "$obs_b" -gt 0 ] || ok=0
+    [ "$workload_pairs" -gt 0 ] && [ "$invalid_workload" -eq 0 ] || ok=0
+    [ "$leader_spawns" -gt 0 ] && [ "$backup_spawns" -eq 0 ] || ok=0
+    _error_check || ok=0
+
+    echo
+    echo "initial roles: leader=$(_slot_value "${INITIAL_LEADER_SLOT:-A}" id) backup=$(_slot_value "${INITIAL_BACKUP_SLOT:-B}" id)"
+    echo "post-failover roles: leader=${leader_id} backup=$(_slot_value "${FINAL_BACKUP_SLOT:-B}" id)"
+    echo "crashed leader lease retained until expiry: ${CRASHED_LEASE_RETAINED:-0}"
+    echo "active scheduler lease holder: ${holder:-<none>}"
+    echo "session ${SID:-<none>}: user=${users:-<none>} succeeded=${succeeded}/${NJOBS} results=${results}/${NJOBS} claimed=${claims}/${NJOBS}"
+    echo "sysview observations: server-a=${obs_a} server-b=${obs_b} workload-pairs=${workload_pairs} invalid=${invalid_workload}"
+    echo "worker spawns: leader=${leader_spawns} backup=${backup_spawns}"
+    echo "both servers remain running; inspect with: ${SCRIPT_DIR}/run sysview"
+    echo "tear down with: ${SCRIPT_DIR}/run cleanup"
+
+    if [ "$ok" -eq 1 ]; then
+        echo "PASS: leader failed over, rejoined as backup, and the sole leader scheduled all ${NJOBS} jobs for ${TEST_USER}"
+        return 0
+    fi
+    echo "FAIL: election or workload invariant failed"
+    return 1
+}
+
+phase_stop() {
+    echo "--- stopping both servers (keeping state) ---"
+    _stop_server A
+    _stop_server B
+    local p
+    for p in $(pgrep -x mrvaagent 2>/dev/null || true); do
+        kill "$p" 2>/dev/null || true
+        echo "  stopped lingering agent pid ${p}"
+    done
+    db_server_stop
+    minio_stop
+}
+
+phase_cleanup() {
+    phase_stop
+    echo "--- dropping MRVA tables and removing test state ---"
+    if psql_mrva -c "SELECT 1;" >/dev/null 2>&1; then
+        psql_mrva -q -c "
+DROP TABLE IF EXISTS $(IFS=,; echo "${MRVA_TABLES[*]}") CASCADE;
+DROP SEQUENCE IF EXISTS $(IFS=,; echo "${MRVA_SEQUENCES[*]}") CASCADE;
+" >/dev/null
+    fi
+    rm -rf "$MRVA_WORK_DIR" "$MRVA_TMP_DIR"
+    echo "cleanup complete"
+}
+
+phase_query() {
+    exec "${SYSTEM_TESTS_DIR}/query-standalone-multi-agent-e2e.sh"
+}
+
+phase_where() {
+    load_state
+    echo "run-system-07: two-server leader election / failover"
+    echo "  servers: ${SERVER_ID_A}=:${PORT_A}, ${SERVER_ID_B}=:${PORT_B}"
+    echo "  last phase: ${CURRENT_PHASE:-<none>}"
+    echo "  pipeline: preflight reset stage build start roles failover pack submit poll sysview logs verify"
+}
+
+phase_all() {
+    local phase
+    for phase in "${ALL_PHASES[@]}"; do
+        "phase_${phase}"
+        _mark "$phase"
+        echo
+    done
+}
+
+ALL_PHASES=(preflight reset stage build start roles failover pack submit poll sysview logs verify)
+
+usage() {
+    cat <<USAGE
+Usage: ${SCRIPT_DIR}/run [COMMAND ...]
+
+Two-server leader-election and failover e2e test. One user (${TEST_USER})
+submits one ${NJOBS}-job session through the elected backup; only the elected
+leader may queue work or spawn agents.
+
+Pipeline:
+  preflight reset stage build start roles failover pack submit poll sysview logs verify
+
+Meta:
+  all       run the full pipeline
+  where     show scenario state
+  query     inspect PostgreSQL
+  stop      stop both servers, retain database/work files
+  cleanup   stop both servers, drop tables, remove scenario files
+  help      show this text
+
+Role timing knobs:
+  MRVA_POOL_LEADER_LEASE_SECONDS=${MRVA_POOL_LEADER_LEASE_SECONDS}
+  MRVA_POOL_LEADER_CHECK_SECONDS=${MRVA_POOL_LEADER_CHECK_SECONDS}
+USAGE
+}
+
+dispatch_one() {
+    local command="$1"
+    case "$command" in
+        all) phase_all ;;
+        preflight|reset|stage|build|start|roles|failover|pack|submit|poll|sysview|logs|verify|stop)
+            "phase_${command}"
+            _mark "$command"
+            ;;
+        query) phase_query ;;
+        cleanup) phase_cleanup ;;
+        where) phase_where ;;
+        help|-h|--help) usage ;;
+        *) echo "ERROR: unknown command '${command}'" >&2; usage >&2; return 2 ;;
+    esac
+}
+
+if [ "$#" -eq 0 ]; then
+    usage
+    exit 0
+fi
+
+for command in "$@"; do
+    dispatch_one "$command"
+done

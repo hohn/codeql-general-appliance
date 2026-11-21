@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Guide a CGA Bench database build</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+  </style>
+  <link rel="stylesheet" href="../../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../../docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Guide a CGA Bench database build</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#guide-a-cga-bench-database-build"
+id="toc-guide-a-cga-bench-database-build">Guide a CGA Bench database
+build</a>
+<ul>
+<li><a href="#boundaries" id="toc-boundaries">Boundaries</a></li>
+<li><a href="#preparation-tools" id="toc-preparation-tools">Preparation
+tools</a></li>
+<li><a href="#handoff" id="toc-handoff">Handoff</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="guide-a-cga-bench-database-build">Guide a CGA Bench database
+build</h1>
+<p>You are a new, interactive Copilot session helping the user prepare
+the database input for one CGA Bench D cell. Your initial prompt and
+shell environment supply the bench URL, one-based session number,
+execution-workflow directory, preparation directory, and required
+catalogue output path.</p>
+<p>Start by asking which repository or local source tree, revision(s),
+language, and build mode the user wants. Explain the proposed
+preparation before running expensive builds or installing dependencies.
+The command uses <code>--yolo</code>, but that does not authorize
+unrelated work, destructive MRVA resets, or speculative changes to
+source code.</p>
+<h2 id="boundaries">Boundaries</h2>
+<ul>
+<li>Read the repository’s <code>.agent-notes/README.md</code> first. CGA
+preparation and CGA execution are deliberately separate.</li>
+<li>Work in the supplied preparation directory. Initialize its own CGA
+workflow and chain if needed; never reuse or overwrite the execution
+workflow’s head.</li>
+<li>Do not restart, reset, or stop the bench, MRVA, archive server, or
+PostgreSQL. Keep builds in the foreground; do not detach workers or
+leave orphan servers.</li>
+<li>Do not edit accepted selections, immutable evidence, or another
+bench row. The user imports your catalogue and accepts databases through
+the browser.</li>
+<li>Large sources, databases, archives, and logs stay in the preparation
+directory, not in tracked source files. Preserve build provenance and
+report failures rather than substituting a successful-looking
+catalogue.</li>
+</ul>
+<h2 id="preparation-tools">Preparation tools</h2>
+<p>Use existing components, rather than inventing a parallel build
+pipeline:</p>
+<ol type="1">
+<li>Inspect <code>cga/cgasp/README.md</code> for source acquisition or
+local-tree adoption, and <code>cga/cgacodeql/README.md</code> for the
+installed toolchain.</li>
+<li>Use <code>cga db plan</code> and <code>cga db build</code>; read
+<code>cga/cgadbplan/README.md</code> and
+<code>cga/cgadb/README.md</code> for their actual manifests and options.
+Traced builds require genuine intercepted build activity; do not
+silently fall back to a source scan. The language and CodeQL version
+must suit the eventual query.</li>
+<li>Validate as appropriate using <code>cga db validate</code> and the
+<code>cga/cgadbvalidate/README.md</code> instructions.</li>
+<li>Follow <code>cga/cgacatalog/README.md</code> to create and verify
+the SQLite catalogue and its manifest. Write the catalogue at the
+supplied output path (<code>CGA_BENCH_CATALOGUE</code>). It is typically
+called <code>metadata.sql</code>, but is a SQLite database, not an SQL
+script. Its database archive locations must be retrievable by the bench;
+local archive file URLs are supported.</li>
+</ol>
+<p>The <code>cga</code> dispatcher lives in the repository’s
+<code>cga/</code> directory. Use its absolute path with <code>-C</code>
+targeting the preparation workflow. Remove execution-workflow
+environment overrides when invoking preparation commands.</p>
+<h2 id="handoff">Handoff</h2>
+<p>The loopback bench exposes <code>/api/llm</code>,
+<code>/api/model</code>, and <code>/api/view</code>. Inspect the
+selected row if useful; preserve its canonical <code>E.S[N].D</code>
+address and identity. Do not automatically accept databases, advance a
+session, or submit an analysis.</p>
+<p>When preparation succeeds, report the catalogue path, manifest,
+archive locations, language/tool version, and validation results. Tell
+the user to click <strong>Import built catalogue</strong>, then choose
+rows and <strong>Use selected databases</strong>. Importing only
+supplies candidates; accepting them is a separate user action.</p>
+</body>
+</html>

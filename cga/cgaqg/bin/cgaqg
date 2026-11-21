@@ -1,0 +1,28 @@
+#!/usr/bin/env python3
+import os
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve()
+PROJECT_DIR = HERE.parent.parent
+REPO_ROOT = PROJECT_DIR.parents[1]
+CGA_PREP_ROOT = Path(os.environ.get("CGA_PREP_ROOT", PROJECT_DIR.parent)).resolve()
+CGA_PREP_TMPDIR = Path(
+    os.environ.get("CGA_PREP_TMPDIR", CGA_PREP_ROOT / "cga-prep-tmp")
+).resolve()
+os.environ.setdefault("CGAST_ROOT", str(CGA_PREP_ROOT))
+os.environ.setdefault("CGAST_TMPDIR", str(CGA_PREP_TMPDIR))
+os.environ.setdefault(
+    "CGAST_SESSION",
+    os.environ.get("CGA_PREP_SESSION", str(CGA_PREP_TMPDIR / "session.json")),
+)
+sys.path.insert(0, str(PROJECT_DIR))
+sys.path.insert(0, str(REPO_ROOT / "cga" / "cgalib"))
+sys.path.insert(0, str(REPO_ROOT / "cga" / "cgaql"))
+from cgaqg.cli import main  # noqa: E402
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main(sys.argv[1:]))
+    except BrokenPipeError:
+        raise SystemExit(0)

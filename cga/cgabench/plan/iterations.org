@@ -1,0 +1,262 @@
+* clarifications 01
+  
+  Note:
+  The tabs
+  - Workflow commands
+    + Input preparation
+      Database catalogue
+      /mnt/common/home/hohn/work-ghp/single-machine-mrva/cga/cgadl/db-collection.global/metadata.sql
+      Load database catalogue
+      Database catalogue loaded
+    + Input preparation
+      Query directory
+      /mnt/common/home/hohn/work-ghp/single-machine-mrva/sample-query
+      Index query library
+      Query library indexed
+  logically form part of the DQJR grid below the 'workflow commands', specifically
+  they apply to rows of the 'Database D' and 'Query Q' column:
+  - DQJR header / grid
+    | Session | MRVA user | Add session |
+    -----
+    | Compare | Session                            | Database D | Query Q | Job J | Result R | Action   |
+    | [ ]     | S[1] baseline / alice (incomplete) | blocked    | empty   | empty | empty    | Continue |
+
+  Changes:
+  It makes  more sense to use the following structure; numbered outline is
+  top-bottom, dashed is left-right
+
+  1. Workflow commands
+     - infrastructure (rest horizontal)
+  2. DQJR header / grid
+  3. Detail: row 1, column D (instead of E.S[1].D)
+     - Input preparation: (read existing Database catalogue|build Database and catalogue)
+     - Input preparation: (read existing Query library | write query and index)
+     - rest as now
+
+  Ask as needed.
+
+* clarifications 02
+  More changes:
+  - DQJR header / grid has form
+    | Session | MRVA user | Add session |
+    -----
+    | Compare | Session                            | Database D | Query Q | Job J | Result R | Action   |
+    | [ ]     | S[1] baseline / alice (incomplete) | blocked    | empty   | empty | empty    | Continue |
+  - Do the 'session' and 'MRVA user' fields serve any purpose?
+    - The sessions are numbered
+    - and this is always single user
+    - Leave only the 'add session' button
+  - The 'Session' column is correct, but has too much detail; instead of
+    | S[1] baseline / alice (incomplete) |
+    just display
+    | 1 (incomplete) |
+
+  Ask as needed.
+
+* clarifications 03
+  The detail section has (text copied) structure
+
+  - Detail: row 1, column D
+    - Input preparation
+      Preparation path
+      Read existing database catalogue
+      Database catalogue
+      /mnt/common/home/hohn/work-ghp/single-machine-mrva/cga/cgadl/db-collection.global/metadata.sql
+      Load database catalogue
+      Database catalogue loaded
+
+      Find in library
+      2.20.4
+      Find
+      1-1 of 1
+
+      Choose	Owner	Repository	Language	CodeQL version
+      face-alignment	face-alignment	python	2.20.4
+      Previous
+      Next
+      Use selected databases
+      0 selected
+      Development note
+      Record note
+      need accepted database selection
+
+    - Stage history
+
+  The 'Read existing database catalogue' does not
+  - does not list any option
+  - help with selecting a catalogue
+  It provides
+  : /mnt/common/home/hohn/work-ghp/single-machine-mrva/cga/cgadl/db-collection.global/metadata.sql
+  but never describes *how it's obtained*.
+  Several options:
+  - provide a file selector dialog
+  - pre-scan the cwd for all metadata.sql files and list the ones found.  This
+    would include
+    : cga/cgadl/db-collection.global/metadata.sql
+    as option.
+  - provide a help text describing what is needed, e.g. 'database catalogues are
+    sqlite files, typically named metadata.sql'
+
+  The label
+  : Find in library
+  is unclear.  Maybe use
+  : Find substring in library metadata
+  
+  Ask as needed.
+* clarifications 04
+  - This is good; note the highlighted
+    :   *Read existing database catalogue*
+    Don't change anything for this case.
+
+    Detail: row 1, column D
+    Input preparation
+    Preparation path
+    *Read existing database catalogue*
+    Database catalogues are SQLite files, typically named metadata.sql, not SQL scripts or database archives. Each row describes a prebuilt CodeQL database and its download location. Obtain a catalogue from a database collection provider, or ask your assistant to generate one from prepared databases. The suggested cgadl/db-collection.global catalogue is a local source for an existing collection; Bench only imports it.
+
+    Discovered catalogues
+    /mnt/common/home/hohn/work-ghp/single-machine-mrva/cga/cgadl/db-collection.global/metadata.sql
+    Rescan catalogues
+    1 found. Searched: /mnt/common/home/hohn/work-ghp/single-machine-mrva/cga/cgabench/my-bench, /mnt/common/home/hohn/work-ghp/single-machine-mrva/cga. Hidden/dependency directories and directory symlinks are not scanned; the suggested collection catalogue is also checked. Choose a file above or enter a path/URL below, then load it.
+
+    Database catalogue path or URL
+    /mnt/common/home/hohn/work-ghp/single-machine-mrva/cga/cgadl/db-collection.global/metadata.sql
+    Load database catalogue
+    Database catalogue loaded
+
+  - This is confusing; note the highlighted
+    :     *Build database and catalogue*
+    case.
+    
+    Detail: row 1, column D
+    Input preparation
+    Preparation path
+    *Build database and catalogue*
+
+    Database catalogues are SQLite files, typically named metadata.sql, not SQL scripts or database archives. Each row describes a prebuilt CodeQL database and its download location. Obtain a catalogue from a database collection provider, or ask your assistant to generate one from prepared databases. The suggested cgadl/db-collection.global catalogue is a local source for an existing collection; Bench only imports it.
+
+    Discovered catalogues
+    /mnt/common/home/hohn/work-ghp/single-machine-mrva/cga/cgadl/db-collection.global/metadata.sql
+
+    Rescan catalogues
+    1 found. Searched: /mnt/common/home/hohn/work-ghp/single-machine-mrva/cga/cgabench/my-bench, /mnt/common/home/hohn/work-ghp/single-machine-mrva/cga. Hidden/dependency directories and directory symlinks are not scanned; the suggested collection catalogue is also checked. Choose a file above or enter a path/URL below, then load it.
+
+    Ask your assistant to acquire sources, build and validate databases, and generate a catalogue with the existing CGA preparation tools. Then load that catalogue here and choose databases from the table. Database building is not performed in this browser.
+
+    Prepared database catalogue path or URL
+    /mnt/common/home/hohn/work-ghp/single-machine-mrva/cga/cgadl/db-collection.global/metadata.sql
+
+    Load my databases
+
+  - For the 
+    :     *Build database and catalogue*
+    case,
+    1. the parts
+       #+BEGIN_SRC text
+             Database catalogues are SQLite files, typically named metadata.sql, not SQL scripts or database archives. Each row describes a prebuilt CodeQL database and its download location. Obtain a catalogue from a database collection provider, or ask your assistant to generate one from prepared databases. The suggested cgadl/db-collection.global catalogue is a local source for an existing collection; Bench only imports it.
+
+             Discovered catalogues
+             /mnt/common/home/hohn/work-ghp/single-machine-mrva/cga/cgadl/db-collection.global/metadata.sql
+
+             Rescan catalogues
+             1 found. Searched: /mnt/common/home/hohn/work-ghp/single-machine-mrva/cga/cgabench/my-bench, /mnt/common/home/hohn/work-ghp/single-machine-mrva/cga. Hidden/dependency directories and directory symlinks are not scanned; the suggested collection catalogue is also checked. Choose a file above or enter a path/URL below, then load it.
+       #+END_SRC
+       are superfluous
+
+    2. the '    Ask your assistant to acquire sources...' part needs modification.
+       I suggest
+       - hbox(text('Ask your assistant below to guide you'),
+              icc := button('insert copilot command below'))
+       - embed xterm.js, just run the user's default shell initially.  on
+         click(icc), insert the full copilot command, e.g.
+         : copilot --yolo copilot-assist-codeql-db-build.md ...
+         or so.  note that copilot-assist-codeql-db-build.md does not exist yet --
+         it's purpose is to orient a new LLM session:  awareness of cgabench and
+         the goal of this LLM session. 
+
+    3. the parts
+       #+BEGIN_SRC text
+       Prepared database catalogue path or URL
+       /mnt/common/home/hohn/work-ghp/single-machine-mrva/cga/cgadl/db-collection.global/metadata.sql
+
+       Load my databases
+       #+END_SRC
+       need adjustment to fit the new form of (2.)
+
+  - Ask as needed.
+* clarifications 05
+  I advanced to sesssion 1, R:
+
+  - Compare	Session	Database D	Query Q	Job J	Result R	Action
+    1 (complete)	complete	complete	complete	complete	Continue
+    2 (incomplete)	blocked	empty	empty	empty	Continue
+    Detail: row 1, column R
+    Status
+    No missing input
+
+    213 findings
+
+    Stage history
+    Collected results (10/8/2026, 2:26:34 PM)
+    Verified results (10/8/2026, 2:26:34 PM)
+    Processed results (10/8/2026, 2:26:34 PM)
+    Completed analysis (10/8/2026, 2:26:34 PM)
+
+  - the status is correct but very sparse:
+    : Status
+    : No missing input
+    : 213 findings
+
+  - As part of R processing, use cgasi (via 'cga sarif-ingest') to form an sqlite
+    DB, display it as a table, and add some filtering entries.  Those can be run
+    via cgasi also:
+    : search              exact-match result search
+    : sql                 run read-only SQL from cgasi-query
+
+  - ask as needed
+
+* clarifications 05
+  I advanced to sesssion 1, R:
+
+  - Compare	Session	Database D	Query Q	Job J	Result R	Action
+    1 (complete)	complete	complete	complete	complete	Continue
+    2 (incomplete)	blocked	empty	empty	empty	Continue
+    Detail: row 1, column R
+    Status
+    No missing input
+
+    213 findings
+
+    Stage history
+    Collected results (10/8/2026, 2:26:34 PM)
+    Verified results (10/8/2026, 2:26:34 PM)
+    Processed results (10/8/2026, 2:26:34 PM)
+    Completed analysis (10/8/2026, 2:26:34 PM)
+
+  - the status is correct but very sparse:
+    : Status
+    : No missing input
+    : 213 findings
+
+  - As part of R processing, use cgasi (via 'cga sarif-ingest') to form an sqlite
+    DB, display it as a table, and add some filtering entries.  Those can be run
+    via cgasi also:
+    : search              exact-match result search
+    : sql                 run read-only SQL from cgasi-query
+
+  - ask as needed
+
+* clarifications 06
+  The text under 'Detail: row 1, column R' is confusing:
+  - Advanced read-only SQL
+    Use one SELECT or WITH query over sarif_results. Columns: user, file_name, kind, rule_id, rule_name, uri, start_line, start_column, result_json. This uses DuckDB SQL. Running SQL replaces the exact-match filters for this view. Writes and external filesystem/network access are disabled; each query operation has a 15-second timeout.
+
+    SQL
+    SELECT rule_id, uri, start_line,
+    json_extract_string(result_json, '$.message.text') AS message
+    FROM sarif_results
+    ORDER BY rule_id, uri, start_line
+    Run read-only SQL
+
+  - It's read-only, but at the same time runnable.  to clarify:  this is
+    editable sql, but the query must not/cannot modify the DB?

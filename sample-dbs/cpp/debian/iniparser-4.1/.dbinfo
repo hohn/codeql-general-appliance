@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ns2:dbinfo xmlns:ns2="https://semmle.com/schemas/dbinfo">
+    <sourceLocationPrefix>/mnt/common/tank/src-debian-12/iniparser-4.1</sourceLocationPrefix>
+    <baselineLinesOfCode>4441</baselineLinesOfCode>
+    <unicodeNewlines>false</unicodeNewlines>
+    <columnKind>utf8</columnKind>
+    <primaryLanguage>cpp</primaryLanguage>
+    <creationMetadata>
+        <cliVersion>2.23.8</cliVersion>
+        <creationTime>2026-01-17T18:44:44.402276658Z</creationTime>
+    </creationMetadata>
+</ns2:dbinfo>

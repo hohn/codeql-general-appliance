@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>CVE query-effectiveness study</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="../../../../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../../../../docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">CVE query-effectiveness study</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#cve-query-effectiveness-study"
+id="toc-cve-query-effectiveness-study">CVE query-effectiveness study</a>
+<ul>
+<li><a href="#method" id="toc-method">Method</a></li>
+<li><a href="#data-and-reproduction" id="toc-data-and-reproduction">Data
+and reproduction</a></li>
+<li><a href="#cross-case-result" id="toc-cross-case-result">Cross-case
+result</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="cve-query-effectiveness-study">CVE query-effectiveness
+study</h1>
+<p>This is a manual source-to-SARIF evaluation of three CVEs from the
+completed <code>run-system-10-2026-08-24</code> analysis. The sample is
+purposive: it tests three different query behaviors and is not a
+statistical estimate for all 19 eligible CVEs.</p>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>CVE</th>
+<th>Query</th>
+<th>Assessment</th>
+<th>Short reason</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="CVE-2016-9843.html">CVE-2016-9843</a></td>
+<td><code>cga/cve-2016-9843-crc32-location</code></td>
+<td><strong>Almost found</strong></td>
+<td>Selects the correct source file, but no line or vulnerability logic
+and no vulnerable/fixed discrimination.</td>
+</tr>
+<tr>
+<td><a href="CVE-2018-16554.html">CVE-2018-16554</a></td>
+<td><code>cpp/tainted-format-string</code></td>
+<td><strong>Not found; related alert elsewhere</strong></td>
+<td>Reports a command-line-controlled format string in
+<code>jhead.c</code>, not the fixed GPS altitude write in
+<code>gpsinfo.c</code>.</td>
+</tr>
+<tr>
+<td><a href="CVE-2018-1000880.html">CVE-2018-1000880</a></td>
+<td><code>cpp/overrun-write</code></td>
+<td><strong>Not found</strong></td>
+<td>Produces no results; the CVE is a WARC input-consumption/progress
+bug, not a write-overrun data flow.</td>
+</tr>
+</tbody>
+</table>
+<p>The follow-up <a href="REMAINING-CASES.html">remaining 16-case
+report</a> finds no direct or file-level near hit in any other CVE.
+Across the full 19-CVE collection the outcome is zero directly found,
+one file-level almost found (zlib), and 18 not found.</p>
+<h2 id="method">Method</h2>
+<p>For each CVE:</p>
+<ol type="1">
+<li>Treat the Debian vulnerable-to-patched source delta as the local
+ground truth for the fault location and repair mechanism. Inspect the
+current implementation to identify whether the same repair remains
+applicable.</li>
+<li>Inspect all six SARIF products: three source variants
+(<code>vulnerable</code>, <code>patched</code>,
+<code>most-recent</code>) crossed with two independently built CodeQL
+databases. <code>trace</code> runs the real package build;
+<code>none</code> uses CodeQL <code>--build-mode=none</code> without a
+build command.</li>
+<li>Compare each primary result and any path locations with the known
+fault file, function, statement, and repair mechanism. Compare variants
+only within the same extraction mode.</li>
+<li>Record two separate judgments. <strong>Relevance</strong> asks
+whether the result reaches the known fault;
+<strong>discrimination</strong> asks whether results distinguish the
+vulnerable source from the patched/current source. “Almost found” means
+the query materially narrows review to the correct area but does not
+identify the faulty operation. A same-package alert for a different
+operation is not counted as almost found.</li>
+</ol>
+<p>This is static-result validation, not exploit reproduction. A
+zero-result SARIF file is evidence that this query/database combination
+emitted no result; it is not evidence that the program is safe.</p>
+<h2 id="data-and-reproduction">Data and reproduction</h2>
+<p>The reviewed run contains 114 successful analyses and 666 result
+rows. Raw SARIF, per-job SQLite, and the cumulative DuckDB are preserved
+under:</p>
+<pre class="text"><code>/mnt/common/home/hohn/work-ghp/single-machine-mrva-artifacts/runs/run-system-10-2026-08-24/</code></pre>
+<p>The external run checksum manifest is anchored by <a
+href="../../ARTIFACTS.sha256"><code>../../ARTIFACTS.sha256</code></a>.
+The compact six-row-per-CVE extract is <a
+href="finding-summary.tsv"><code>finding-summary.tsv</code></a>.
+Regenerate it from the raw SARIF with:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> query-effectiveness/summarize-sarif.py <span class="dt">\</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">&gt;</span>query-effectiveness/finding-summary.tsv</span></code></pre></div>
+<p>Run that command from this evidence directory. The script reads
+versions and query identities from each checked-in CVE
+<code>spec.json</code>; it does not infer them from SARIF filenames.</p>
+<h2 id="cross-case-result">Cross-case result</h2>
+<p>None of the three queries proves the selected vulnerability. The zlib
+query does exactly what its metadata promises—a file-level review
+pointer—and is a useful pipeline positive control, but not a detector.
+The two generic queries do not reach their known CVE repairs. In both
+generic cases the initial CWE to query mapping is the limiting factor:
+jhead’s repair bounds an output buffer rather than sanitizing an
+attacker-controlled format string, and libarchive’s repair ensures
+parser input is consumed rather than bounding a destination write.</p>
+<p>The practical next step is to derive CVE checks from the repair
+semantics first, then use generic CWE queries as supporting evidence.
+Variant discrimination should be an explicit acceptance test: a proposed
+CVE query should identify the vulnerable operation and cease to report
+that operation, or report a clearly changed path, in the patched version
+built in the same mode.</p>
+</body>
+</html>

@@ -1,0 +1,15 @@
+#!/usr/bin/env python3
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "lib"))
+sys.path.insert(0, str(ROOT.parent / "cgalib"))
+
+from cgactl.cli import main  # noqa: E402
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except BrokenPipeError:
+        raise SystemExit(0)

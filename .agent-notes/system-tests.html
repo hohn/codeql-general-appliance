@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>System-test notes</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+  </style>
+  <link rel="stylesheet" href="../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">System-test notes</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#system-test-notes" id="toc-system-test-notes">System-test
+notes</a>
+<ul>
+<li><a href="#lifecycle-pitfalls" id="toc-lifecycle-pitfalls">Lifecycle
+pitfalls</a></li>
+<li><a href="#choose-a-fixed-check" id="toc-choose-a-fixed-check">Choose
+a fixed check</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="system-test-notes">System-test notes</h1>
+<p>E2e tests are fixed examples: they test implementation behavior with
+specified inputs and assertions. Other examples leave experimental
+choices open. Start with the <a
+href="../cga/system-tests/README.md">usage/configuration guide</a>.</p>
+<h2 id="lifecycle-pitfalls">Lifecycle pitfalls</h2>
+<ul>
+<li>Canonical standalone check:
+<code>cd cga/system-tests &amp;&amp; CODEQL_JAVA_HOME=/usr ./run-system-02 all</code>.
+It exercises two users and eight jobs.</li>
+<li><code>all</code> includes <code>preflight reset</code>: it reclaims
+the configured port and drops MRVA state before execution. It leaves the
+server on <code>:8081</code> and PostgreSQL state available for
+inspection. Do not run it merely to discover behavior.</li>
+<li>Phases are intentionally decoupled. <code>preflight</code> reclaims
+the port; <code>start</code> launches. <code>build start</code> alone
+does not remove an old server.</li>
+<li>A stale server can leave you testing the wrong binary. Inspect
+<code>ss -ltnp | grep :8081</code> and the owning process; stop only the
+identified process. The system harness preflight uses <code>lsof</code>,
+which must be installed.</li>
+<li>Different scenario scratch paths do not isolate PostgreSQL or shared
+ports. Run only one shared-infrastructure scenario at a time.</li>
+<li><code>where</code> describes phases without mutation;
+<code>query</code> inspects state. <code>cleanup</code> stops services
+and removes MRVA runtime state.</li>
+<li>SARIF <code>ingest-all</code> is optional in run-system-02, not part
+of <code>all</code>. It needs the SARIF ingestor plus SQLite and DuckDB
+CLIs.</li>
+<li><code>cga/system-tests/standalone-multi-agent-lib.sh</code> owns
+shared harness plumbing. <code>cga/cgamx</code> owns the equivalent
+CGA-facing lifecycle; preserve each public phase’s responsibility rather
+than mixing setup into analysis commands.</li>
+<li>Client operations use a recorded CGA workflow at
+<code>$CGA_TEST_WORKFLOW</code> (default
+<code>$MRVA_WORK_DIR/workflow</code>). Prepared packs and repository
+lists are explicit submission inputs; database ZIP creation is
+<code>cga db zip</code>, not an upload. Scenario 08 retains concurrent
+HTTP submissions and then attaches their sessions to CGA to avoid
+serializing the race.</li>
+<li>Scenarios 09/10 also use native recorded workflows. Their session
+JSON files are exported snapshots, not filter inputs. Scenario 09
+explicitly plans three build-mode-none jobs, builds each independently,
+and verifies a catalogue before importing it into analysis.</li>
+</ul>
+<h2 id="choose-a-fixed-check">Choose a fixed check</h2>
+<table>
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 82%" />
+</colgroup>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>What it fixes and checks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>run-system-02</td>
+<td>Two-user standalone execution</td>
+</tr>
+<tr>
+<td>run-system-03</td>
+<td>Multiple sessions and query packs in one language</td>
+</tr>
+<tr>
+<td>run-system-04</td>
+<td>Sessions in multiple languages</td>
+</tr>
+<tr>
+<td>run-system-05</td>
+<td>Named submissions, status, and downloads</td>
+</tr>
+<tr>
+<td>run-system-06</td>
+<td>Idle worker exit and fresh workers for later work</td>
+</tr>
+<tr>
+<td>run-system-07</td>
+<td>Two-server leader failover and backup behavior</td>
+</tr>
+<tr>
+<td>run-system-08</td>
+<td>Two workload waves, queue restart, and stale-status recovery</td>
+</tr>
+<tr>
+<td>run-system-09</td>
+<td>Small controlled preparation-to-analysis-to-export handoff</td>
+</tr>
+<tr>
+<td>run-system-10</td>
+<td>Execution over eligible promoted collection groups</td>
+</tr>
+<tr>
+<td>run-system-11</td>
+<td>Sysview observation over 200+ distinct DBs, scaled by
+user/session</td>
+</tr>
+</tbody>
+</table>
+<p>Read the chosen driver’s usage and local README before running.
+Collection checks need the right database/toolchain provenance and
+adequate memory; CodeQL RSS can greatly exceed its Java heap. Successful
+collection execution does not prove its generic queries detect the
+target CVEs. Consult the <a
+href="../cga/analysis/run-system-10-2026-08-24/query-effectiveness/README.md">effectiveness
+evidence</a>.</p>
+<p>Scenario 11 uses the dispatcher and <code>cga mx</code> directly,
+without sourcing the bash harness. Its global-catalogue SQL selects one
+latest snapshot per C/C++ owner/repo; mixed creation versions are
+recorded, not rejected by equality. Prepared inputs and observation
+evidence live outside the reset MRVA directory. The default root is
+<code>&lt;checkout&gt;/.cga-system-11</code>, including
+<code>TMPDIR</code> for worker unpacking. Plan for at least 50 GiB free
+for a fresh run (26 GiB observed footprint), with more for
+concurrency/retained runs. Preparation/start check only 16 GiB free
+headroom on each runtime filesystem, not total capacity. Retry
+interrupted preparation with the same root; <code>cga dl download</code>
+verifies completed ZIPs and resumes hash-addressed HTTP partials where
+supported. Its <code>wait</code>/<code>verify</code> check complete
+per-repository terminal accounting, explicitly reporting
+failed/canceled/timed-out jobs rather than requiring all-success. MRVA
+session <code>succeeded</code> also covers mixed terminal outcomes.
+Strict server-log checking is the separate <code>check</code> phase, not
+an observation-success gate. It does not implement the proposed limited
+server mode or browser automation.</p>
+</body>
+</html>

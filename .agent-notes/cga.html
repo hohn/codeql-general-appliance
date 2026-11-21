@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>CGA integration notes</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+  </style>
+  <link rel="stylesheet" href="../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">CGA integration notes</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#cga-integration-notes" id="toc-cga-integration-notes">CGA
+integration notes</a>
+<ul>
+<li><a href="#commands-and-state" id="toc-commands-and-state">Commands
+and state</a></li>
+<li><a href="#assistant-context-and-element-references"
+id="toc-assistant-context-and-element-references">Assistant context and
+element references</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="cga-integration-notes">CGA integration notes</h1>
+<p>Read these constraints for command integration or recorded-example
+changes. Consult only the relevant named section of the <a
+href="../cga/README.md">usage guide</a> when the task needs its
+contract, not the whole manual as a prerequisite.</p>
+<h2 id="commands-and-state">Commands and state</h2>
+<ul>
+<li><code>cga/cga</code> owns command routing; Bash completion discovers
+the same routing table through <code>cga __tools|__subs|__long</code>.
+Keep both command and alias surfaces consistent. Database operations
+route to <code>cgadbplan</code>, <code>cgadb</code>, and
+<code>cgadbvalidate</code>; catalogues and CodeQL checks are separate
+components.</li>
+<li>Normal examples use the top-level dispatcher. Direct component
+commands remain CGAST JSON filters for pipelines and tests. Many use
+<code>bin/&lt;component&gt;</code>, a same-name package, and
+<code>tests/</code>.</li>
+<li>Public <code>-h</code> help uses <code>cgalib/command_help.py</code>
+and command-specific topics in <code>cgalib/help_topics/</code>: Name,
+Synopsis, native argument/option headings, Description, relevant
+Environment Variables, and contextual Example. Call
+<code>enhance_parser</code> after building the full parser tree;
+document new groups and leaves rather than falling back to generic text.
+Shell/Go dispatcher help uses <code>cgalib/dispatcher_help.py</code>.
+Help must not record attempts or start services. Coverage:
+<code>cd cga &amp;&amp; python3 -m unittest discover -s tests -p test_command_help.py</code>.</li>
+<li><code>cga public-html setup</code> clones committed HEAD into
+<code>~/public_html/single-machine-mrva</code> if needed and prints a
+documented Bash script on stdout; diagnostics go to stderr. Existing
+documentation clones remain untouched. Only the operator-run script
+builds the book, changes ACLs, or applies lighttpd configuration;
+preserve its differing-config guard and the shared
+<code>docs/lighttpd-public-html.conf</code> policy. Tests:
+<code>cd cga &amp;&amp; python3 -m unittest discover -s tests -p test_public_html.py</code>.</li>
+<li><code>cga help --export FILE.html</code> uses
+<code>cgalib/help_view.py</code> and its own <code>help_static/</code>
+assets to embed authoritative help in a standalone file. Bench is only a
+visual reference, never a runtime or styling dependency. Navigation is
+shallow: outline selects PR_t, its subcommands open in PR_b, and deeper
+help is a copyable shell command. Preserve offline operation, safe text
+rendering, independent scrolling, and read-only export collection.
+Reference is alphabetical; <code>help_view.py</code> owns the four
+overlapping task groups. Search covers all embedded pages, with
+literal/regex modes and safe DOM highlighting. Search runs only on
+submit and marks index entries for matching command/subcommand help;
+retain the two-pane depth boundary. Tests:
+<code>cd cga &amp;&amp; python3 -m unittest discover -s tests -p test_help_view.py</code>.
+The viewer opens <code>cga help overview</code> before
+<code>cga help getting-started</code>. The overview’s shared content
+lives in <code>help_topics/workflow.py</code>, with read-only CLI and
+HTML presentations. Collapsible Start here and LLM start here groups
+route to embedded help and checkout-relative document links; external
+guides open separately. <code>make -C docs help</code> rebuilds the
+linked human HTML guides and the entry point.
+<code>cgalib/tutorial_help.py</code> owns the shared Start here guide
+registry and source-backed read-only chapter help, including
+<code>cga help bash-tutorial-sql [CHAPTER]</code>. Keep declared
+chapters aligned with canonical Markdown headings outside code fences;
+preserve all fenced text, never execute it. Reference holds collapsible
+system tests and Original write-ups below cga index; linked HTML opens
+separately. Sample 05’s individual step pages remain embedded read-only.
+<code>cgalib/sample_help.py</code> owns the shared displayed/executed
+Bash recipes; only an exact trailing <code>run</code>/<code>r</code>
+executes a step. <code>h</code> aliases <code>help</code>,
+<code>s</code> aliases <code>sample</code>, and <code>sample-05</code>
+normalizes to <code>sample 05</code>. Step 00 explicitly creates
+<code>cga-tmp/help-sample-05/</code> and saves private runtime settings
+for fresh shells/cells; later steps source those settings. Tests:
+<code>cd cga &amp;&amp; python3 -m unittest discover -s tests -p test_sample_help.py</code>.
+The longer getting-started walkthrough remains available.
+<code>cga -hs</code> and <code>cga -h -s</code> print the identical
+guide; its Commands/Further Reading content lives in
+<code>help_topics/workflow.py</code>, not a separate HTML-only tutorial.
+Keep these help requests read-only even inside an active workflow.</li>
+<li><code>cga/cgawf</code> owns immutable workflow history and artifact
+recording. <code>.cga/current.json</code> is a compatibility copy, not a
+second authoritative history. New workflows use
+<code>cga tree show</code>; <code>dfg</code>/<code>cfg</code> also
+support earlier manifest-based examples.</li>
+<li><code>cga a q start DIRECTORY</code> bootstraps a fresh named
+authoring workflow; later <code>assist query-writing</code> operations
+use normal workflow recording. Prompt input uses <code>/dev/tty</code>,
+never CGAST stdin. Help remains read-only. Source snapshots use tracked
+<code>path</code> fields, and library artifact paths are absolute so
+ordinary <code>cga ql</code> commands work in later shells without
+authoring-specific exports.</li>
+<li><code>cga a d fetch/build/index/export</code> operates inside an
+initialized preparation workflow. <code>cgaassist/database.py</code>
+owns guided choices and per-job recovery; operations stay in the
+source/build/catalogue plumbing. Respect explicit scratch overrides;
+otherwise keep artifacts under the workflow’s
+<code>.cga/tmp/</code>.</li>
+<li><code>.cga/</code> stores normalized relative
+<code>objects/sha256/...</code> keys. The configured object-store root
+supplies object bytes. <code>CGA_WORKFLOW_STORE</code> selects the
+initial store; <code>cga store set</code> verifies references when
+changing it.</li>
+<li><code>cga/mrva-flow/mrva-flow.sh</code> is the starting single-user
+recorded example. <code>cga mr run</code> combines bounded
+submit/poll/download/verify into one operation while retaining recovery
+checkpoints. Do not duplicate submission after an uncertain outcome;
+inspect status and existing checkpoints.</li>
+<li>Follow the <a href="../cga/cgawf/FLOW-SCRIPT-GUIDE.md">flow script
+guide</a>: one meaningful operation per command, explicit choices, no
+duplicate provenance plumbing. Keep setup distinct from the conceptual
+experiment.</li>
+<li><code>cgamx</code> owns the example’s MRVA infrastructure lifecycle.
+Configuration defaults are supplied only when unset. <code>check</code>
+is the log-error gate. Component tests:
+<code>cd cga/cgamx &amp;&amp; python3 -m unittest discover -s tests</code>.</li>
+</ul>
+<h2 id="assistant-context-and-element-references">Assistant context and
+element references</h2>
+<ul>
+<li><code>cga llm context bench</code> and
+<code>cga llm context unified</code> read bounded state projections
+without a web service or recorded mutation. Implementation:
+<code>cga/cgalib/llm.py</code>. Endpoint/doc flags print references;
+they do not fetch them or prove a viewer is running. Tests:
+<code>cd cga &amp;&amp; python3 -m unittest discover -s tests -p test_llm.py</code>.</li>
+<li><code>cga/cgalib/vid_registry.py</code> owns permanent opaque VID
+roots; never reassign them. <code>vid.py</code> is the shared resolver
+for CLI, Bench, and Unified View. Facts derive from retained immutable
+states/CAS, not another mutable store.</li>
+<li>Offline help registers disjoint help roots in the same registry.
+Embedded <code>help_static/references.js</code> adapts shared VID badges
+to content-pinned <code>cga://help</code> inspectors, copyable JSON, and
+file deep links; it starts no service or terminal. Do not route these
+references through workflow VID resolution. Help page/section identities
+use canonical commands/headings, never filtered positions; document
+identities hash canonical source paths.</li>
+<li>Shared <code>vid_http.py</code> and <code>vid_static/</code> own
+inspectors and their terminals. Closing an inspector or expiring its
+lease owns that terminal, not the experiment. Copilot context insertion
+does not execute the command.</li>
+<li>Browser badge changes must preserve existing activation/clipboard
+behavior and stable layout. Presentation-only splitters must not receive
+badges. Tests:
+<code>cd cga &amp;&amp; python3 -m unittest discover -s tests -p test_vid.py</code>.</li>
+<li>Preparation and analysis handoff is explicit. Selection history may
+retain multiple users, but singular selection/pack keys are active
+inputs. Submission labels and authenticated MRVA users are distinct
+identities.</li>
+</ul>
+</body>
+</html>

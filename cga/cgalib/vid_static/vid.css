@@ -1,0 +1,51 @@
+button.cga-vid {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  box-sizing: content-box;
+  width: 1em;
+  min-width: 0;
+  height: 1ex;
+  min-height: 0;
+  margin: 0 0 0 0.2em;
+  padding: 0;
+  font: inherit;
+  line-height: 1;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+  vertical-align: 0.1ex;
+}
+.cga-vid-symbol { font-size: 0.75em; font-variant-emoji: text; line-height: 1; }
+.cga-vid-symbol::before { content: "\2693"; }
+.cga-vid-control { display: inline-flex; align-items: center; min-width: 0; max-width: 100%; vertical-align: baseline; }
+.cga-vid-control > :not(.cga-vid):not(.cga-vid-error) { min-width: 0; }
+.cga-vid-control > button:not(.cga-vid) { padding: 0.1em 0.35em; }
+.cga-vid-control[hidden], button.cga-vid[hidden] { display: none; }
+.cga-vid:hover, .cga-vid:focus-visible { opacity: 1; }
+.cga-vid-active {
+  background: var(--vid-color) !important;
+  color: #000 !important;
+  opacity: 1 !important;
+  outline: 1px solid currentColor;
+}
+.cga-vid:focus-visible { outline: 1px dashed currentColor; outline-offset: 2px; }
+.cga-vid-error { font: 0.85rem system-ui; color: #a00; }
+/* Diagnostics must not move a target between the two clicks. */
+span.cga-vid-error { position: absolute; z-index: 5; width: max-content; max-width: min(28rem, 80vw); padding: 0.25rem 0.4rem; border: 1px solid currentColor; background: var(--panel, #fff); white-space: pre-wrap; transform: translateY(1.5em); }
+.cga-inspector { margin: 0; padding: 0 1rem 1rem; font: 14px system-ui; background: #fff; color: #111; }
+.cga-inspector #color-bar { height: 10px; margin: 0 -1rem; background: var(--vid-color, #8dd3c7); }
+.cga-inspector header, .cga-inspector .terminal-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
+.cga-inspector button { padding: 0.4rem; cursor: pointer; }
+.cga-inspector pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 32vh; overflow: auto; }
+.cga-inspector #reference { font-family: ui-monospace, monospace; }
+.cga-inspector #context { overflow-wrap: anywhere; }
+.cga-inspector #qualified-reference { overflow-wrap: anywhere; }
+.cga-inspector #terminal { height: 45vh; min-height: 250px; background: #000; padding: 0.5rem; }
+.cga-inspector #error { color: #a00; }
+.cga-inspector #relations a { display: inline-block; margin: 0.3rem 1rem 0.3rem 0; }
+html[data-appearance="grayscale"] .cga-inspector a { color: inherit; }

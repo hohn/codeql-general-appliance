@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Install repository dependencies</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="docs/readme-fonts.css" />
+  <link rel="stylesheet" href="docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Install repository dependencies</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#install-repository-dependencies"
+id="toc-install-repository-dependencies">Install repository
+dependencies</a>
+<ul>
+<li><a href="#core-debianubuntu-packages"
+id="toc-core-debianubuntu-packages">Core Debian/Ubuntu packages</a></li>
+<li><a href="#go-1.25-or-newer" id="toc-go-1.25-or-newer">Go 1.25 or
+newer</a></li>
+<li><a href="#codeql-bundle" id="toc-codeql-bundle">CodeQL
+bundle</a></li>
+<li><a href="#postgresql" id="toc-postgresql">PostgreSQL</a></li>
+<li><a href="#minio-for-object-storage-workflows"
+id="toc-minio-for-object-storage-workflows">MinIO for object-storage
+workflows</a></li>
+<li><a href="#sarif-ingestion" id="toc-sarif-ingestion">SARIF
+ingestion</a></li>
+<li><a href="#documentation-and-formatting"
+id="toc-documentation-and-formatting">Documentation and formatting</a>
+<ul>
+<li><a href="#mdbook" id="toc-mdbook">mdBook</a></li>
+<li><a href="#recommended-optional-markdown-previewers"
+id="toc-recommended-optional-markdown-previewers">Recommended optional
+Markdown previewers</a></li>
+<li><a href="#markdown-and-vm-checks"
+id="toc-markdown-and-vm-checks">Markdown and VM checks</a></li>
+</ul></li>
+<li><a href="#optional-container-and-vm-tooling"
+id="toc-optional-container-and-vm-tooling">Optional container and VM
+tooling</a></li>
+<li><a href="#verify-the-prepared-host"
+id="toc-verify-the-prepared-host">Verify the prepared host</a></li>
+<li><a href="#installation-complete-open-cga"
+id="toc-installation-complete-open-cga">Installation complete: open
+CGA</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="install-repository-dependencies">Install repository
+dependencies</h1>
+<p>These instructions prepare a Debian or Ubuntu Linux host for local
+development, the standalone MRVA system tests, the CGA sample workflow,
+SARIF ingestion, and the documentation build. The production/container
+paths have additional infrastructure requirements, but they are not
+needed for the single-machine workflow.</p>
+<p>The shortest useful path is:</p>
+<ol type="1">
+<li>install the core Debian packages;</li>
+<li>install Go 1.25 or newer and the CodeQL bundle;</li>
+<li>start PostgreSQL;</li>
+<li>install MinIO for the MinIO-backed samples;</li>
+<li>install DuckDB for SARIF ingestion; and</li>
+<li>install mdBook 0.5 or newer to build these docs.</li>
+</ol>
+<p>For a dedicated Debian sid development VM, the required and optional
+package groups below are automated by <a
+href="vm-setup/debian-sid/install-dependencies.sh"><code>vm-setup/debian-sid/install-dependencies.sh</code></a>.
+Review candidates and cached downloads with <code>--list</code>, then
+run the script with no options for the required CGA/MRVA environment.
+Its <a href="vm-setup/debian-sid/README.html"><code>README</code></a> is
+the explicit Debian sid inventory.</p>
+<p>Ubuntu 24.04 Noble hosts use the parallel <a
+href="vm-setup/ubuntu-noble/install-dependencies.sh"><code>vm-setup/ubuntu-noble/install-dependencies.sh</code></a>
+installer. Noble’s apt repositories do not provide sufficiently recent
+Go or mdBook packages, or a DuckDB CLI package, so that installer caches
+and verifies pinned upstream archives for those tools. See its <a
+href="vm-setup/ubuntu-noble/README.html"><code>README</code></a> for the
+exact inventory.</p>
+<h2 id="core-debianubuntu-packages">Core Debian/Ubuntu packages</h2>
+<p>Install the compiler, Python, PostgreSQL, Java, and the command-line
+utilities used directly by the Makefiles and test harnesses:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get update</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> DEBIAN_FRONTEND=noninteractive apt-get install <span class="at">-y</span> <span class="at">--no-install-recommends</span> <span class="dt">\</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  bash <span class="dt">\</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  build-essential <span class="dt">\</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  ca-certificates <span class="dt">\</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  curl <span class="dt">\</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  default-jre-headless <span class="dt">\</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  git <span class="dt">\</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  iproute2 <span class="dt">\</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  jq <span class="dt">\</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  lsof <span class="dt">\</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  postgresql <span class="dt">\</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  postgresql-client <span class="dt">\</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>  procps <span class="dt">\</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>  python3 <span class="dt">\</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>  python3-pip <span class="dt">\</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>  python3-venv <span class="dt">\</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>  rsync <span class="dt">\</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>  sqlite3 <span class="dt">\</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>  tar <span class="dt">\</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>  unzip <span class="dt">\</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>  util-linux <span class="dt">\</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>  xz-utils <span class="dt">\</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>  zip <span class="dt">\</span></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>  zstd</span></code></pre></div>
+<p>The less-obvious packages are intentional: <code>lsof</code> and
+<code>iproute2</code> reclaim orphaned listener ports,
+<code>procps</code> provides <code>pgrep</code>,
+<code>default-jre-headless</code> provides the native Java runtime
+needed by CodeQL on ARM64, and the archive tools stage CodeQL databases
+and result bundles.</p>
+<p>The CGA tools and SARIF-to-SQLite converter use only the Python
+standard library.</p>
+<h2 id="go-1.25-or-newer">Go 1.25 or newer</h2>
+<p>Every Go module in this repository declares Go 1.25. First check the
+version offered by the distribution:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">apt-cache</span> policy golang-go</span></code></pre></div>
+<p>If its candidate is 1.25 or newer, use apt:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get install <span class="at">-y</span> golang-go</span></code></pre></div>
+<p>Older Debian and Ubuntu releases package an older Go toolchain. In
+that case, install a current Go 1.25 patch release using the <a
+href="https://go.dev/doc/install">official Linux archive</a>. This
+example supports the two architectures used by this repository:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="va">GO_VERSION</span><span class="op">=</span>1.25.12</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="cf">case</span> <span class="st">&quot;</span><span class="va">$(</span><span class="ex">dpkg</span> <span class="at">--print-architecture</span><span class="va">)</span><span class="st">&quot;</span> <span class="kw">in</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="ss">amd64</span><span class="kw">)</span> <span class="va">GO_ARCH</span><span class="op">=</span>amd64 <span class="cf">;;</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="ss">arm64</span><span class="kw">)</span> <span class="va">GO_ARCH</span><span class="op">=</span>arm64 <span class="cf">;;</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="pp">*</span><span class="kw">)</span> <span class="bu">echo</span> <span class="st">&quot;unsupported Go architecture&quot;</span> <span class="op">&gt;&amp;</span><span class="dv">2</span><span class="kw">;</span> <span class="bu">exit</span> 1 <span class="cf">;;</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="cf">esac</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="va">GO_ARCHIVE</span><span class="op">=</span><span class="st">&quot;go</span><span class="va">${GO_VERSION}</span><span class="st">.linux-</span><span class="va">${GO_ARCH}</span><span class="st">.tar.gz&quot;</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="va">GO_TMPDIR</span><span class="op">=</span><span class="st">&quot;</span><span class="va">$(</span><span class="fu">mktemp</span> <span class="at">-d</span><span class="va">)</span><span class="st">&quot;</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-fL</span> <span class="st">&quot;https://go.dev/dl/</span><span class="va">${GO_ARCHIVE}</span><span class="st">&quot;</span> <span class="at">-o</span> <span class="st">&quot;</span><span class="va">${GO_TMPDIR}</span><span class="st">/</span><span class="va">${GO_ARCHIVE}</span><span class="st">&quot;</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> rm <span class="at">-rf</span> /usr/local/go</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> tar <span class="at">-C</span> /usr/local <span class="at">-xzf</span> <span class="st">&quot;</span><span class="va">${GO_TMPDIR}</span><span class="st">/</span><span class="va">${GO_ARCHIVE}</span><span class="st">&quot;</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> ln <span class="at">-sfn</span> /usr/local/go/bin/go /usr/local/bin/go</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> ln <span class="at">-sfn</span> /usr/local/go/bin/gofmt /usr/local/bin/gofmt</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span> <span class="at">-rf</span> <span class="st">&quot;</span><span class="va">${GO_TMPDIR}</span><span class="st">&quot;</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> version</span></code></pre></div>
+<p>Go downloads the modules’ library dependencies during
+<code>go build</code> or <code>go mod download</code>; no system-wide
+installation is needed for those libraries.</p>
+<h2 id="codeql-bundle">CodeQL bundle</h2>
+<p>The system tests require CodeQL 2.23.6 or newer. GitHub recommends
+the complete <a
+href="https://docs.github.com/en/code-security/how-tos/find-and-fix-code-vulnerabilities/scan-from-the-command-line/set-up-codeql-cli">CodeQL
+bundle</a>, which keeps the CLI, queries, and libraries compatible. The
+repository pins 2.27.1 and selects the dedicated Linux ARM64 bundle on
+<code>arm64</code>/<code>aarch64</code>:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="va">CODEQL_VERSION</span><span class="op">=</span>v2.27.1</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="va">CODEQL_TAG</span><span class="op">=</span><span class="st">&quot;codeql-bundle-</span><span class="va">${CODEQL_VERSION}</span><span class="st">&quot;</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="cf">case</span> <span class="st">&quot;</span><span class="va">$(</span><span class="fu">uname</span> <span class="at">-m</span><span class="va">)</span><span class="st">&quot;</span> <span class="kw">in</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="ss">aarch64</span><span class="kw">|</span><span class="ss">arm64</span><span class="kw">)</span> <span class="va">CODEQL_ARCHIVE</span><span class="op">=</span>codeql-bundle-linux-arm64.tar.gz <span class="cf">;;</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="ss">x86_64</span><span class="kw">|</span><span class="ss">amd64</span><span class="kw">)</span> <span class="va">CODEQL_ARCHIVE</span><span class="op">=</span>codeql-bundle-linux64.tar.gz <span class="cf">;;</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="pp">*</span><span class="kw">)</span> <span class="bu">echo</span> <span class="st">&quot;unsupported CodeQL architecture&quot;</span> <span class="op">&gt;&amp;</span><span class="dv">2</span><span class="kw">;</span> <span class="bu">exit</span> 1 <span class="cf">;;</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="cf">esac</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="va">CODEQL_INSTALL_ROOT</span><span class="op">=</span><span class="st">&quot;/opt/codeql-</span><span class="va">${CODEQL_VERSION}</span><span class="st">&quot;</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="va">CODEQL_TMPDIR</span><span class="op">=</span><span class="st">&quot;</span><span class="va">$(</span><span class="fu">mktemp</span> <span class="at">-d</span><span class="va">)</span><span class="st">&quot;</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-fL</span> <span class="dt">\</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;https://github.com/github/codeql-action/releases/download/</span><span class="va">${CODEQL_TAG}</span><span class="st">/</span><span class="va">${CODEQL_ARCHIVE}</span><span class="st">&quot;</span> <span class="dt">\</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> <span class="st">&quot;</span><span class="va">${CODEQL_TMPDIR}</span><span class="st">/</span><span class="va">${CODEQL_ARCHIVE}</span><span class="st">&quot;</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-fL</span> <span class="dt">\</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;https://github.com/github/codeql-action/releases/download/</span><span class="va">${CODEQL_TAG}</span><span class="st">/</span><span class="va">${CODEQL_ARCHIVE}</span><span class="st">.checksum.txt&quot;</span> <span class="dt">\</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> <span class="st">&quot;</span><span class="va">${CODEQL_TMPDIR}</span><span class="st">/</span><span class="va">${CODEQL_ARCHIVE}</span><span class="st">.checksum.txt&quot;</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="bu">cd</span> <span class="st">&quot;</span><span class="va">${CODEQL_TMPDIR}</span><span class="st">&quot;</span> <span class="kw">&amp;&amp;</span> <span class="fu">sha256sum</span> <span class="at">-c</span> <span class="st">&quot;</span><span class="va">${CODEQL_ARCHIVE}</span><span class="st">.checksum.txt&quot;</span><span class="kw">)</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> mkdir <span class="at">-p</span> <span class="st">&quot;</span><span class="va">${CODEQL_INSTALL_ROOT}</span><span class="st">&quot;</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> tar <span class="at">-C</span> <span class="st">&quot;</span><span class="va">${CODEQL_INSTALL_ROOT}</span><span class="st">&quot;</span> <span class="at">-xzf</span> <span class="st">&quot;</span><span class="va">${CODEQL_TMPDIR}</span><span class="st">/</span><span class="va">${CODEQL_ARCHIVE}</span><span class="st">&quot;</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> ln <span class="at">-sfn</span> <span class="st">&quot;</span><span class="va">${CODEQL_INSTALL_ROOT}</span><span class="st">/codeql/codeql&quot;</span> /usr/local/bin/codeql</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span> <span class="at">-rf</span> <span class="st">&quot;</span><span class="va">${CODEQL_TMPDIR}</span><span class="st">&quot;</span></span></code></pre></div>
+<p>The 2.27.1 ARM64 bundle contains native binaries. This repository
+still points CodeQL at the host JRE for a consistent runtime across
+installations:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">CODEQL_JAVA_HOME</span><span class="op">=</span>/usr</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">codeql</span> version <span class="at">--format</span><span class="op">=</span>terse</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="ex">codeql</span> resolve packs</span></code></pre></div>
+<p>On Debian specifically, the repository’s provisioner performs the
+same bundle, checksum, Java, and profile setup:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> env CODEQL_VERSION=v2.27.1 <span class="dt">\</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  ./vm-setup/lima-debian/scripts/provision-debian-codeql.sh</span></code></pre></div>
+<h2 id="postgresql">PostgreSQL</h2>
+<p>The standalone server stores its state in a host PostgreSQL instance.
+Start it and verify that the client can reach it:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl enable <span class="at">--now</span> postgresql</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="ex">pg_isready</span> <span class="at">-h</span> localhost <span class="at">-p</span> 5432</span></code></pre></div>
+<p>The system-test preflight creates the current Unix user’s PostgreSQL
+role and the default <code>mrvadev</code> database when they do not
+exist. Override <code>POSTGRES_HOST</code>, <code>POSTGRES_PORT</code>,
+<code>POSTGRES_USER</code>, <code>POSTGRES_PASSWORD</code>, or
+<code>POSTGRES_DB</code> when using an existing server.</p>
+<h2 id="minio-for-object-storage-workflows">MinIO for object-storage
+workflows</h2>
+<p><code>run-system-03</code>, <code>run-system-04</code>,
+<code>run-system-05</code>, and <code>cga/sample-05</code> default to
+the MinIO artifact backend. The repository needs the community server
+binary; do not install the current <code>minio</code> Debian package,
+which may provide the licensed AIStor build instead.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="cf">case</span> <span class="st">&quot;</span><span class="va">$(</span><span class="ex">dpkg</span> <span class="at">--print-architecture</span><span class="va">)</span><span class="st">&quot;</span> <span class="kw">in</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="ss">amd64</span><span class="kw">)</span> <span class="va">MINIO_ARCH</span><span class="op">=</span>amd64 <span class="cf">;;</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="ss">arm64</span><span class="kw">)</span> <span class="va">MINIO_ARCH</span><span class="op">=</span>arm64 <span class="cf">;;</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="pp">*</span><span class="kw">)</span> <span class="bu">echo</span> <span class="st">&quot;unsupported MinIO architecture&quot;</span> <span class="op">&gt;&amp;</span><span class="dv">2</span><span class="kw">;</span> <span class="bu">exit</span> 1 <span class="cf">;;</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="cf">esac</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-fL</span> <span class="st">&quot;https://dl.min.io/server/minio/release/linux-</span><span class="va">${MINIO_ARCH}</span><span class="st">/minio&quot;</span> <span class="dt">\</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> /tmp/minio</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> install <span class="at">-m</span> 0755 /tmp/minio /usr/local/bin/minio</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="ex">minio</span> <span class="at">--version</span></span></code></pre></div>
+<p>The harness starts and stops MinIO itself. To avoid MinIO entirely
+where the scenario permits it, set
+<code>MRVA_STANDALONE_STORAGE=filesystem</code>.</p>
+<p>The optional MinIO client is useful for the object-inspection recipes
+in the system-test documentation. It is installed as <code>mcli</code>
+to avoid colliding with Midnight Commander’s <code>mc</code>
+command:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-fL</span> <span class="st">&quot;https://dl.min.io/client/mc/release/linux-</span><span class="va">${MINIO_ARCH}</span><span class="st">/mc&quot;</span> <span class="dt">\</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> /tmp/mcli</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> install <span class="at">-m</span> 0755 /tmp/mcli /usr/local/bin/mcli</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="ex">mcli</span> <span class="at">--version</span></span></code></pre></div>
+<p>The legacy <code>populate-dbstore.sh</code> and
+<code>populate-qpstore.sh</code> scripts call the client as
+<code>mc</code>; install the same binary under that name only when those
+scripts are needed and it will not conflict with another <code>mc</code>
+command.</p>
+<h2 id="sarif-ingestion">SARIF ingestion</h2>
+<p>SQLite is installed by the core apt command. The cumulative SARIF
+database also requires the DuckDB CLI. DuckDB’s official installer
+supports both AMD64 and ARM64 Linux:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-fsSL</span> https://install.duckdb.org <span class="kw">|</span> <span class="fu">sh</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">PATH</span><span class="op">=</span><span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/.duckdb/cli/latest:</span><span class="va">$PATH</span><span class="st">&quot;</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="ex">duckdb</span> <span class="at">--version</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="ex">sqlite3</span> <span class="at">--version</span></span></code></pre></div>
+<p>Persist the <code>PATH</code> addition in the shell profile used for
+MRVA. No Python DuckDB package is needed;
+<code>sarif-ingest/bin/srfi</code> and <code>cgasi</code> invoke the
+CLI.</p>
+<h2 id="documentation-and-formatting">Documentation and formatting</h2>
+<h3 id="mdbook">mdBook</h3>
+<p>The documentation requires mdBook 0.5 or newer. Check the apt
+candidate first:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">apt-cache</span> policy mdbook</span></code></pre></div>
+<p>Use <code>sudo apt-get install -y mdbook</code> when the candidate is
+at least 0.5. Many Debian/Ubuntu releases still package mdBook 0.4; for
+those, install current Rust with rustup and then mdBook using its <a
+href="https://rust-lang.github.io/mdBook/guide/installation.html">preferred
+Cargo installation</a>:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">--proto</span> <span class="st">&#39;=https&#39;</span> <span class="at">--tlsv1.2</span> <span class="at">-sSf</span> https://sh.rustup.rs <span class="dt">\</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">|</span> <span class="fu">sh</span> <span class="at">-s</span> <span class="at">--</span> <span class="at">-y</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="bu">.</span> <span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/.cargo/env&quot;</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> install mdbook <span class="at">--version</span> <span class="st">&#39;^0.5.4&#39;</span> <span class="at">--locked</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="ex">mdbook</span> <span class="at">--version</span></span></code></pre></div>
+<p>Build or live-preview the book with:</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> book</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> view-book</span></code></pre></div>
+<h3 id="recommended-optional-markdown-previewers">Recommended optional
+Markdown previewers</h3>
+<p><a href="https://github.com/charmbracelet/glow">Glow</a> provides a
+quick terminal preview; <a
+href="https://github.com/chrishrb/go-grip">go-grip</a> renders
+individual Markdown files in a browser with automatic reload when they
+change. These are convenience tools, not required for building, running,
+or testing the project.</p>
+<p>Install Glow with your distribution’s package manager
+(<code>sudo dnf install glow</code> on Fedora). Install go-grip with
+Go:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> install github.com/chrishrb/go-grip@latest</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">PATH</span><span class="op">=</span><span class="st">&quot;</span><span class="va">$(</span><span class="ex">go</span> env GOPATH<span class="va">)</span><span class="st">/bin:</span><span class="va">$PATH</span><span class="st">&quot;</span></span></code></pre></div>
+<p>Preview a file with either tool:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">glow</span> <span class="at">-p</span> README.md</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="ex">go-grip</span> README.md</span></code></pre></div>
+<p>go-grip opens the browser at <code>http://localhost:6419</code>; stop
+its server with Ctrl-C. Use <code>make view-book</code> for the
+assembled project documentation instead.</p>
+<h3 id="markdown-and-vm-checks">Markdown and VM checks</h3>
+<p>Repository-wide Markdown formatting uses Prettier. The VM setup
+checks also use ShellCheck, shfmt, yamllint, Ruby mdl, and
+<code>markdownlint-cli</code>:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get install <span class="at">-y</span> <span class="dt">\</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  nodejs <span class="dt">\</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  npm <span class="dt">\</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  ruby-mdl <span class="dt">\</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>  shellcheck <span class="dt">\</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>  shfmt <span class="dt">\</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>  yamllint</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> npm install <span class="at">-g</span> prettier markdownlint-cli</span></code></pre></div>
+<p>Optional legacy document and dependency-graph Makefile targets use
+Pandoc and Graphviz:</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get install <span class="at">-y</span> graphviz pandoc</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> install github.com/kisielk/godepgraph@latest</span></code></pre></div>
+<p>The shared-library lint target expects golangci-lint:</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> install github.com/golangci/golangci-lint/cmd/golangci-lint@latest</span></code></pre></div>
+<p>Ensure the Go binary directory is on <code>PATH</code> for the two
+Go-installed tools:</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">PATH</span><span class="op">=</span><span class="st">&quot;</span><span class="va">$(</span><span class="ex">go</span> env GOPATH<span class="va">)</span><span class="st">/bin:</span><span class="va">$PATH</span><span class="st">&quot;</span></span></code></pre></div>
+<h2 id="optional-container-and-vm-tooling">Optional container and VM
+tooling</h2>
+<p>Standalone mode does not require Docker, Argo, Kubernetes, QEMU, or
+Lima. The container Makefiles are legacy, while <code>vm-setup/</code>
+uses Lima and QEMU for isolated CodeQL guests. Install only the path
+being exercised:</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Legacy container Makefile targets.</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get install <span class="at">-y</span> docker.io docker-compose</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Linux host dependencies for vm-setup/lima-*.</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get install <span class="at">-y</span> <span class="dt">\</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>  devscripts <span class="dt">\</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>  openssh-client <span class="dt">\</span></span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>  qemu-system-arm <span class="dt">\</span></span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>  qemu-utils <span class="dt">\</span></span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>  rsync <span class="dt">\</span></span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>  sshpass</span></code></pre></div>
+<p>Install Lima itself from its upstream release, then follow the
+detailed <code>vm-setup/lima-debian</code> or
+<code>vm-setup/lima-void</code> instructions.</p>
+<p>The legacy qldbtools metadata scripts use <code>yq</code> in addition
+to their Python requirements:</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get install <span class="at">-y</span> yq</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> <span class="at">-m</span> venv mrvacommander/client/qldbtools/.venv</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="bu">.</span> mrvacommander/client/qldbtools/.venv/bin/activate</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> <span class="at">-m</span> pip install <span class="dt">\</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">-r</span> mrvacommander/client/qldbtools/requirements.txt <span class="dt">\</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">-e</span> mrvacommander/client/qldbtools</span></code></pre></div>
+<h2 id="verify-the-prepared-host">Verify the prepared host</h2>
+<p>Start with version checks, then let the canonical harness validate
+PostgreSQL, CodeQL, Go, and port management:</p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">CODEQL_JAVA_HOME</span><span class="op">=</span>/usr</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> version</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> <span class="at">--version</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="ex">psql</span> <span class="at">--version</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="ex">codeql</span> version <span class="at">--format</span><span class="op">=</span>terse</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a><span class="ex">mdbook</span> <span class="at">--version</span></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> cga/system-tests</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a><span class="ex">./run-system-02</span> preflight</span></code></pre></div>
+<p>For the complete local workflow, continue with
+<code>./run-system-02 all</code>. MinIO and SARIF ingestion are
+intentionally separate: use a MinIO-backed scenario and run its
+<code>tolite</code>/<code>toduck</code> or <code>cgasi ingest</code>
+phase when those paths are needed.</p>
+<h2 id="installation-complete-open-cga">Installation complete: open
+CGA</h2>
+<p>With the <code>cga</code> command installed and on <code>PATH</code>
+(see <a href="README.html#cga-command-line-interface">dispatcher
+installation</a>), start the documentation gateway on the CGA
+machine:</p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> gateway start</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> gateway status</span></code></pre></div>
+<p>For a remote VM, keep an SSH tunnel open from your workstation.
+Replace <code>hohn@svm</code> with your SSH destination:</p>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> <span class="at">-o</span> ExitOnForwardFailure=yes <span class="at">-o</span> ServerAliveInterval=60 <span class="dt">\</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">-L</span> 8599:127.0.0.1:8599 hohn@svm</span></code></pre></div>
+<p>Open <strong>http://127.0.0.1:8599/</strong> in your workstation’s
+browser, or directly on the CGA machine for local use. Choose
+<strong>CGA overview</strong> and follow <strong>Sample 05 in section
+03</strong> for a first analysis.</p>
+<p>No initialized workflow, running MRVA, or configured viewers are
+needed. The overview and help are already rendered; no documentation
+build is required. The reference manual is optional and built
+separately.</p>
+<p>Reconnect with the same SSH command. Stop only the gateway with
+<code>cga gateway stop</code>.</p>
+</body>
+</html>

@@ -1,0 +1,163 @@
+// State Machine Traces: NEW handlers only (download + dashboard).
+// Render: dot -Tpdf state-machine-traces-new.dot -o state-machine-traces-new.pdf
+//
+// Legend:
+//   Green edge   = postgres READ
+//   Orange edge  = postgres WRITE
+//   Blue box     = function / handler
+//   Dashed box   = external system (artifact store)
+//   Gray cylinder = postgres table
+
+digraph state_machine_traces_new {
+    rankdir=TB;
+    fontname="Helvetica";
+    node [fontname="Helvetica", fontsize=10];
+    edge [fontname="Helvetica", fontsize=8];
+    compound=true;
+
+    // =========================================================================
+    // Shared postgres table nodes
+    // =========================================================================
+    subgraph cluster_tables {
+        label="Postgres Tables";
+        style=dashed;
+        color=gray60;
+        fontsize=12;
+
+        tbl_job_status      [label="job_status\n(session_id, owner, repo, status)",
+                             shape=cylinder, style=filled, fillcolor="#e8e8e8"];
+        tbl_job_info        [label="job_info\n(session_id, owner, repo,\nuser_id, started_at,\ncompleted_at, argo_workflow_id)",
+                             shape=cylinder, style=filled, fillcolor="#e8e8e8"];
+        tbl_analyze_jobs    [label="analyze_jobs\n(session_id, owner, repo, payload)",
+                             shape=cylinder, style=filled, fillcolor="#e8e8e8"];
+        tbl_analyze_results [label="analyze_results\n(session_id, owner, repo, result)",
+                             shape=cylinder, style=filled, fillcolor="#e8e8e8"];
+        tbl_job_repo_map    [label="job_repo_map\n(job_repo_id, owner, repo)",
+                             shape=cylinder, style=filled, fillcolor="#e8e8e8"];
+    }
+
+    // =========================================================================
+    // TRACE 7: MRVADownloadQLDB
+    //   GET /repos/{owner}/{repo}/.../databases/{language}
+    // =========================================================================
+    subgraph cluster_download_qldb {
+        label="Trace 7: MRVADownloadQLDB (GET → serve CodeQL DB)";
+        style=filled;
+        fillcolor="#f0f8ff";
+        color="#4682b4";
+        fontsize=11;
+
+        dlqldb_entry  [label="MRVADownloadQLDB", shape=box, style=filled, fillcolor="#b0d4f1"];
+        dlqldb_store  [label="CodeQLDBStore\n.GetDatabase()\n(artifact store)", shape=box, style="filled,dashed", fillcolor="#b0d4f1"];
+    }
+
+    dlqldb_entry -> dlqldb_store [label="direct artifact\nretrieval"];
+    // NO postgres interactions
+
+    // =========================================================================
+    // TRACE 8: MRVADownloadArtifact
+    //   GET /repos/{owner}/{repo}/.../variant-analyses/{id}/repos/{repo_owner}/{repo_name}
+    // =========================================================================
+    subgraph cluster_download_artifact {
+        label="Trace 8: MRVADownloadArtifact (GET → serve result artifact by name)";
+        style=filled;
+        fillcolor="#f0fff8";
+        color="#2e8b57";
+        fontsize=11;
+
+        dlart_entry   [label="MRVADownloadArtifact", shape=box, style=filled, fillcolor="#a8e6cf"];
+        dlart_common  [label="MRVADownloadArtifact\nCommon", shape=box, style=filled, fillcolor="#a8e6cf"];
+        dlart_send    [label="sendArtifactDownload\nResponse", shape=box, style=filled, fillcolor="#a8e6cf"];
+        dlart_serve   [label="Artifacts.ServeResult()\n(artifact store)", shape=box, style="filled,dashed", fillcolor="#a8e6cf"];
+    }
+
+    dlart_entry  -> dlart_common;
+    dlart_common -> dlart_send;
+    dlart_send   -> dlart_serve [label="if Succeeded\nstream binary"];
+
+    dlart_send -> tbl_job_status      [label="READ\nGetStatus()", color=green4, fontcolor=green4];
+    dlart_send -> tbl_analyze_results [label="READ\nGetResult()\n(if Succeeded)", color=green4, fontcolor=green4];
+
+    // =========================================================================
+    // TRACE 9: MRVADownloadArtifactID
+    //   GET /repositories/{controller_repo_id}/.../variant-analyses/{id}/repositories/{repository_id}
+    // =========================================================================
+    subgraph cluster_download_artifact_id {
+        label="Trace 9: MRVADownloadArtifactID (GET → serve result artifact by numeric ID)";
+        style=filled;
+        fillcolor="#f8f0ff";
+        color="#6a5acd";
+        fontsize=11;
+
+        dlartid_entry  [label="MRVADownloadArtifactID", shape=box, style=filled, fillcolor="#d4b8f0"];
+        dlartid_lookup [label="resolve repo_id\n→ (owner, repo)", shape=box, style=filled, fillcolor="#d4b8f0"];
+        dlartid_common [label="MRVADownloadArtifact\nCommon", shape=box, style=filled, fillcolor="#d4b8f0"];
+        dlartid_send   [label="sendArtifactDownload\nResponse", shape=box, style=filled, fillcolor="#d4b8f0"];
+        dlartid_serve  [label="Artifacts.ServeResult()\n(artifact store)", shape=box, style="filled,dashed", fillcolor="#d4b8f0"];
+    }
+
+    dlartid_entry  -> dlartid_lookup;
+    dlartid_lookup -> dlartid_common;
+    dlartid_common -> dlartid_send;
+    dlartid_send   -> dlartid_serve [label="if Succeeded\nstream binary"];
+
+    dlartid_lookup -> tbl_job_repo_map    [label="READ\nGetJobSpecByRepoId()\nrepo_id → (owner, repo)", color=green4, fontcolor=green4];
+    dlartid_send   -> tbl_job_status      [label="READ\nGetStatus()", color=green4, fontcolor=green4];
+    dlartid_send   -> tbl_analyze_results [label="READ\nGetResult()\n(if Succeeded)", color=green4, fontcolor=green4];
+
+    // =========================================================================
+    // TRACE 10: MRVADownloadServe
+    //   GET /download/{encoded_job_spec}
+    // =========================================================================
+    subgraph cluster_download_serve {
+        label="Trace 10: MRVADownloadServe (GET → serve artifact via encoded spec)";
+        style=filled;
+        fillcolor="#fff8f0";
+        color="#d2691e";
+        fontsize=11;
+
+        dlserve_entry [label="MRVADownloadServe\n(decode job_spec\nfrom URL)", shape=box, style=filled, fillcolor="#f5deb3"];
+        dlserve_serve [label="Artifacts.ServeResult()\n(artifact store)", shape=box, style="filled,dashed", fillcolor="#f5deb3"];
+    }
+
+    dlserve_entry -> dlserve_serve [label="stream binary"];
+
+    dlserve_entry -> tbl_analyze_results [label="READ\nGetResult()", color=green4, fontcolor=green4];
+
+    // =========================================================================
+    // TRACE 11: RootHandler (Dashboard)
+    //   GET /
+    // =========================================================================
+    subgraph cluster_dashboard {
+        label="Trace 11: RootHandler (GET / → HTML dashboard)";
+        style=filled;
+        fillcolor="#fffff0";
+        color="#b8860b";
+        fontsize=11;
+
+        dash_entry    [label="RootHandler", shape=box, style=filled, fillcolor="#f0e68c"];
+        dash_running  [label="get running jobs", shape=box, style=filled, fillcolor="#f0e68c"];
+        dash_pending  [label="get pending jobs", shape=box, style=filled, fillcolor="#f0e68c"];
+        dash_sessions [label="GetRecentSessions(30)\n(last 30 days)", shape=box, style=filled, fillcolor="#f0e68c"];
+        dash_render   [label="renderDashboard()\n(per running job)", shape=box, style=filled, fillcolor="#f0e68c"];
+        dash_sess_stat[label="GetSessionStatus()\n(per session)", shape=box, style=filled, fillcolor="#f0e68c"];
+    }
+
+    dash_entry    -> dash_running;
+    dash_entry    -> dash_pending;
+    dash_entry    -> dash_sessions;
+    dash_sessions -> dash_sess_stat [label="per session"];
+    dash_entry    -> dash_render;
+
+    dash_running  -> tbl_analyze_jobs [label="READ\nGetRunningJobs()\nJOIN job_status\nWHERE InProgress", color=green4, fontcolor=green4];
+    dash_running  -> tbl_job_status   [label="READ\n(joined)", color=green4, fontcolor=green4, style=dashed];
+
+    dash_pending  -> tbl_analyze_jobs [label="READ\nGetPendingJobs()\nJOIN job_status\nWHERE Pending", color=green4, fontcolor=green4];
+    dash_pending  -> tbl_job_status   [label="READ\n(joined)", color=green4, fontcolor=green4, style=dashed];
+
+    dash_sessions -> tbl_job_info     [label="READ\nSELECT DISTINCT sessions\nWHERE created_at > 30d ago\n+ AVG(duration)", color=green4, fontcolor=green4];
+
+    dash_sess_stat -> tbl_job_status  [label="READ\nGetSessionStatus()\ncount by status", color=green4, fontcolor=green4];
+
+    dash_render   -> tbl_job_info     [label="READ\nGetJobInfo()\nper running job", color=green4, fontcolor=green4];
+}

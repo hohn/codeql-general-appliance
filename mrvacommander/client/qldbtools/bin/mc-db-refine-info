@@ -1,0 +1,60 @@
+#!/usr/bin/env python
+""" Read an initial table of CodeQL DB information, produced by
+    mc-db-initial-info, and collect more detailed information from the database
+    files.  Write out an extended table in CSV format.
+"""
+from argparse import ArgumentParser
+from typing import List
+
+from pandas import DataFrame
+
+import qldbtools.utils as utils
+import argparse
+import logging
+import pandas as pd
+import sys
+
+#
+#* Configure logger
+# 
+logging.basicConfig(format='%(asctime)s %(message)s')
+
+#
+#* Process command line
+#
+parser: ArgumentParser = argparse.ArgumentParser(
+    description="""Read an initial table of CodeQL DB information, produced by
+    mc-db-initial-info, and collect more detailed information from the database
+    files.  Write out an extended table in CSV format. """)
+args = parser.parse_args()
+
+#
+#* Collect the information
+# This step is time-intensive so we save the results right after.
+d: DataFrame = pd.read_csv(sys.stdin)
+joiners: list[DataFrame] = []
+for left_index in range(0, len(d)-1):
+    try:
+        metac: object
+        cqlc: object
+        cqlc, metac = utils.extract_metadata(d.path[left_index])
+    except utils.ExtractNotZipfile:
+        continue
+    except utils.ExtractNoCQLDB:
+        continue
+    try:
+        detail_df: DataFrame = utils.metadata_details(left_index, cqlc, metac)
+    except utils.DetailsMissing:
+        continue
+    joiners.append(detail_df)
+joiners_df: DataFrame = pd.concat(joiners, axis=0)
+full_df: DataFrame = pd.merge(d, joiners_df, left_index=True, right_on='left_index', how='outer')
+
+#
+#* Save results
+#
+full_df.to_csv(sys.stdout, index=False)
+
+# Local Variables:
+# python-shell-virtualenv-root: "~/work-gh/mrva/mrvacommander/client/qldbtools/venv/"
+# End:

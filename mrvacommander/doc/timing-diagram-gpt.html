@@ -1,0 +1,1483 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>MRVA Two-Session Timing Diagram (GPT-Optimized Format)</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="../../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../../docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">MRVA Two-Session Timing Diagram (GPT-Optimized
+Format)</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#mrva-two-session-timing-diagram-gpt-optimized-format"
+id="toc-mrva-two-session-timing-diagram-gpt-optimized-format">MRVA
+Two-Session Timing Diagram (GPT-Optimized Format)</a>
+<ul>
+<li><a href="#parameters" id="toc-parameters">Parameters</a></li>
+<li><a href="#sessions" id="toc-sessions">Sessions</a></li>
+<li><a href="#components" id="toc-components">Components</a></li>
+<li><a href="#timeline" id="toc-timeline">Timeline</a>
+<ul>
+<li><a href="#t0s-u_1-submits-session-j_1"
+id="toc-t0s-u_1-submits-session-j_1">t=0s – U_1 Submits Session
+J_1</a></li>
+<li><a href="#t10s-scheduler-poll-cycle-1"
+id="toc-t10s-scheduler-poll-cycle-1">t=10s – Scheduler Poll Cycle
+1</a></li>
+<li><a href="#t15s-u_2-submits-session-j_2"
+id="toc-t15s-u_2-submits-session-j_2">t=15s – U_2 Submits Session
+J_2</a></li>
+<li><a href="#t20s-scheduler-poll-cycle-2"
+id="toc-t20s-scheduler-poll-cycle-2">t=20s – Scheduler Poll Cycle
+2</a></li>
+<li><a href="#t30s-scheduler-poll-cycle-3"
+id="toc-t30s-scheduler-poll-cycle-3">t=30s – Scheduler Poll Cycle
+3</a></li>
+<li><a href="#t40s-j_1.1-and-j_1.2-complete-scheduler-poll-cycle-4"
+id="toc-t40s-j_1.1-and-j_1.2-complete-scheduler-poll-cycle-4">t=40s –
+J_1.1 and J_1.2 Complete; Scheduler Poll Cycle 4</a></li>
+<li><a href="#t50s-scheduler-poll-cycle-5"
+id="toc-t50s-scheduler-poll-cycle-5">t=50s – Scheduler Poll Cycle
+5</a></li>
+<li><a href="#t60s-scheduler-poll-cycle-6"
+id="toc-t60s-scheduler-poll-cycle-6">t=60s – Scheduler Poll Cycle
+6</a></li>
+<li><a href="#t70s-j_2.1-and-j_1.3-complete-scheduler-poll-cycle-7"
+id="toc-t70s-j_2.1-and-j_1.3-complete-scheduler-poll-cycle-7">t=70s –
+J_2.1 and J_1.3 Complete; Scheduler Poll Cycle 7</a></li>
+<li><a href="#t80s-scheduler-poll-cycle-8"
+id="toc-t80s-scheduler-poll-cycle-8">t=80s – Scheduler Poll Cycle
+8</a></li>
+<li><a href="#t90s-scheduler-poll-cycle-9"
+id="toc-t90s-scheduler-poll-cycle-9">t=90s – Scheduler Poll Cycle
+9</a></li>
+<li><a href="#t100s-j_2.2-and-j_2.3-complete-all-jobs-done"
+id="toc-t100s-j_2.2-and-j_2.3-complete-all-jobs-done">t=100s – J_2.2 and
+J_2.3 Complete; All Jobs Done</a></li>
+</ul></li>
+<li><a href="#worker-gantt-chart" id="toc-worker-gantt-chart">Worker
+Gantt Chart</a></li>
+<li><a href="#summary-of-fair-scheduling-decisions"
+id="toc-summary-of-fair-scheduling-decisions">Summary of Fair Scheduling
+Decisions</a></li>
+<li><a href="#message-flow-summary-all-messages-in-order"
+id="toc-message-flow-summary-all-messages-in-order">Message Flow Summary
+(all messages in order)</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="mrva-two-session-timing-diagram-gpt-optimized-format">MRVA
+Two-Session Timing Diagram (GPT-Optimized Format)</h1>
+<h2 id="parameters">Parameters</h2>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">max_workers</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span><span class="co">          # W</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">poll_interval_s</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span><span class="co">     # T_poll</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">job_duration_s</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span><span class="co">      # each sub-job</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">runtime_window_s</span><span class="kw">:</span><span class="at"> </span><span class="dv">3600</span><span class="co">  # T_w</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">workers</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">alpha_</span><span class="dv">1</span><span class="kw">,</span><span class="at"> alpha_</span><span class="dv">2</span><span class="kw">]</span></span></code></pre></div>
+<h2 id="sessions">Sessions</h2>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">J_1</span><span class="kw">:</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">user</span><span class="kw">:</span><span class="at"> U_1</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">session_id</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">sub_jobs</span><span class="kw">:</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">J_1.1</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">session_id</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">,</span><span class="at"> </span><span class="fu">owner</span><span class="kw">:</span><span class="at"> org_a</span><span class="kw">,</span><span class="at"> </span><span class="fu">repo</span><span class="kw">:</span><span class="at"> repo_1</span><span class="kw">}</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">J_1.2</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">session_id</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">,</span><span class="at"> </span><span class="fu">owner</span><span class="kw">:</span><span class="at"> org_a</span><span class="kw">,</span><span class="at"> </span><span class="fu">repo</span><span class="kw">:</span><span class="at"> repo_2</span><span class="kw">}</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">J_1.3</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">session_id</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">,</span><span class="at"> </span><span class="fu">owner</span><span class="kw">:</span><span class="at"> org_a</span><span class="kw">,</span><span class="at"> </span><span class="fu">repo</span><span class="kw">:</span><span class="at"> repo_3</span><span class="kw">}</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="fu">J_2</span><span class="kw">:</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">user</span><span class="kw">:</span><span class="at"> U_2</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">session_id</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">sub_jobs</span><span class="kw">:</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">J_2.1</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">session_id</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span><span class="kw">,</span><span class="at"> </span><span class="fu">owner</span><span class="kw">:</span><span class="at"> org_b</span><span class="kw">,</span><span class="at"> </span><span class="fu">repo</span><span class="kw">:</span><span class="at"> repo_4</span><span class="kw">}</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">J_2.2</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">session_id</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span><span class="kw">,</span><span class="at"> </span><span class="fu">owner</span><span class="kw">:</span><span class="at"> org_b</span><span class="kw">,</span><span class="at"> </span><span class="fu">repo</span><span class="kw">:</span><span class="at"> repo_5</span><span class="kw">}</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">J_2.3</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">session_id</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span><span class="kw">,</span><span class="at"> </span><span class="fu">owner</span><span class="kw">:</span><span class="at"> org_b</span><span class="kw">,</span><span class="at"> </span><span class="fu">repo</span><span class="kw">:</span><span class="at"> repo_6</span><span class="kw">}</span></span></code></pre></div>
+<h2 id="components">Components</h2>
+<pre><code>C_1     = Client for U_1
+C_2     = Client for U_2
+S       = Server (API coordinator + result consumer)
+DB      = PostgreSQL
+Sigma_L = Scheduler (leader)
+Omega   = Argo Workflows
+alpha_1 = Worker pod 1
+alpha_2 = Worker pod 2
+MQ      = RabbitMQ &quot;results&quot; queue</code></pre>
+<hr />
+<h2 id="timeline">Timeline</h2>
+<h3 id="t0s-u_1-submits-session-j_1">t=0s – U_1 Submits Session J_1</h3>
+<p><strong>Messages:</strong></p>
+<pre><code>C_1 --submit(Q, R={R_1,R_2,R_3}, u=U_1)--&gt; S
+S   --INSERT--&gt; DB</code></pre>
+<p><strong>Server actions:</strong> 1. Generate session_id=1 via
+<code>SELECT nextval('session_id_seq')</code> 2. Save query pack to
+MinIO 3. For each repo in {R_1, R_2, R_3}: - INSERT INTO analyze_jobs
+(session_id, owner, repo, payload) - INSERT INTO job_status (session_id,
+owner, repo, status=0) – 0=Pending - INSERT INTO job_info (session_id,
+owner, repo, payload, user_id=‘U_1’, started_at=NULL, completed_at=NULL,
+argo_workflow_id=’’) - UPSERT INTO job_repo_map (owner, repo)</p>
+<p><strong>DB State at t=0:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Table: job_status</th>
+<th>session_id</th>
+<th>owner</th>
+<th>repo</th>
+<th>status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td>1</td>
+<td>org_a</td>
+<td>repo_1</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>org_a</td>
+<td>repo_2</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>org_a</td>
+<td>repo_3</td>
+<td>Pending</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 12%" />
+<col style="width: 7%" />
+<col style="width: 8%" />
+<col style="width: 9%" />
+<col style="width: 12%" />
+<col style="width: 14%" />
+<col style="width: 18%" />
+</colgroup>
+<thead>
+<tr>
+<th>Table: job_info</th>
+<th>session_id</th>
+<th>owner</th>
+<th>repo</th>
+<th>user_id</th>
+<th>started_at</th>
+<th>completed_at</th>
+<th>argo_workflow_id</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td>1</td>
+<td>org_a</td>
+<td>repo_1</td>
+<td>U_1</td>
+<td>NULL</td>
+<td>NULL</td>
+<td>’’</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>org_a</td>
+<td>repo_2</td>
+<td>U_1</td>
+<td>NULL</td>
+<td>NULL</td>
+<td>’’</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>org_a</td>
+<td>repo_3</td>
+<td>U_1</td>
+<td>NULL</td>
+<td>NULL</td>
+<td>’’</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="t10s-scheduler-poll-cycle-1">t=10s – Scheduler Poll Cycle 1</h3>
+<p><strong>Messages:</strong></p>
+<pre><code>Sigma_L --SELECT pending jobs--&gt; DB
+DB      --{J_1.1, J_1.2, J_1.3}--&gt; Sigma_L
+
+Sigma_L --SELECT running jobs--&gt; DB
+DB      --{} (W_r=0, W_a=2)--&gt; Sigma_L</code></pre>
+<p><strong>Fair Scheduling Decision:</strong></p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">users_with_pending</span><span class="kw">:</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">U_1</span><span class="kw">:</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">n_r</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="co">          # running count</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">tau</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="co">           # recent runtime (seconds)</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">n_p</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span><span class="co">           # pending count</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">pi</span><span class="kw">:</span><span class="at"> (0, 0, -3)</span><span class="co">   # priority tuple</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="fu">priority_order</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">U_</span><span class="dv">1</span><span class="kw">]</span><span class="co">   # only user</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="fu">W_a</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span><span class="co">                  # available slots</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="fu">round_robin_allocation</span><span class="kw">:</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">pass_1</span><span class="kw">:</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">U_1</span><span class="kw">:</span><span class="at"> 1 slot -&gt; a_U1=1, remaining=1</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">pass_2</span><span class="kw">:</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">U_1</span><span class="kw">:</span><span class="at"> 1 slot -&gt; a_U1=2, remaining=0</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="fu">result</span><span class="kw">:</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">U_1</span><span class="kw">:</span><span class="at"> 2 jobs allocated (J_1.1, J_1.2)</span></span></code></pre></div>
+<p><strong>Job Submission:</strong></p>
+<pre><code>Sigma_L --SubmitWorkflow(J_1.1)--&gt; Omega
+Omega   --CreatePod--&gt; alpha_1     # pod starts executing J_1.1
+Sigma_L &lt;--workflow_id=omega_1.1-- Omega
+
+Sigma_L --SubmitWorkflow(J_1.2)--&gt; Omega
+Omega   --CreatePod--&gt; alpha_2     # pod starts executing J_1.2
+Sigma_L &lt;--workflow_id=omega_1.2-- Omega</code></pre>
+<p><strong>DB Updates:</strong></p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">UPDATE</span> job_status <span class="kw">SET</span> status<span class="op">=</span><span class="dv">1</span> <span class="kw">WHERE</span> (<span class="dv">1</span>, org_a, repo_1);  <span class="co">-- 1=InProgress</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="kw">UPDATE</span> job_status <span class="kw">SET</span> status<span class="op">=</span><span class="dv">1</span> <span class="kw">WHERE</span> (<span class="dv">1</span>, org_a, repo_2);</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="kw">UPDATE</span> job_info <span class="kw">SET</span> started_at<span class="op">=</span><span class="st">&#39;t=10&#39;</span>, argo_workflow_id<span class="op">=</span><span class="st">&#39;omega_1.1&#39;</span> <span class="kw">WHERE</span> (<span class="dv">1</span>, org_a, repo_1);</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="kw">UPDATE</span> job_info <span class="kw">SET</span> started_at<span class="op">=</span><span class="st">&#39;t=10&#39;</span>, argo_workflow_id<span class="op">=</span><span class="st">&#39;omega_1.2&#39;</span> <span class="kw">WHERE</span> (<span class="dv">1</span>, org_a, repo_2);</span></code></pre></div>
+<p><strong>Argo Status Polling (running workflows):</strong></p>
+<pre><code>Sigma_L --GetWorkflowStatus(omega_1.1)--&gt; Omega
+Omega   --phase=Pending--&gt; Sigma_L        # just submitted, no change
+
+Sigma_L --GetWorkflowStatus(omega_1.2)--&gt; Omega
+Omega   --phase=Pending--&gt; Sigma_L        # just submitted, no change</code></pre>
+<p><strong>DB State at t=10:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Table: job_status</th>
+<th>session_id</th>
+<th>owner</th>
+<th>repo</th>
+<th>status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td>1</td>
+<td>org_a</td>
+<td>repo_1</td>
+<td>InProgress</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>org_a</td>
+<td>repo_2</td>
+<td>InProgress</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>org_a</td>
+<td>repo_3</td>
+<td>Pending</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 12%" />
+<col style="width: 7%" />
+<col style="width: 8%" />
+<col style="width: 9%" />
+<col style="width: 12%" />
+<col style="width: 14%" />
+<col style="width: 18%" />
+</colgroup>
+<thead>
+<tr>
+<th>Table: job_info</th>
+<th>session_id</th>
+<th>owner</th>
+<th>repo</th>
+<th>user_id</th>
+<th>started_at</th>
+<th>completed_at</th>
+<th>argo_workflow_id</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td>1</td>
+<td>org_a</td>
+<td>repo_1</td>
+<td>U_1</td>
+<td>t=10</td>
+<td>NULL</td>
+<td>omega_1.1</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>org_a</td>
+<td>repo_2</td>
+<td>U_1</td>
+<td>NULL</td>
+<td>NULL</td>
+<td>omega_1.2</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>org_a</td>
+<td>repo_3</td>
+<td>U_1</td>
+<td>NULL</td>
+<td>NULL</td>
+<td>’’</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Worker</th>
+<th>Job</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>alpha_1</td>
+<td>J_1.1</td>
+<td>Running</td>
+</tr>
+<tr>
+<td>alpha_2</td>
+<td>J_1.2</td>
+<td>Running</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="t15s-u_2-submits-session-j_2">t=15s – U_2 Submits Session
+J_2</h3>
+<p><strong>Messages:</strong></p>
+<pre><code>C_2 --submit(Q&#39;, R&#39;={R_4,R_5,R_6}, u=U_2)--&gt; S
+S   --INSERT--&gt; DB</code></pre>
+<p><strong>Server actions:</strong> (identical pattern to t=0, with
+session_id=2, user_id=U_2)</p>
+<p><strong>DB State at t=15 (new rows only):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Table: job_status</th>
+<th>session_id</th>
+<th>owner</th>
+<th>repo</th>
+<th>status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td>2</td>
+<td>org_b</td>
+<td>repo_4</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>org_b</td>
+<td>repo_5</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>org_b</td>
+<td>repo_6</td>
+<td>Pending</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 12%" />
+<col style="width: 7%" />
+<col style="width: 8%" />
+<col style="width: 9%" />
+<col style="width: 12%" />
+<col style="width: 14%" />
+<col style="width: 18%" />
+</colgroup>
+<thead>
+<tr>
+<th>Table: job_info</th>
+<th>session_id</th>
+<th>owner</th>
+<th>repo</th>
+<th>user_id</th>
+<th>started_at</th>
+<th>completed_at</th>
+<th>argo_workflow_id</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td>2</td>
+<td>org_b</td>
+<td>repo_4</td>
+<td>U_2</td>
+<td>NULL</td>
+<td>NULL</td>
+<td>’’</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>org_b</td>
+<td>repo_5</td>
+<td>U_2</td>
+<td>NULL</td>
+<td>NULL</td>
+<td>’’</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>org_b</td>
+<td>repo_6</td>
+<td>U_2</td>
+<td>NULL</td>
+<td>NULL</td>
+<td>’’</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="t20s-scheduler-poll-cycle-2">t=20s – Scheduler Poll Cycle 2</h3>
+<p><strong>Messages:</strong></p>
+<pre><code>Sigma_L --SELECT running jobs--&gt; DB
+DB      --{J_1.1, J_1.2} (W_r=2, W_a=0)--&gt; Sigma_L</code></pre>
+<p><strong>Scheduling:</strong> W_a=0, no slots available. Skip fair
+scheduling.</p>
+<p><strong>Argo Status Polling:</strong></p>
+<pre><code>Sigma_L --GetWorkflowStatus(omega_1.1)--&gt; Omega
+Omega   --phase=Running--&gt; Sigma_L       # 10s into 30s execution
+
+Sigma_L --GetWorkflowStatus(omega_1.2)--&gt; Omega
+Omega   --phase=Running--&gt; Sigma_L</code></pre>
+<p>No DB changes. Pending jobs {J_1.3, J_2.1, J_2.2, J_2.3} wait.</p>
+<hr />
+<h3 id="t30s-scheduler-poll-cycle-3">t=30s – Scheduler Poll Cycle 3</h3>
+<p>Same as t=20s. Both workers still executing (20s into 30s
+execution).</p>
+<pre><code>Sigma_L polls Argo: J_1.1 Running, J_1.2 Running
+W_r=2, W_a=0, no scheduling.</code></pre>
+<hr />
+<h3 id="t40s-j_1.1-and-j_1.2-complete-scheduler-poll-cycle-4">t=40s –
+J_1.1 and J_1.2 Complete; Scheduler Poll Cycle 4</h3>
+<p>This is the most complex event. Three things happen in rapid
+succession:</p>
+<h4 id="step-1-pods-complete-and-publish-results">Step 1: Pods Complete
+and Publish Results</h4>
+<pre><code>alpha_1 --execute(Q, R_1) completes--&gt; result_1.1
+alpha_1 --publish(result_1.1)--&gt; MQ (&quot;results&quot; queue)
+
+alpha_2 --execute(Q, R_2) completes--&gt; result_1.2
+alpha_2 --publish(result_1.2)--&gt; MQ (&quot;results&quot; queue)</code></pre>
+<h4 id="step-2-server-consumes-results-from-rabbitmq">Step 2: Server
+Consumes Results from RabbitMQ</h4>
+<pre><code>S &lt;--consume(result_1.1)-- MQ
+S --SetResult(J_1.1, result_1.1)--&gt; DB    # INSERT INTO analyze_results
+S --SetStatus(J_1.1, Succeeded)--&gt; DB     # UPDATE job_status SET status=2
+S --TriggerScheduling()--&gt; Sigma_L        # wake up scheduler
+
+S &lt;--consume(result_1.2)-- MQ
+S --SetResult(J_1.2, result_1.2)--&gt; DB
+S --SetStatus(J_1.2, Succeeded)--&gt; DB
+S --TriggerScheduling()--&gt; Sigma_L</code></pre>
+<p><strong>DB updates from result consumption:</strong></p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">INSERT</span> <span class="kw">INTO</span> analyze_results (session_id, owner, repo, result)</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">VALUES</span> (<span class="dv">1</span>, <span class="st">&#39;org_a&#39;</span>, <span class="st">&#39;repo_1&#39;</span>, <span class="st">&#39;&lt;sarif_json&gt;&#39;</span>);</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="kw">UPDATE</span> job_status <span class="kw">SET</span> status<span class="op">=</span><span class="dv">2</span> <span class="kw">WHERE</span> (<span class="dv">1</span>, org_a, repo_1);  <span class="co">-- 2=Succeeded</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="kw">INSERT</span> <span class="kw">INTO</span> analyze_results (session_id, owner, repo, result)</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">VALUES</span> (<span class="dv">1</span>, <span class="st">&#39;org_a&#39;</span>, <span class="st">&#39;repo_2&#39;</span>, <span class="st">&#39;&lt;sarif_json&gt;&#39;</span>);</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="kw">UPDATE</span> job_status <span class="kw">SET</span> status<span class="op">=</span><span class="dv">2</span> <span class="kw">WHERE</span> (<span class="dv">1</span>, org_a, repo_2);</span></code></pre></div>
+<h4 id="step-3-scheduler-runs-triggered-or-on-poll">Step 3: Scheduler
+Runs (triggered or on poll)</h4>
+<pre><code>Sigma_L --SELECT running jobs--&gt; DB
+DB      --{} (W_r=0, W_a=2)--&gt; Sigma_L   # both now Succeeded</code></pre>
+<p><strong>Fair Scheduling Decision:</strong></p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">users_with_pending</span><span class="kw">:</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">U_1</span><span class="kw">:</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">n_r</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">tau</span><span class="kw">:</span><span class="at"> </span><span class="dv">60</span><span class="co">           # two completed 30s jobs within T_w window</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">n_p</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="co">            # only J_1.3 remains</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">pi</span><span class="kw">:</span><span class="at"> (0, 60, -1)</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">U_2</span><span class="kw">:</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">n_r</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">tau</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="co">            # no completed jobs yet</span></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">n_p</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span><span class="co">            # J_2.1, J_2.2, J_2.3 all pending</span></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">pi</span><span class="kw">:</span><span class="at"> (0, 0, -3)</span></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a><span class="fu">priority_comparison</span><span class="kw">:</span></span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a><span class="at">  pi(U_2) = (0,  0, -3)</span><span class="co">   # &lt;-- HIGHER priority (less runtime)</span></span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a><span class="at">  pi(U_1) = (0, 60, -1)</span></span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a><span class="co">  # First components tie (both 0)</span></span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a><span class="co">  # Second component: 0 &lt; 60, so U_2 wins</span></span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a><span class="fu">priority_order</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">U_</span><span class="dv">2</span><span class="kw">,</span><span class="at"> U_</span><span class="dv">1</span><span class="kw">]</span><span class="co">   # U_2 first due to less runtime</span></span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a><span class="fu">W_a</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a><span class="fu">round_robin_allocation</span><span class="kw">:</span></span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">pass_1</span><span class="kw">:</span></span>
+<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">U_2</span><span class="kw">:</span><span class="at"> 1 slot -&gt; a_U2=1, remaining=1</span></span>
+<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">U_1</span><span class="kw">:</span><span class="at"> 1 slot -&gt; a_U1=1, remaining=0</span></span>
+<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a><span class="fu">result</span><span class="kw">:</span></span>
+<span id="cb18-29"><a href="#cb18-29" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">U_2</span><span class="kw">:</span><span class="at"> 1 job (J_2.1)</span><span class="co">    # gets priority position</span></span>
+<span id="cb18-30"><a href="#cb18-30" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">U_1</span><span class="kw">:</span><span class="at"> 1 job (J_1.3)</span></span></code></pre></div>
+<p><strong>Note on fairness:</strong> U_2 is prioritized because U_1 has
+already consumed 60s of compute time (tau=60) while U_2 has consumed 0s.
+Even though both have n_r=0, the second component of pi breaks the tie
+in U_2’s favor.</p>
+<p><strong>Job Submission:</strong></p>
+<pre><code>Sigma_L --SubmitWorkflow(J_2.1)--&gt; Omega
+Omega   --CreatePod--&gt; alpha_1
+Sigma_L &lt;--workflow_id=omega_2.1-- Omega
+
+Sigma_L --SubmitWorkflow(J_1.3)--&gt; Omega
+Omega   --CreatePod--&gt; alpha_2
+Sigma_L &lt;--workflow_id=omega_1.3-- Omega</code></pre>
+<p><strong>DB updates:</strong></p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">UPDATE</span> job_status <span class="kw">SET</span> status<span class="op">=</span><span class="dv">1</span> <span class="kw">WHERE</span> (<span class="dv">2</span>, org_b, repo_4);  <span class="co">-- J_2.1 InProgress</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="kw">UPDATE</span> job_status <span class="kw">SET</span> status<span class="op">=</span><span class="dv">1</span> <span class="kw">WHERE</span> (<span class="dv">1</span>, org_a, repo_3);  <span class="co">-- J_1.3 InProgress</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="kw">UPDATE</span> job_info <span class="kw">SET</span> started_at<span class="op">=</span><span class="st">&#39;t=40&#39;</span>, argo_workflow_id<span class="op">=</span><span class="st">&#39;omega_2.1&#39;</span> <span class="kw">WHERE</span> (<span class="dv">2</span>, org_b, repo_4);</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="kw">UPDATE</span> job_info <span class="kw">SET</span> started_at<span class="op">=</span><span class="st">&#39;t=40&#39;</span>, argo_workflow_id<span class="op">=</span><span class="st">&#39;omega_1.3&#39;</span> <span class="kw">WHERE</span> (<span class="dv">1</span>, org_a, repo_3);</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="co">-- Also set completed_at for finished jobs (from Argo polling or RabbitMQ path):</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="kw">UPDATE</span> job_info <span class="kw">SET</span> completed_at<span class="op">=</span><span class="st">&#39;t=40&#39;</span> <span class="kw">WHERE</span> (<span class="dv">1</span>, org_a, repo_1);</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="kw">UPDATE</span> job_info <span class="kw">SET</span> completed_at<span class="op">=</span><span class="st">&#39;t=40&#39;</span> <span class="kw">WHERE</span> (<span class="dv">1</span>, org_a, repo_2);</span></code></pre></div>
+<p><strong>DB State at t=40:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Table: job_status</th>
+<th>session_id</th>
+<th>owner</th>
+<th>repo</th>
+<th>status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td>1</td>
+<td>org_a</td>
+<td>repo_1</td>
+<td>Succeeded</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>org_a</td>
+<td>repo_2</td>
+<td>Succeeded</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>org_a</td>
+<td>repo_3</td>
+<td>InProgress</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>org_b</td>
+<td>repo_4</td>
+<td>InProgress</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>org_b</td>
+<td>repo_5</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>org_b</td>
+<td>repo_6</td>
+<td>Pending</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 12%" />
+<col style="width: 7%" />
+<col style="width: 8%" />
+<col style="width: 9%" />
+<col style="width: 12%" />
+<col style="width: 14%" />
+<col style="width: 18%" />
+</colgroup>
+<thead>
+<tr>
+<th>Table: job_info</th>
+<th>session_id</th>
+<th>owner</th>
+<th>repo</th>
+<th>user_id</th>
+<th>started_at</th>
+<th>completed_at</th>
+<th>argo_workflow_id</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td>1</td>
+<td>org_a</td>
+<td>repo_1</td>
+<td>U_1</td>
+<td>t=10</td>
+<td>t=40</td>
+<td>omega_1.1</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>org_a</td>
+<td>repo_2</td>
+<td>U_1</td>
+<td>t=10</td>
+<td>t=40</td>
+<td>omega_1.2</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>org_a</td>
+<td>repo_3</td>
+<td>U_1</td>
+<td>t=40</td>
+<td>NULL</td>
+<td>omega_1.3</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>org_b</td>
+<td>repo_4</td>
+<td>U_2</td>
+<td>t=40</td>
+<td>NULL</td>
+<td>omega_2.1</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>org_b</td>
+<td>repo_5</td>
+<td>U_2</td>
+<td>NULL</td>
+<td>NULL</td>
+<td>’’</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>org_b</td>
+<td>repo_6</td>
+<td>U_2</td>
+<td>NULL</td>
+<td>NULL</td>
+<td>’’</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Worker</th>
+<th>Job</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>alpha_1</td>
+<td>J_2.1</td>
+<td>Running</td>
+</tr>
+<tr>
+<td>alpha_2</td>
+<td>J_1.3</td>
+<td>Running</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="t50s-scheduler-poll-cycle-5">t=50s – Scheduler Poll Cycle 5</h3>
+<pre><code>Sigma_L: W_r=2, W_a=0. No slots.
+Argo status: J_2.1 Running, J_1.3 Running.
+Pending: {J_2.2, J_2.3}
+No changes.</code></pre>
+<hr />
+<h3 id="t60s-scheduler-poll-cycle-6">t=60s – Scheduler Poll Cycle 6</h3>
+<p>Same as t=50s. Workers at 20s into 30s execution.</p>
+<hr />
+<h3 id="t70s-j_2.1-and-j_1.3-complete-scheduler-poll-cycle-7">t=70s –
+J_2.1 and J_1.3 Complete; Scheduler Poll Cycle 7</h3>
+<h4 id="step-1-pods-complete">Step 1: Pods Complete</h4>
+<pre><code>alpha_1 --execute(Q&#39;, R_4) completes--&gt; result_2.1
+alpha_1 --publish(result_2.1)--&gt; MQ
+
+alpha_2 --execute(Q, R_3) completes--&gt; result_1.3
+alpha_2 --publish(result_1.3)--&gt; MQ</code></pre>
+<h4 id="step-2-server-consumes-results">Step 2: Server Consumes
+Results</h4>
+<pre><code>S &lt;--consume(result_2.1)-- MQ
+S --SetResult(J_2.1)--&gt; DB
+S --SetStatus(J_2.1, Succeeded)--&gt; DB
+S --TriggerScheduling()--&gt; Sigma_L
+
+S &lt;--consume(result_1.3)-- MQ
+S --SetResult(J_1.3)--&gt; DB
+S --SetStatus(J_1.3, Succeeded)--&gt; DB
+S --TriggerScheduling()--&gt; Sigma_L</code></pre>
+<h4 id="step-3-scheduler-runs">Step 3: Scheduler Runs</h4>
+<pre><code>W_r=0, W_a=2
+Pending: {J_2.2, J_2.3} -- only U_2</code></pre>
+<p><strong>Fair Scheduling Decision:</strong></p>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">users_with_pending</span><span class="kw">:</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">U_2</span><span class="kw">:</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">n_r</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">tau</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span><span class="co">            # one completed 30s job (J_2.1) in window</span></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">n_p</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">pi</span><span class="kw">:</span><span class="at"> (0, 30, -2)</span></span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a><span class="co"># U_1 has NO pending jobs, so not in scheduling consideration.</span></span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a><span class="fu">priority_order</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">U_</span><span class="dv">2</span><span class="kw">]</span></span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a><span class="fu">W_a</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a><span class="fu">allocation</span><span class="kw">:</span></span>
+<span id="cb25-14"><a href="#cb25-14" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">U_2</span><span class="kw">:</span><span class="at"> min(2, 2) = 2 jobs (J_2.2, J_2.3)</span></span></code></pre></div>
+<p><strong>Job Submission:</strong></p>
+<pre><code>Sigma_L --SubmitWorkflow(J_2.2)--&gt; Omega --&gt; alpha_1
+Sigma_L --SubmitWorkflow(J_2.3)--&gt; Omega --&gt; alpha_2</code></pre>
+<p><strong>DB State at t=70:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Table: job_status</th>
+<th>session_id</th>
+<th>owner</th>
+<th>repo</th>
+<th>status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td>1</td>
+<td>org_a</td>
+<td>repo_1</td>
+<td>Succeeded</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>org_a</td>
+<td>repo_2</td>
+<td>Succeeded</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>org_a</td>
+<td>repo_3</td>
+<td>Succeeded</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>org_b</td>
+<td>repo_4</td>
+<td>Succeeded</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>org_b</td>
+<td>repo_5</td>
+<td>InProgress</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>org_b</td>
+<td>repo_6</td>
+<td>InProgress</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 12%" />
+<col style="width: 7%" />
+<col style="width: 8%" />
+<col style="width: 9%" />
+<col style="width: 12%" />
+<col style="width: 14%" />
+<col style="width: 18%" />
+</colgroup>
+<thead>
+<tr>
+<th>Table: job_info</th>
+<th>session_id</th>
+<th>owner</th>
+<th>repo</th>
+<th>user_id</th>
+<th>started_at</th>
+<th>completed_at</th>
+<th>argo_workflow_id</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td>1</td>
+<td>org_a</td>
+<td>repo_1</td>
+<td>U_1</td>
+<td>t=10</td>
+<td>t=40</td>
+<td>omega_1.1</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>org_a</td>
+<td>repo_2</td>
+<td>U_1</td>
+<td>t=10</td>
+<td>t=40</td>
+<td>omega_1.2</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>org_a</td>
+<td>repo_3</td>
+<td>U_1</td>
+<td>t=40</td>
+<td>t=70</td>
+<td>omega_1.3</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>org_b</td>
+<td>repo_4</td>
+<td>U_2</td>
+<td>t=40</td>
+<td>t=70</td>
+<td>omega_2.1</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>org_b</td>
+<td>repo_5</td>
+<td>U_2</td>
+<td>t=70</td>
+<td>NULL</td>
+<td>omega_2.2</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>org_b</td>
+<td>repo_6</td>
+<td>U_2</td>
+<td>t=70</td>
+<td>NULL</td>
+<td>omega_2.3</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Worker</th>
+<th>Job</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>alpha_1</td>
+<td>J_2.2</td>
+<td>Running</td>
+</tr>
+<tr>
+<td>alpha_2</td>
+<td>J_2.3</td>
+<td>Running</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="t80s-scheduler-poll-cycle-8">t=80s – Scheduler Poll Cycle 8</h3>
+<pre><code>W_r=2, W_a=0. Argo: both Running. No pending jobs. No changes.</code></pre>
+<hr />
+<h3 id="t90s-scheduler-poll-cycle-9">t=90s – Scheduler Poll Cycle 9</h3>
+<p>Same as t=80s.</p>
+<hr />
+<h3 id="t100s-j_2.2-and-j_2.3-complete-all-jobs-done">t=100s – J_2.2 and
+J_2.3 Complete; All Jobs Done</h3>
+<h4 id="step-1-pods-complete-1">Step 1: Pods Complete</h4>
+<pre><code>alpha_1 --execute(Q&#39;, R_5) completes--&gt; result_2.2
+alpha_1 --publish(result_2.2)--&gt; MQ
+
+alpha_2 --execute(Q&#39;, R_6) completes--&gt; result_2.3
+alpha_2 --publish(result_2.3)--&gt; MQ</code></pre>
+<h4 id="step-2-server-consumes-results-1">Step 2: Server Consumes
+Results</h4>
+<pre><code>S &lt;--consume(result_2.2)-- MQ --&gt; DB (Succeeded)
+S &lt;--consume(result_2.3)-- MQ --&gt; DB (Succeeded)</code></pre>
+<h4 id="step-3-scheduler-runs-1">Step 3: Scheduler Runs</h4>
+<pre><code>W_r=0, W_a=2. No pending jobs. System idle.</code></pre>
+<p><strong>Final DB State at t=100:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Table: job_status</th>
+<th>session_id</th>
+<th>owner</th>
+<th>repo</th>
+<th>status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td>1</td>
+<td>org_a</td>
+<td>repo_1</td>
+<td>Succeeded</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>org_a</td>
+<td>repo_2</td>
+<td>Succeeded</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>org_a</td>
+<td>repo_3</td>
+<td>Succeeded</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>org_b</td>
+<td>repo_4</td>
+<td>Succeeded</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>org_b</td>
+<td>repo_5</td>
+<td>Succeeded</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>org_b</td>
+<td>repo_6</td>
+<td>Succeeded</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 12%" />
+<col style="width: 7%" />
+<col style="width: 8%" />
+<col style="width: 9%" />
+<col style="width: 12%" />
+<col style="width: 14%" />
+<col style="width: 18%" />
+</colgroup>
+<thead>
+<tr>
+<th>Table: job_info</th>
+<th>session_id</th>
+<th>owner</th>
+<th>repo</th>
+<th>user_id</th>
+<th>started_at</th>
+<th>completed_at</th>
+<th>argo_workflow_id</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td>1</td>
+<td>org_a</td>
+<td>repo_1</td>
+<td>U_1</td>
+<td>t=10</td>
+<td>t=40</td>
+<td>omega_1.1</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>org_a</td>
+<td>repo_2</td>
+<td>U_1</td>
+<td>t=10</td>
+<td>t=40</td>
+<td>omega_1.2</td>
+</tr>
+<tr>
+<td></td>
+<td>1</td>
+<td>org_a</td>
+<td>repo_3</td>
+<td>U_1</td>
+<td>t=40</td>
+<td>t=70</td>
+<td>omega_1.3</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>org_b</td>
+<td>repo_4</td>
+<td>U_2</td>
+<td>t=40</td>
+<td>t=70</td>
+<td>omega_2.1</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>org_b</td>
+<td>repo_5</td>
+<td>U_2</td>
+<td>t=70</td>
+<td>t=100</td>
+<td>omega_2.2</td>
+</tr>
+<tr>
+<td></td>
+<td>2</td>
+<td>org_b</td>
+<td>repo_6</td>
+<td>U_2</td>
+<td>t=70</td>
+<td>t=100</td>
+<td>omega_2.3</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="worker-gantt-chart">Worker Gantt Chart</h2>
+<pre><code>Time:    0    10   15   20   30   40   50   60   70   80   90   100
+         |    |    |    |    |    |    |    |    |    |    |    |
+alpha_1: .... [===J_1.1(U_1)====] [===J_2.1(U_2)====] [===J_2.2(U_2)====]
+alpha_2: .... [===J_1.2(U_1)====] [===J_1.3(U_1)====] [===J_2.3(U_2)====]
+                   ^                   ^                   ^
+                   |                   |                   |
+              U_2 submits         Fair sched:          Only U_2
+              J_2 at t=15        U_2 prioritized      has pending</code></pre>
+<h2 id="summary-of-fair-scheduling-decisions">Summary of Fair Scheduling
+Decisions</h2>
+<table>
+<colgroup>
+<col style="width: 6%" />
+<col style="width: 5%" />
+<col style="width: 4%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 11%" />
+<col style="width: 11%" />
+<col style="width: 9%" />
+<col style="width: 22%" />
+</colgroup>
+<thead>
+<tr>
+<th>Cycle</th>
+<th>Time</th>
+<th>W_a</th>
+<th>Pending (U_1)</th>
+<th>Pending (U_2)</th>
+<th>pi(U_1)</th>
+<th>pi(U_2)</th>
+<th>Priority</th>
+<th>Allocated</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>t=10</td>
+<td>2</td>
+<td>3</td>
+<td>–</td>
+<td>(0, 0, -3)</td>
+<td>–</td>
+<td>U_1</td>
+<td>U_1: 2 (J_1.1, J_1.2)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>t=40</td>
+<td>2</td>
+<td>1</td>
+<td>3</td>
+<td>(0, 60, -1)</td>
+<td>(0, 0, -3)</td>
+<td>U_2&gt;U_1</td>
+<td>U_2: 1, U_1: 1</td>
+</tr>
+<tr>
+<td>7</td>
+<td>t=70</td>
+<td>2</td>
+<td>0</td>
+<td>2</td>
+<td>–</td>
+<td>(0, 30, -2)</td>
+<td>U_2</td>
+<td>U_2: 2 (J_2.2, J_2.3)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="message-flow-summary-all-messages-in-order">Message Flow Summary
+(all messages in order)</h2>
+<pre><code> #  Time  From     To       Message
+ 1  t=0   C_1      S        submit(Q, {R_1,R_2,R_3}, U_1)
+ 2  t=0   S        DB       INSERT jobs J_1.1, J_1.2, J_1.3 (Pending)
+ 3  t=10  Sigma_L  DB       SELECT pending/running jobs
+ 4  t=10  Sigma_L  Omega    SubmitWorkflow(J_1.1)
+ 5  t=10  Omega    alpha_1  CreatePod (execute J_1.1)
+ 6  t=10  Sigma_L  Omega    SubmitWorkflow(J_1.2)
+ 7  t=10  Omega    alpha_2  CreatePod (execute J_1.2)
+ 8  t=10  Sigma_L  DB       UPDATE J_1.1, J_1.2 -&gt; InProgress
+ 9  t=10  Sigma_L  Omega    GetWorkflowStatus(J_1.1) -&gt; Pending
+10  t=10  Sigma_L  Omega    GetWorkflowStatus(J_1.2) -&gt; Pending
+11  t=15  C_2      S        submit(Q&#39;, {R_4,R_5,R_6}, U_2)
+12  t=15  S        DB       INSERT jobs J_2.1, J_2.2, J_2.3 (Pending)
+13  t=20  Sigma_L  DB       SELECT running -&gt; W_r=2, W_a=0 (skip)
+14  t=20  Sigma_L  Omega    GetWorkflowStatus(J_1.1) -&gt; Running
+15  t=20  Sigma_L  Omega    GetWorkflowStatus(J_1.2) -&gt; Running
+16  t=30  Sigma_L  DB       SELECT running -&gt; W_r=2, W_a=0 (skip)
+17  t=30  Sigma_L  Omega    GetWorkflowStatus(J_1.1) -&gt; Running
+18  t=30  Sigma_L  Omega    GetWorkflowStatus(J_1.2) -&gt; Running
+19  t=40  alpha_1  MQ       publish(result_1.1)
+20  t=40  alpha_2  MQ       publish(result_1.2)
+21  t=40  MQ       S        consume(result_1.1)
+22  t=40  S        DB       SetResult + SetStatus(J_1.1, Succeeded)
+23  t=40  S        Sigma_L  TriggerScheduling()
+24  t=40  MQ       S        consume(result_1.2)
+25  t=40  S        DB       SetResult + SetStatus(J_1.2, Succeeded)
+26  t=40  Sigma_L  DB       SELECT pending/running -&gt; W_a=2
+27  t=40  Sigma_L  Omega    SubmitWorkflow(J_2.1) -- U_2 prioritized
+28  t=40  Omega    alpha_1  CreatePod (execute J_2.1)
+29  t=40  Sigma_L  Omega    SubmitWorkflow(J_1.3)
+30  t=40  Omega    alpha_2  CreatePod (execute J_1.3)
+31  t=40  Sigma_L  DB       UPDATE J_2.1, J_1.3 -&gt; InProgress
+32  t=50  Sigma_L  DB/Omega poll: W_r=2, W_a=0 (skip)
+33  t=60  Sigma_L  DB/Omega poll: W_r=2, W_a=0 (skip)
+34  t=70  alpha_1  MQ       publish(result_2.1)
+35  t=70  alpha_2  MQ       publish(result_1.3)
+36  t=70  MQ       S        consume(result_2.1, result_1.3)
+37  t=70  S        DB       SetResult + SetStatus -&gt; Succeeded
+38  t=70  S        Sigma_L  TriggerScheduling()
+39  t=70  Sigma_L  DB       SELECT pending -&gt; {J_2.2, J_2.3}, W_a=2
+40  t=70  Sigma_L  Omega    SubmitWorkflow(J_2.2), SubmitWorkflow(J_2.3)
+41  t=70  Omega    alpha_1  CreatePod (execute J_2.2)
+42  t=70  Omega    alpha_2  CreatePod (execute J_2.3)
+43  t=70  Sigma_L  DB       UPDATE J_2.2, J_2.3 -&gt; InProgress
+44  t=80  Sigma_L  DB/Omega poll: W_r=2, W_a=0 (skip)
+45  t=90  Sigma_L  DB/Omega poll: W_r=2, W_a=0 (skip)
+46  t=100 alpha_1  MQ       publish(result_2.2)
+47  t=100 alpha_2  MQ       publish(result_2.3)
+48  t=100 MQ       S        consume(result_2.2, result_2.3)
+49  t=100 S        DB       SetResult + SetStatus -&gt; Succeeded
+50  t=100 Sigma_L  DB       All Succeeded, no pending. System idle.</code></pre>
+</body>
+</html>

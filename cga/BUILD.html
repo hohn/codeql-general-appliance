@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Building the CVE CodeQL databases</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Building the CVE CodeQL databases</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#building-the-cve-codeql-databases"
+id="toc-building-the-cve-codeql-databases">Building the CVE CodeQL
+databases</a>
+<ul>
+<li><a href="#recommendation"
+id="toc-recommendation">Recommendation</a></li>
+<li><a href="#unit-of-work" id="toc-unit-of-work">Unit of work</a></li>
+<li><a href="#storage-layout" id="toc-storage-layout">Storage
+layout</a></li>
+<li><a href="#controller-and-container-lifecycle"
+id="toc-controller-and-container-lifecycle">Controller and container
+lifecycle</a></li>
+<li><a href="#success-means-more-than-exit-status"
+id="toc-success-means-more-than-exit-status">Success means more than
+exit status</a></li>
+<li><a href="#repair-policy-for-llm-workers"
+id="toc-repair-policy-for-llm-workers">Repair policy for LLM
+workers</a></li>
+<li><a href="#reporting-contract" id="toc-reporting-contract">Reporting
+contract</a></li>
+<li><a href="#rollout" id="toc-rollout">Rollout</a></li>
+<li><a href="#repository-integration"
+id="toc-repository-integration">Repository integration</a></li>
+<li><a href="#postgresql-controller"
+id="toc-postgresql-controller">PostgreSQL controller</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="building-the-cve-codeql-databases">Building the CVE CodeQL
+databases</h1>
+<h2 id="recommendation">Recommendation</h2>
+<p>The proposed Incus/ZFS arrangement is a good fit, with one important
+change: treat a build as a reproducible, immutable job described by a
+manifest, and treat the LLM as the repair agent for that job rather than
+as its scheduler or source of record. A small deterministic controller
+should assign work, capture logs and metadata, validate database output,
+and collect results. LLM reports then add diagnosis and reusable build
+knowledge without determining whether a job is complete.</p>
+<p>There are currently 61 <code>examples/cves/cve-*</code> directories,
+not 60. At three variants and two extraction modes, the present tree
+implies <strong>366 database jobs</strong>. If the intended total is
+360, the controller needs an explicit 60-project allowlist rather than
+deriving its workload from directory names.</p>
+<h2 id="unit-of-work">Unit of work</h2>
+<p>Use one job identity per tuple:</p>
+<pre class="text"><code>(CVE, source variant, extraction mode, source digest, toolchain digest)</code></pre>
+<p>For example:</p>
+<pre class="text"><code>cve-2016-9843 / vulnerable / trace / &lt;source-sha256&gt; / &lt;image+codeql-id&gt;</code></pre>
+<p>The extraction modes should be named <code>trace</code> and
+<code>none</code>. <code>trace</code> invokes
+<code>codeql database create</code> with the project’s real build
+command; <code>none</code> invokes it with
+<code>--build-mode=none</code> and no build command. Do not run both
+modes in the same checked-out source directory. Debian builds modify
+source trees, and the second result would otherwise depend on job order.
+Give each job a fresh ZFS clone or freshly unpacked source snapshot.</p>
+<p>The repository uses two vocabularies that should be normalized in the
+job manifest: specifications call the latter variants
+<code>patched</code> and <code>most-recent</code>, while downloaded
+directories currently use <code>fixed</code> and <code>current</code>.
+Pick canonical names and record aliases; do not let workers infer the
+mapping.</p>
+<h2 id="storage-layout">Storage layout</h2>
+<p>A full independent copy of the 3.9 GiB CVE tree in every container is
+unnecessary. It also makes it harder to know which inputs a worker
+actually used. Prefer three storage layers:</p>
+<ol type="1">
+<li>A small, read-only base image containing the OS, CodeQL CLI and
+packs, the checked-out CGA preparation code, and common build
+tooling.</li>
+<li>A read-only source cache with one verified pristine snapshot per
+CVE/variant. Download and unpack sources once, record hashes, then
+snapshot.</li>
+<li>A writable ZFS clone per job containing only that source snapshot,
+job workspace, logs, and database output.</li>
+</ol>
+<p>Mount only the selected CVE metadata into the worker if that makes
+the worker interface clearer, but avoid manufacturing 61 partial Git
+clones. A base snapshot plus a job-specific source mount provides the
+same consistency with less copying and a more explicit trust boundary.
+If a complete CGA preparation checkout inside every container is useful
+for tooling, make it a shared read-only image layer rather than a copied
+working tree.</p>
+<p>Use ZFS compression and per-job quotas. Snapshots/clones provide most
+of the space saving expected here; global ZFS dedup is usually not worth
+its memory and operational cost. Keep source archives, build products,
+CodeQL databases, and logs as separate datasets or directories so
+retention policies can differ.</p>
+<p>Database destinations must be unique and initially absent. On
+success, make the database artifact immutable (or snapshot it), then
+publish it by atomic rename into a results area. Never let two retries
+write the same destination.</p>
+<h2 id="controller-and-container-lifecycle">Controller and container
+lifecycle</h2>
+<p>Use a bounded pool of identical workers rather than starting 366
+containers at once. Set concurrency from measured CPU, RAM, I/O, and
+temporary-space peaks; native builds plus CodeQL extraction can consume
+much more space than the final bundled database. Start with a pilot set
+and raise concurrency only after observing high-water marks.</p>
+<p>Each job should follow this lifecycle:</p>
+<ol type="1">
+<li>Resolve the job manifest and verify the source digest.</li>
+<li>Clone a pristine source snapshot into a new workspace.</li>
+<li>Install declared build dependencies in a controlled preparation
+phase.</li>
+<li>Record the container image, OS/architecture, CodeQL version, packs,
+dependency state, environment, source digest, and exact command.</li>
+<li>Run one extraction mode with wall-clock and resource limits.</li>
+<li>Validate the database with CodeQL, record source-file counts and
+database size, and optionally bundle it.</li>
+<li>Publish result metadata and logs, then snapshot successful
+output.</li>
+<li>Destroy failed scratch state only after retaining the evidence
+needed for repair; destroy successful build intermediates according to
+policy.</li>
+</ol>
+<p>Separate dependency preparation from database creation in the logs
+even when the controller performs them in one container. This
+distinguishes an unavailable historical dependency from an extraction or
+compilation failure. Network access should be disabled during the actual
+database build if all inputs can be prefetched. At minimum, retain
+package repository snapshots or resolved package versions: an unpinned
+<code>apt-get build-dep</code> makes later retries different
+experiments.</p>
+<p>Architecture is part of the toolchain identity. Do not silently mix
+native arm64 builds, x86_64 builds, and emulated builds in one
+comparison set. If both are useful, make architecture another manifest
+dimension. On arm64 Linux this repository requires
+<code>CODEQL_JAVA_HOME=/usr</code>; put it in the arm64 container image
+and record it in the job environment, or CodeQL’s bundled x86_64 JRE
+fails with <code>Exec format error</code>.</p>
+<h2 id="success-means-more-than-exit-status">Success means more than
+exit status</h2>
+<p>A zero exit code is necessary but not sufficient. A successful job
+should have:</p>
+<ul>
+<li>a finalized, inspectable CodeQL database;</li>
+<li>the expected language and source root;</li>
+<li>nonzero extracted source/code where appropriate;</li>
+<li>captured extractor and build logs;</li>
+<li>a recorded database size and source-file count;</li>
+<li>immutable provenance linking it to source and toolchain digests;
+and</li>
+<li>optionally, a small smoke query that proves the database can be
+queried.</li>
+</ul>
+<p>The <code>none</code> database is not expected to be semantically
+equivalent to the traced database. It is the comparison subject. Record
+useful comparison metrics such as files seen, files extracted, database
+size, creation time, and smoke-query results. Keep the same CodeQL CLI
+and pack versions for each paired comparison.</p>
+<h2 id="repair-policy-for-llm-workers">Repair policy for LLM
+workers</h2>
+<p>Give the worker the original manifest, source, logs, and a fresh
+retry workspace. Permit repairs only under an explicit policy. It is
+reasonable to install missing dependencies, adjust environment
+variables, apply known compatibility flags, or correct the declared
+build command. It is not reasonable to change vulnerable source code
+merely to obtain a build unless that alteration is separately identified
+as a build-only patch.</p>
+<p>Every retry should be a new attempt with its own directory and
+report. Record all commands and file changes. A recovered job must
+report both success and the delta from the original recipe. Promote a
+repair into the central recipe only after it succeeds from a fresh
+pristine source snapshot; otherwise a dirty workspace can create a false
+recovery.</p>
+<p>Bound autonomous repair by attempt count and elapsed time. Terminal
+states should distinguish at least:</p>
+<pre class="text"><code>succeeded
+succeeded-after-repair
+failed-source
+failed-dependencies
+failed-build
+failed-extraction
+failed-validation
+timed-out
+infrastructure-error</code></pre>
+<h2 id="reporting-contract">Reporting contract</h2>
+<p>Require a machine-readable <code>result.json</code> from every
+attempt, alongside full stdout/stderr logs and an optional Markdown
+explanation. A useful minimum is:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;schema_version&quot;</span><span class="fu">:</span> <span class="dv">1</span><span class="fu">,</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;job_id&quot;</span><span class="fu">:</span> <span class="st">&quot;cve-2016-9843--vulnerable--trace--...&quot;</span><span class="fu">,</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;cve&quot;</span><span class="fu">:</span> <span class="st">&quot;CVE-2016-9843&quot;</span><span class="fu">,</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;variant&quot;</span><span class="fu">:</span> <span class="st">&quot;vulnerable&quot;</span><span class="fu">,</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;mode&quot;</span><span class="fu">:</span> <span class="st">&quot;trace&quot;</span><span class="fu">,</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;attempt&quot;</span><span class="fu">:</span> <span class="dv">1</span><span class="fu">,</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;status&quot;</span><span class="fu">:</span> <span class="st">&quot;succeeded&quot;</span><span class="fu">,</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;source_digest&quot;</span><span class="fu">:</span> <span class="st">&quot;sha256:...&quot;</span><span class="fu">,</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;toolchain_digest&quot;</span><span class="fu">:</span> <span class="st">&quot;sha256:...&quot;</span><span class="fu">,</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;started_at&quot;</span><span class="fu">:</span> <span class="st">&quot;...&quot;</span><span class="fu">,</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;finished_at&quot;</span><span class="fu">:</span> <span class="st">&quot;...&quot;</span><span class="fu">,</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;commands&quot;</span><span class="fu">:</span> <span class="ot">[]</span><span class="fu">,</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;changes&quot;</span><span class="fu">:</span> <span class="ot">[]</span><span class="fu">,</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;metrics&quot;</span><span class="fu">:</span> <span class="fu">{},</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;artifacts&quot;</span><span class="fu">:</span> <span class="fu">{},</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;failure&quot;</span><span class="fu">:</span> <span class="kw">null</span><span class="fu">,</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;insights&quot;</span><span class="fu">:</span> <span class="ot">[]</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<p>The central consolidator should ingest JSON, reject duplicate or
+mismatched job identities, and generate the human report from it.
+Free-form insights should carry a scope such as package, build system,
+distro release, architecture, or CodeQL version. That lets later agents
+retrieve relevant advice without blindly applying a workaround learned
+on an unrelated project. The consolidated knowledge base should preserve
+provenance back to the job and attempt that established each
+insight.</p>
+<h2 id="rollout">Rollout</h2>
+<p>Before launching the full matrix, run a representative pilot of
+roughly six projects: small and large sources, old and current Debian
+packaging, and more than one build system if present. Run all three
+variants and both modes for the pilot. Use it to establish:</p>
+<ul>
+<li>actual source, scratch, raw-database, and bundled-database
+sizes;</li>
+<li>RAM/CPU/I/O high-water marks and safe worker concurrency;</li>
+<li>timeout and retry limits;</li>
+<li>whether <code>none</code> validation and comparison metrics are
+meaningful;</li>
+<li>which dependencies belong in the base image; and</li>
+<li>whether the report schema captures every repair cleanly.</li>
+</ul>
+<p>Then freeze the base image and CodeQL version for the 366-job
+campaign. Run trace/none pairs near each other in time but in separate
+pristine workspaces. Periodically checkpoint the result index, and make
+reruns select jobs by manifest identity and terminal status rather than
+by inspecting directories.</p>
+<h2 id="repository-integration">Repository integration</h2>
+<p>The focused <code>cga db build</code> path consumes one immutable job
+and bundles one result. It intentionally does not model campaign
+attempts, retries, or distributed scheduling. The proposed matrix
+therefore needs a separate campaign driver whose manifest references
+<code>cga db plan</code> jobs and one-database records. Avoid
+overloading the build record with distributed-run semantics until the
+manifest and result schemas have been exercised by the pilot.</p>
+<p>The checked-in CVE metadata is small; downloaded material under each
+<code>tmp/</code> is ignored by Git and accounts for several GiB. On
+this host the <code>tmp</code> paths are relative symlinks into the
+adjacent durable
+<code>single-machine-mrva-artifacts/examples/cves/</code> tree. Keep
+generated databases and campaign reports outside the Git working tree.
+Commit only manifests, schemas, normalized recipes, concise consolidated
+findings, and tooling needed to reproduce the campaign. This also
+follows the parent repository’s storage rule: large database archives
+belong in external filesystem or object storage, never Git, Git LFS, or
+PostgreSQL. PostgreSQL, if used by a controller, should contain only job
+state, provenance, and artifact references.</p>
+<p>Preserve the existing CGA boundary. Database construction and
+catalogue generation belong to CGA preparation; downstream selection,
+download, query packing, and MRVA execution belong to CGA. Give all
+three variants distinct synthetic repository identities, as the current
+zlib fixture does, so qldbstore outputs cannot collide while the
+catalogue retains the original Debian package and version
+provenance.</p>
+<h2 id="postgresql-controller">PostgreSQL controller</h2>
+<p>A single PostgreSQL instance is preferable to a three-node cowsql
+cluster for this campaign. The controller is already the logical
+authority, the workload is finite and restartable, and temporary loss of
+coordination does not require the builds to remain continuously
+available. PostgreSQL also follows the existing MRVA deployment and
+operational model in this repository.</p>
+<p>PostgreSQL holds only coordination data: jobs, attempts, builders,
+leases, events, recipes, insights, and artifact references. Source
+trees, logs, build products, and CodeQL databases remain in ZFS or
+external filesystem/object storage. Put PostgreSQL itself on durable
+storage, back it up, and periodically export the job/result catalogue to
+JSON. The deterministic campaign manifest can recreate planned jobs, and
+published per-attempt result manifests can be used to reconcile artifact
+metadata after recovery.</p>
+<p>Builders claim work atomically with
+<code>FOR UPDATE SKIP LOCKED</code>. Claims are time-limited leases
+containing a random fencing token. Every heartbeat, phase change, and
+terminal update must match the job, builder, and current token; this
+prevents a late process from publishing over a job reassigned after its
+lease expired. A builder may own at most one active job. Expired jobs
+become new attempts rather than overwriting the history of the abandoned
+attempt.</p>
+<p>The controller can consist of separate scheduler/reconciler and
+read-only dashboard processes while remaining one logical authority.
+Builders may use a controller API or restricted PostgreSQL stored
+functions. The latter is a simple initial implementation: grant builders
+permission to execute the claim/heartbeat/result functions without
+granting arbitrary table writes. A single PostgreSQL node is inadequate
+only if job claiming and dashboard availability must survive loss of the
+database host without a recovery pause; that is not presently a campaign
+requirement.</p>
+<p>Successful jobs enter the master collection through
+<code>cgactl promote</code>, not by copying bundles manually. Promotion
+fetches the controller-recorded artifact, checks its size and SHA-256,
+unbundles and resolves it with CodeQL, installs it under a mode-bearing
+qldbstore identity, preserves the full attempt as a provenance sidecar,
+and updates the SQLite catalogue. The local master is the Git-ignored
+<code>db-collection.local/</code> tree.
+<code>collection-status --verify</code> audits the filesystem and
+hashes, while <code>collection-reconcile</code> compares it with the
+successful jobs in PostgreSQL without changing either side.</p>
+<p>Database creation should run through <code>cgactl measure</code>,
+including both traced and build-mode-none extraction. It samples
+aggregate process-group CPU, RSS, process count, and I/O every second
+and writes raw JSONL, a JSON summary, and a standalone HTML report
+beside the build artifacts. Promotion preserves these files under the
+job’s collection provenance. PostgreSQL stores only the promotion and
+report paths, and the host dashboard links the terminal status to the
+report; it does not ingest the sample stream.</p>
+<p>Production manifests use a deterministic <code>tree-sha256</code>
+identity over each prepared source tree, including paths, types,
+permission modes, symlink targets, and file contents. The zlib pilot was
+migrated from descriptor identity to tree identity without rebuilding
+the already-promoted vulnerable trace database. Its other five databases
+were then built and promoted with resource telemetry. The migrated
+database intentionally has no telemetry report because retaining its
+original bytes was the migration requirement.</p>
+<p>Campaign execution is staged rather than allowing opportunistic
+retries. Static workers run the canonical recipe and stop on failure. An
+explicit LLM sweep advances those terminal jobs to new attempts in the
+<code>llm-repair</code> lane; remaining failures escalate to a master
+LLM, which may select an exclusive profile using nearly all host
+resources while retaining a controller-enforced host reserve. Each
+attempt begins by restoring a registered immutable Incus base snapshot.
+LLMs are unrestricted inside that disposable container, while
+<code>cgactl</code> remains authoritative for leases, source/toolchain
+identity, attempt history, scheduling, validation, and host-side
+automatic promotion.</p>
+<p>This boundary is intentionally confined to CGA preparation. CGA
+consumes only the promoted database collection and does not receive
+build logs, repair recipes, container state, or campaign scheduling
+details. A future higher orchestrator may coordinate CGA preparation and
+CGA, but neither controller should absorb the other’s state model.</p>
+</body>
+</html>

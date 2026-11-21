@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>MRVA runtime notes</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+  </style>
+  <link rel="stylesheet" href="../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">MRVA runtime notes</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#mrva-runtime-notes" id="toc-mrva-runtime-notes">MRVA
+runtime notes</a>
+<ul>
+<li><a href="#modules-and-deployment"
+id="toc-modules-and-deployment">Modules and deployment</a></li>
+<li><a href="#configuration-and-scheduling"
+id="toc-configuration-and-scheduling">Configuration and
+scheduling</a></li>
+<li><a href="#identity" id="toc-identity">Identity</a></li>
+<li><a href="#storage" id="toc-storage">Storage</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="mrva-runtime-notes">MRVA runtime notes</h1>
+<p>Read for execution-system changes, starting with the relevant section
+and owning module or named symbol below. Investigate that module before
+widening to the whole-project map.</p>
+<h2 id="modules-and-deployment">Modules and deployment</h2>
+<ul>
+<li><code>server-commander</code> builds <code>mrvaserver</code>;
+<code>agent-commander-argo</code> builds <code>mrvaagent</code>. Both
+locally replace the shared <code>mrvacommander</code> module. Build each
+with <code>cd &lt;module&gt; &amp;&amp; go build ./...</code>.</li>
+<li>Standalone uses host PostgreSQL, local artifact storage, a
+filesystem CodeQL database store, and <code>LocalArgoClient</code>
+worker subprocesses. Container mode uses Argo integrations; it is
+another prototype deployment path, not a declaration of production
+readiness.</li>
+<li>Cluster URLs under <code>example.com</code>, image/package names,
+identity-exchange URNs, and annotation domains are generic placeholders.
+Configure endpoint/image overrides and adapt the buildpack and identity
+integration values before deploying container mode; standalone mode does
+not use these integrations.</li>
+<li>Legacy release examples use <code>enterprise-gh</code> and
+<code>/opt/example</code> as placeholder tool names and installation
+paths; adapt them to the host before use.</li>
+<li><code>cgamx</code> resolves build sources and default executables
+from its source checkout, independently of
+<code>CGAST_ROOT</code>/<code>CGA_ROOT</code>, which anchor workflow
+artifacts. Preserve explicit executable overrides such as
+<code>MRVA_ENVSIM_AGENT_BINARY</code>.</li>
+<li>Docker Compose files and <code>cmd/{server,agent}</code> Dockerfiles
+are earlier implementation material, not the starting local
+workflow.</li>
+<li>Compose and MinIO upload examples require exported
+<code>MINIO_ROOT_PASSWORD</code>; demo editors also require
+<code>CODE_SERVER_PASSWORD</code>. <code>.env.container</code> performs
+interpolation and preserves explicit store overrides; it is not a
+password store. Do not reintroduce shared passwords in scripts, images,
+or examples. Run
+<code>python3 -m unittest discover -s cga/tests -p test_container_credentials.py</code>
+for the template/upload credential checks.</li>
+</ul>
+<h2 id="configuration-and-scheduling">Configuration and scheduling</h2>
+<ul>
+<li>Defaults live in Go and are filled only when environment variables
+are unset. Harnesses expose overrides; do not move hidden policy into
+them.</li>
+<li><code>server-commander/main.go: applyStandaloneResourceDefaults()</code>
+exports resource defaults so the manager and spawned agents share them.
+Check that function before changing worker count, threads, or polling
+defaults.</li>
+<li>Every server runs a pool manager, but only the holder of the
+renewable PostgreSQL <code>scheduler_lock</code> lease runs pool cycles.
+Keep leader checks shorter than the lease. <code>MRVA_SERVER_ID</code>
+is an operator label; ownership uses a separate process-unique token.
+Advisory locks provide additional fencing.</li>
+<li>Submit wakes scheduling via
+<code>PoolManager.TriggerScheduling()</code>. Do not assume workers
+appear only on periodic ticks.</li>
+<li>Worker states are Idle, Busy, Draining, Exited. Starting workers are
+<code>pending_spawns</code>, not a fifth status; stale heartbeats can
+make apparently idle/busy workers unavailable.</li>
+<li>Worker/job coupling uses <code>worker_pool.current_job</code> as
+<code>sessionID/owner/repo</code> plus <code>job_info.worker_id</code>,
+not foreign keys.</li>
+</ul>
+<h2 id="identity">Identity</h2>
+<p>MRVA identity comes from JWT <code>sub</code> in container
+authentication or <code>X-MRVA-User</code> in standalone development
+authentication. Deployment wiring selects the authenticator; local
+examples do not require JWT infrastructure.</p>
+<h2 id="storage">Storage</h2>
+<ul>
+<li>PostgreSQL stores state and references, never large
+source/database/result blobs. Artifacts use MinIO/S3 or the
+filesystem.</li>
+<li>Container mode uses externally provided HEPC database endpoints.
+Local CGA workflows serve database archives with <code>cgadbserve</code>
+or <code>cgamx</code>; this plain HTTP service does not implement the
+HEPC metadata protocol.</li>
+<li><code>deploy.InitStandaloneArtifactStore</code> selects
+<code>MRVA_STANDALONE_STORAGE=minio|filesystem</code>;
+<code>--storage</code> overrides it and is inherited by workers. The Go
+default is MinIO, while the shared standalone harness defaults to
+filesystem for run-system-02. Do not conflate them.</li>
+<li>Cloud MinIO initialization uses HTTPS and a pre-provisioned bucket.
+Local initialization uses HTTP/path-style requests and may create the
+bucket.</li>
+<li>The local harness owns MinIO startup/shutdown; Go connects to it.
+Use the community server rather than accidentally installing a
+license-gated enterprise build. <code>MINIO_BIN</code> can select the
+executable.</li>
+</ul>
+</body>
+</html>

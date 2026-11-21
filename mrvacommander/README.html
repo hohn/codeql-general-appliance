@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Overview</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Overview</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#overview" id="toc-overview">Overview</a>
+<ul>
+<li><a href="#client-codeql-database-selector"
+id="toc-client-codeql-database-selector">Client CodeQL Database
+Selector</a></li>
+<li><a href="#reverse-proxy" id="toc-reverse-proxy">Reverse
+proxy</a></li>
+<li><a href="#cross-compile-server-on-host-run-it-in-container"
+id="toc-cross-compile-server-on-host-run-it-in-container">Cross-compile
+server on host, run it in container</a></li>
+<li><a href="#using-docker-compose" id="toc-using-docker-compose">Using
+docker-compose</a>
+<ul>
+<li><a href="#container-credentials"
+id="toc-container-credentials">Container credentials</a></li>
+<li><a href="#steps-to-build-and-run-the-server"
+id="toc-steps-to-build-and-run-the-server">Steps to build and run the
+server</a></li>
+<li><a href="#some-general-docker-compose-commands"
+id="toc-some-general-docker-compose-commands">Some general
+docker-compose commands</a></li>
+<li><a href="#use-the-minio-ql-database-db"
+id="toc-use-the-minio-ql-database-db">Use the minio ql database
+db</a></li>
+<li><a href="#use-the-minio-query-pack-db"
+id="toc-use-the-minio-query-pack-db">Use the minio query pack
+db</a></li>
+<li><a href="#to-run-use-the-minio-query-pack-db"
+id="toc-to-run-use-the-minio-query-pack-db">To run Use the minio query
+pack db</a></li>
+</ul></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="overview">Overview</h1>
+<p>TODO diagram</p>
+<p>TODO Style notes - NO package init() functions - Dynamic behaviour
+must be explicit</p>
+<h2 id="client-codeql-database-selector">Client CodeQL Database
+Selector</h2>
+<p>Separate from the server’s downloading of databases, a client-side
+interface is needed to generate the <code>databases.json</code> file.
+This</p>
+<ol type="1">
+<li>must be usable from the shell</li>
+<li>must be interactive (Python, Jupyter)</li>
+<li>is session based to allow iterations on selection / narrowing</li>
+<li>must be queryable. There is no need to reinvent sql /
+dataframes</li>
+</ol>
+<p>Python with dataframes is ideal for this; the project is in
+<code>client/</code>.</p>
+<h2 id="reverse-proxy">Reverse proxy</h2>
+<p>For testing, replay flows using mitmweb. This is faster and simpler
+than using gh-mrva or the VS Code plugin.</p>
+<ul>
+<li><p>Set up the virtual environment and install tools</p>
+<pre><code>python3.11 -m venv venv
+source venv/bin/activate
+pip install mitmproxy</code></pre></li>
+</ul>
+<p>For intercepting requests:</p>
+<ol type="1">
+<li><p>Start mitmproxy to listen on port 8080 and forward requests to
+port 8081, with web interface</p>
+<pre><code>mitmweb --mode reverse:http://localhost:8081 -p 8080</code></pre></li>
+<li><p>Change <code>server</code> ports in
+<code>docker-compose.yml</code> to</p>
+<pre><code>ports:
+- &quot;8081:8080&quot; # host:container</code></pre></li>
+<li><p>Start the containers.</p></li>
+<li><p>Submit requests.</p></li>
+<li><p>Save the flows for later replay.</p></li>
+</ol>
+<p>One such session is in <code>tools/mitmweb-flows</code>; it can be
+loaded to replay the requests:</p>
+<ol type="1">
+<li>start
+<code>mitmweb --mode reverse:http://localhost:8081 -p 8080</code></li>
+<li><code>file</code> &gt; <code>open</code> &gt;
+<code>tools/mitmweb-flows</code></li>
+<li>replay at least the submit, status, and download requests</li>
+</ol>
+<h2 id="cross-compile-server-on-host-run-it-in-container">Cross-compile
+server on host, run it in container</h2>
+<p>These are simple steps using a single container.</p>
+<ol type="1">
+<li><p>build server on host</p>
+<pre><code>GOOS=linux GOARCH=arm64 go build</code></pre></li>
+<li><p>build docker image</p>
+<pre><code>cd cmd/server
+docker build -t server-image .</code></pre></li>
+<li><p>Start container with shared directory</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-it</span> <span class="dt">\</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>       <span class="at">-v</span>   /Users/hohn/work-gh/mrva/mrvacommander:/mrva/mrvacommander <span class="dt">\</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>       server-image</span></code></pre></div></li>
+<li><p>Run server in container</p>
+<pre><code>cd /mrva/mrvacommander/cmd/server/ &amp;&amp; ./server</code></pre></li>
+</ol>
+<h2 id="using-docker-compose">Using docker-compose</h2>
+<p>Cluster integration URLs under <code>example.com</code> and the
+associated buildpack images/packages, identity-exchange URNs, and
+annotation domains are generic placeholders, not working services.
+Before using container/cluster mode, set <code>MRVA_ARGO_API_URL</code>,
+<code>MRVA_ARGO_PROXY</code>, <code>MRVA_IDENTITY_EXCHANGE_URL</code>,
+and <code>MRVA_ARGO_IMAGE</code> for your deployment. Adapt the
+buildpack configuration, JWT issuer/JWKS constants, token-type URNs,
+cluster annotation key, and per-cluster status URL in the integration
+code as needed. Standalone mode does not use these cluster
+integrations.</p>
+<p>Legacy release examples use the placeholder CLI name
+<code>enterprise-gh</code> and installation prefix
+<code>/opt/example</code>. Adapt these to your host’s tools and paths
+before running the examples.</p>
+<h3 id="container-credentials">Container credentials</h3>
+<p>Export the MinIO password before starting Compose or using the upload
+examples:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="bu">read</span> <span class="at">-rsp</span> <span class="st">&#39;MinIO root password: &#39;</span> <span class="va">MINIO_ROOT_PASSWORD</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="bu">printf</span> <span class="st">&#39;\n&#39;</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">MINIO_ROOT_PASSWORD</span></span></code></pre></div>
+<p>Use the configured password for existing stores.
+<code>MINIO_ROOT_USER</code> defaults to <code>user</code>; export it to
+select another account. <code>.env.container</code> interpolates the
+environment and rejects missing or empty passwords instead of storing
+one. Explicit <code>ARTIFACT_MINIO_*</code> and
+<code>QLDB_MINIO_*</code> settings remain overrides.</p>
+<p>The demo Compose files also require a separate editor password:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="bu">read</span> <span class="at">-rsp</span> <span class="st">&#39;Demo editor password: &#39;</span> <span class="va">CODE_SERVER_PASSWORD</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="bu">printf</span> <span class="st">&#39;\n&#39;</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">CODE_SERVER_PASSWORD</span></span></code></pre></div>
+<p>Do not commit either password. The editor Dockerfile supplies no
+default password.</p>
+<h3 id="steps-to-build-and-run-the-server">Steps to build and run the
+server</h3>
+<p>Steps to build and run the server in a multi-container environment
+set up by docker-compose.</p>
+<ol type="1">
+<li><p>Built the server-image, above</p></li>
+<li><p>Build server on host</p>
+<pre><code>cd ~/work-gh/mrva/mrvacommander/cmd/server/
+GOOS=linux GOARCH=arm64 go build</code></pre></li>
+<li><p>Start the containers</p>
+<pre><code>cd ~/work-gh/mrva/mrvacommander/
+docker-compose down
+docker-compose up -d</code></pre></li>
+<li><p>Run server in its container</p>
+<pre><code>cd ~/work-gh/mrva/mrvacommander/
+docker exec -it server bash
+cd /mrva/mrvacommander/cmd/server/ 
+./server -loglevel=debug -mode=container</code></pre></li>
+<li><p>Test server from the host via</p>
+<pre><code>cd ~/work-gh/mrva/mrvacommander/tools
+sh ./request_16-Jun-2024_11-33-16.curl</code></pre></li>
+<li><p>Follow server logging via</p>
+<pre><code>cd ~/work-gh/mrva/mrvacommander
+docker-compose up -d
+docker-compose logs -f server</code></pre></li>
+<li><p>Completely rebuild all containers. Useful when running into
+docker errors</p>
+<pre><code>cd ~/work-gh/mrva/mrvacommander
+docker-compose up --build</code></pre></li>
+<li><p>Start the server containers and the desktop/demo containers</p>
+<pre><code>cd ~/work-gh/mrva/mrvacommander/
+docker-compose down --remove-orphans
+docker-compose -f docker-compose-demo.yml up -d</code></pre></li>
+<li><p>Test server via remote client by following the steps in <a
+href="https://github.com/hohn/gh-mrva/blob/connection-redirect/README.org#compacted-edit-run-debug-cycle">gh-mrva</a></p></li>
+</ol>
+<h3 id="some-general-docker-compose-commands">Some general
+docker-compose commands</h3>
+<ol start="2" type="1">
+<li><p>Get service status</p>
+<pre><code>docker-compose ps</code></pre></li>
+<li><p>Stop services</p>
+<pre><code>docker-compose down</code></pre></li>
+<li><p>View all logs</p>
+<pre><code>docker-compose logs</code></pre></li>
+<li><p>check containers from server container</p>
+<pre><code>docker exec -it server bash
+curl -I http://rabbitmq:15672</code></pre></li>
+</ol>
+<h3 id="use-the-minio-ql-database-db">Use the minio ql database db</h3>
+<ol type="1">
+<li><p>Web access via</p>
+<pre><code>open http://localhost:9001/login</code></pre>
+<p>Use <code>MINIO_ROOT_USER</code> (default <code>user</code>) and your
+exported <code>MINIO_ROOT_PASSWORD</code>. The ql db listing will be
+at</p>
+<pre><code>http://localhost:9001/browser/qldb</code></pre></li>
+<li><p>Populate the database by running</p>
+<pre><code>./populate-dbstore.sh</code></pre>
+<p>from the host.</p></li>
+<li><p>The names in the bucket use the <code>owner_repo</code> format
+for now, e.g. <code>google_flatbuffers_db.zip</code>. TODO This will be
+enhanced to include other data later</p></li>
+<li><p>Test Go’s access to the dbstore – from the host – via</p>
+<pre><code>cd ./test
+go test -v</code></pre>
+<p>This should produce</p>
+<pre><code>=== RUN   TestDBListing
+dbstore_test.go:44: Object Key: google_flatbuffers_db.zip
+dbstore_test.go:44: Object Key: psycopg_psycopg2_db.zip</code></pre></li>
+</ol>
+<h3 id="use-the-minio-query-pack-db">Use the minio query pack db</h3>
+<ol type="1">
+<li><p>Web access via</p>
+<pre><code>open http://localhost:19001/login</code></pre>
+<p>Use <code>MINIO_ROOT_USER</code> (default <code>user</code>) and your
+exported <code>MINIO_ROOT_PASSWORD</code>. The query pack listing will
+be at</p>
+<pre><code>http://localhost:19001/browser/qpstore</code></pre></li>
+</ol>
+<h3 id="to-run-use-the-minio-query-pack-db">To run Use the minio query
+pack db</h3>
+</body>
+</html>

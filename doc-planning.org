@@ -1,0 +1,173 @@
+#+TITLE: Documentation planning
+
+* output header
+  # llm: this is purely for styling. ignore this section
+#+OPTIONS: H:3 num:t \n:nil @:t ::t |:t ^:{} f:t *:t TeX:t LaTeX:t skip:nil p:nil
+#+OPTIONS: toc:t
+#+LATEX_COMPILER: xelatex
+
+#+LATEX_HEADER: \usepackage{minted}
+#+LATEX_HEADER: \usepackage{amssymb}
+#+LATEX_HEADER: \usepackage{xcolor}
+#+LATEX_HEADER: \usepackage{newunicodechar}
+
+#+LATEX_HEADER: \usepackage{newunicodechar}
+
+#+LATEX_HEADER: \newunicodechar{₁}{\ensuremath{_1}}
+#+LATEX_HEADER: \newunicodechar{₂}{\ensuremath{_2}}
+#+LATEX_HEADER: \newunicodechar{₃}{\ensuremath{_3}}
+#+LATEX_HEADER: \newunicodechar{₄}{\ensuremath{_4}}
+#+LATEX_HEADER: \newunicodechar{₅}{\ensuremath{_5}}
+#+LATEX_HEADER: \newunicodechar{₆}{\ensuremath{_6}}
+#+LATEX_HEADER: \newunicodechar{₇}{\ensuremath{_7}}
+#+LATEX_HEADER: \newunicodechar{₈}{\ensuremath{_8}}
+#+LATEX_HEADER: \newunicodechar{₉}{\ensuremath{_9}}
+#+LATEX_HEADER: \newunicodechar{₀}{\ensuremath{_0}}
+
+#+LATEX_HEADER: \newunicodechar{ₐ}{\ensuremath{_a}}
+#+LATEX_HEADER: \newunicodechar{ₑ}{\ensuremath{_e}}
+#+LATEX_HEADER: \newunicodechar{ₒ}{\ensuremath{_o}}
+#+LATEX_HEADER: \newunicodechar{ₓ}{\ensuremath{_x}}
+#+LATEX_HEADER: \newunicodechar{ₙ}{\ensuremath{_n}}
+#+LATEX_HEADER: \newunicodechar{ₖ}{\ensuremath{_k}}
+#+LATEX_HEADER: \newunicodechar{ₘ}{\ensuremath{_m}}
+#+LATEX_HEADER: \newunicodechar{≡}{\ensuremath{\equiv}}
+#+LATEX_HEADER: \newunicodechar{…}{\ensuremath{\ldots}}
+
+#+LATEX_HEADER: \newunicodechar{≈}{\ensuremath{\mathrel{\approx}}}
+#+LATEX_HEADER: \newunicodechar{↓}{\ensuremath{\mathrel{\downarrow}}}
+#+LATEX_HEADER: \newunicodechar{✅}{\textcolor{green!50!black}{\ensuremath{\checkmark}}}
+#+LATEX_HEADER: \newunicodechar{❌}{\textcolor{red!70!black}{\ensuremath{\times}}}
+#+LATEX_HEADER: \newunicodechar{∣}{\ensuremath{\mid}}
+#+LATEX_HEADER: \newunicodechar{∈}{\ensuremath{\in}}
+#+LATEX_HEADER: \newunicodechar{→}{\ensuremath{\to}}
+#+LATEX_HEADER: \newunicodechar{⇒}{\ensuremath{\Rightarrow}}
+#+LATEX_HEADER: \newunicodechar{↦}{\ensuremath{\mapsto}}
+#+LATEX_HEADER: \newunicodechar{≥}{\ensuremath{\ge}}
+#+LATEX_HEADER: \newunicodechar{≤}{\ensuremath{\le}}
+#+LATEX_HEADER: \newunicodechar{≡}{\ensuremath{\equiv}}
+#+LATEX_HEADER: \newunicodechar{⊂}{\ensuremath{\subset}}
+#+LATEX_HEADER: \newunicodechar{⊃}{\ensuremath{\supset}}
+#+LATEX_HEADER: \newunicodechar{⊆}{\ensuremath{\subseteq}}
+#+LATEX_HEADER: \newunicodechar{⊇}{\ensuremath{\supseteq}}
+#+LATEX_HEADER: \newunicodechar{⟶}{\ensuremath{\longrightarrow}}
+#+LATEX_HEADER: \newunicodechar{⟵}{\ensuremath{\longleftarrow}}
+#+LATEX_HEADER: \newunicodechar{⋯}{\ensuremath{\cdots}}
+#+LATEX_HEADER: \newunicodechar{…}{\ensuremath{\ldots}}
+#+LATEX_HEADER: \newunicodechar{∪}{\ensuremath{\cup}}
+#+LATEX_HEADER: \newunicodechar{∩}{\ensuremath{\cap}}
+#+LATEX_HEADER: \newunicodechar{∧}{\ensuremath{\wedge}}
+#+LATEX_HEADER: \newunicodechar{∨}{\ensuremath{\vee}}
+#+LATEX_HEADER: \newunicodechar{¬}{\ensuremath{\neg}}
+#+LATEX_HEADER: \newunicodechar{∀}{\ensuremath{\forall}}
+#+LATEX_HEADER: \newunicodechar{∃}{\ensuremath{\exists}}
+#+LATEX_HEADER: \newunicodechar{⊢}{\ensuremath{\vdash}}
+#+LATEX_HEADER: \newunicodechar{⊨}{\ensuremath{\vDash}}
+#+LATEX_HEADER: \newunicodechar{⊥}{\ensuremath{\bot}}
+#+LATEX_HEADER: \newunicodechar{⊤}{\ensuremath{\top}}
+#+LATEX_HEADER: \newunicodechar{∅}{\ensuremath{\emptyset}}
+#+LATEX_HEADER: \newunicodechar{↔}{\ensuremath{\leftrightarrow}}
+#+LATEX_HEADER: \newunicodechar{⇔}{\ensuremath{\Leftrightarrow}}
+
+
+
+#+LATEX_HEADER: \usepackage[
+#+LATEX_HEADER:   paper=letterpaper,
+#+LATEX_HEADER:   left=1in,
+#+LATEX_HEADER:   right=1in,
+#+LATEX_HEADER:   top=1in,
+#+LATEX_HEADER:   bottom=1in
+#+LATEX_HEADER: ]{geometry}
+
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \setmainfont{Avenir Next}[
+#+LATEX_HEADER:   UprightFont = *,
+#+LATEX_HEADER:   ItalicFont = * Italic,
+#+LATEX_HEADER:   BoldFont = * Demi Bold,
+#+LATEX_HEADER:   BoldItalicFont = * Demi Bold Italic
+#+LATEX_HEADER: ]
+# #+LATEX_HEADER: \setmainfont{FS Baskerville}
+# #+LATEX_HEADER: \setmainfont{Adelle}
+# #+LATEX_HEADER: \setmonofont{CMU Typewriter Text}[
+# #+LATEX_HEADER:   Scale = MatchLowercase
+# #+LATEX_HEADER: ]
+
+
+#+HTML_HEAD: <style>
+#+HTML_HEAD: body {
+#+HTML_HEAD:   font-family: "Charter", "Avenir", "Avenir Next", "Average Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+#+HTML_HEAD:   font-weight: 400;
+#+HTML_HEAD:   line-height: 1.5;
+#+HTML_HEAD: }
+#+HTML_HEAD: code, pre, tt {
+#+HTML_HEAD:   font-family: "CMU Typewriter Text", "CMU Typewriter", "Courier New", monospace;
+#+HTML_HEAD:   font-size: 0.95em;
+#+HTML_HEAD:   background-color: #f8f8f8;
+#+HTML_HEAD:   border-radius: 4px;
+#+HTML_HEAD:   padding: 0.1em 0.25em;
+#+HTML_HEAD: }
+#+HTML_HEAD: pre {
+#+HTML_HEAD:   padding: 0.6em;
+#+HTML_HEAD:   border: 1px solid #ddd;
+#+HTML_HEAD:   background-color: #fdfdfd;
+#+HTML_HEAD:   overflow-x: auto;
+#+HTML_HEAD: }
+#+HTML_HEAD: </style>
+
+* Turn 1: User
+
+we now have extensive docs (good) but with one major problem (for humans): no clear reading order. One choice that comes to mind: group the 'cga' commands into |database creation| database application |query writing| result review |, then align the book/ content to that. Thoughts?
+
+* Turn 2: Assistant
+
+*Yes—organize around what the reader wants to accomplish, not which component implements it.* The current book starts with guides, then switches to a component inventory; readers must reconstruct the workflow themselves.
+
+Your four groups make sense. I would change “database application” to *“Apply queries”*: databases are inputs, while running queries is the activity.
+
+| Book part                 | Reader's goal                                                    | Main CGA commands                                        |
+|---------------------------+------------------------------------------------------------------+----------------------------------------------------------|
+| *Create databases*        | Turn source into validated databases and a catalogue             | =src-prep=, =database=, =catalog=                         |
+| *Write and prepare queries* | Develop queries and package selected inputs                    | =coder=, =query-gen=, =query-lib=                         |
+| *Apply queries*           | Select databases and queries, submit analyses, retrieve results   | =db-lib=, =query-lib=, =mrva-request=                     |
+| *Review results*          | Inspect findings, trace evidence, compare experiments, export     | =sarif-ingest=, =export=, =unified-view=, =bench=          |
+
+These are *task groups, not exclusive command categories*. =query-lib= bridges preparation and execution; Bench spans query iteration, execution, and comparison. Cross-link those rather than forcing each into exactly one box.
+
+For a clear reading order, I suggest:
+
+1. *Start here:* a short system picture and one complete example using existing databases and a supplied query. Reach an inspectable result without first learning database construction.
+2. *The four task parts above:* each starts with prerequisites, a core command sequence, expected outputs, and where to go next. Database creation and query writing are independent inputs to query application—not mandatory consecutive lessons.
+3. *Reference:* complete command help, workflow/history concepts, installation, service operation, architecture, and contributor material.
+
+The distinction is important: *the first reading path should be short; the book should still cover the whole lifecycle.*
+
+We already have useful foundations in =guides/introductory/cli-workflow.md= and the worked examples. I would reorganize the book's =SUMMARY.md= around these tasks, adding only short connective chapters where needed and retaining canonical component documentation through the existing symlinks. The advanced reading guide would remain a task index, not another competing tutorial.
+
+For the HTML help browser, the same groups could organize the left tree, with an additional *Workflow and operations* group for commands such as =init=, =chain=, =store=, and service management. That aligns navigation without renaming commands or changing their behavior.
+
+* Turn 3: User
+
+as an aside, how do we structure LLM docs?
+
+* Turn 4: Assistant
+
+*Share the factual documentation; give LLMs a different entry path.* Humans need a learning sequence; LLMs need to locate the relevant contracts and evidence with minimal reading.
+
+The existing structure is a good foundation:
+
+| Layer                | Purpose                                                                         | Current location                                 |
+|----------------------+---------------------------------------------------------------------------------+--------------------------------------------------|
+| *Core*               | Mandatory invariants, essential prohibitions, routing instructions; kept short   | =.agent-notes/README.md=                          |
+| *Task routing*       | Where to start, what to consult, when to stop reading                            | =READING-GUIDE.md=                               |
+| *Topic contracts*    | Non-obvious constraints, ownership boundaries, failure modes, relevant checks     | =.agent-notes/*.md=                               |
+| *Shared reference*   | Command behavior, examples, architecture; authoritative for humans and LLMs       | CLI help, component READMEs                      |
+| *Current evidence*   | Selected inputs, completed operations, unresolved work                           | =cga llm context …=, then referenced artifacts    |
+
+I would align *task routing* with the same four human-facing groups, while retaining implementation-oriented topic notes underneath. A task such as “create databases” should lead to its commands, preparation contracts, representative example, and smallest relevant checks—not require reading every preparation document.
+
+Two important boundaries:
+
+- *Do not duplicate the human manual in agent notes.* Record constraints and link to authoritative explanations.
+- *Do not put transient experiment state in permanent documentation.* Obtain it from read-only context commands and artifacts.
+
+So: *human book = learning order; LLM guide = selective reading order; shared sources = facts.* We mostly need to sharpen the routing, not create another documentation collection.

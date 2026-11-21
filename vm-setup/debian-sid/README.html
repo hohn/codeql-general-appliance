@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Debian sid development VM setup</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="../../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../../docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Debian sid development VM setup</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#debian-sid-development-vm-setup"
+id="toc-debian-sid-development-vm-setup">Debian sid development VM
+setup</a>
+<ul>
+<li><a href="#usage" id="toc-usage">Usage</a></li>
+<li><a href="#required-debian-packages"
+id="toc-required-debian-packages">Required Debian packages</a></li>
+<li><a href="#cached-upstream-tools"
+id="toc-cached-upstream-tools">Cached upstream tools</a></li>
+<li><a href="#optional-table-tools"
+id="toc-optional-table-tools">Optional table tools</a></li>
+<li><a href="#optional-development-packages"
+id="toc-optional-development-packages">Optional development
+packages</a></li>
+<li><a href="#verification" id="toc-verification">Verification</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="debian-sid-development-vm-setup">Debian sid development VM
+setup</h1>
+<p>This directory provisions a Debian sid machine whose primary purpose
+is CGA, CGA preparation, and standalone MRVA development. The canonical
+cross-distribution dependency discussion remains in <a
+href="../../INSTALL.html"><code>INSTALL.md</code></a>; this setup turns
+its Debian requirements into one repeatable host installation.</p>
+<h2 id="usage">Usage</h2>
+<p>Inspect package candidates, installation status, cached tools, and
+optional tools without changing the machine:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">./vm-setup/debian-sid/install-dependencies.sh</span> <span class="at">--list</span></span></code></pre></div>
+<p>Install all required dependencies, enable PostgreSQL, and publish
+cached tools under <code>/usr/local/bin</code>:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">./vm-setup/debian-sid/install-dependencies.sh</span></span></code></pre></div>
+<p>The script uses <code>sudo</code> when it is not already running as
+root. It is idempotent: apt handles installed packages, and upstream
+tools are downloaded only when their cached executable is absent.</p>
+<p>Optional packages are reported by <code>--list</code> and installed
+only when requested:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">./vm-setup/debian-sid/install-dependencies.sh</span> <span class="at">--with-table-tools</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">./vm-setup/debian-sid/install-dependencies.sh</span> <span class="at">--with-dev-tools</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="ex">./vm-setup/debian-sid/install-dependencies.sh</span> <span class="at">--with-optional</span></span></code></pre></div>
+<p>An optional package is passed to <code>apt-get install</code> only
+when <code>apt-cache policy</code> reports a candidate in the VM’s
+configured Debian repositories. The installer does not fall back to
+Cargo, Go, pip, npm, or arbitrary release binaries for optional
+tools.</p>
+<h2 id="required-debian-packages">Required Debian packages</h2>
+<p>The default installation requires these system-wide apt packages:</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Purpose</th>
+<th>Packages</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Shell and base utilities</td>
+<td><code>bash</code>, <code>bsdextrautils</code>,
+<code>ca-certificates</code>, <code>curl</code>, <code>less</code>,
+<code>procps</code>, <code>tar</code>, <code>unzip</code>,
+<code>util-linux</code>, <code>xz-utils</code>, <code>zip</code>,
+<code>zstd</code></td>
+</tr>
+<tr>
+<td>Native and Debian builds</td>
+<td><code>build-essential</code>, <code>devscripts</code>,
+<code>dpkg-dev</code></td>
+</tr>
+<tr>
+<td>Source and file transfer</td>
+<td><code>git</code>, <code>rsync</code></td>
+</tr>
+<tr>
+<td>Go and Python</td>
+<td><code>golang-go</code>, <code>python3</code>,
+<code>python3-pip</code>, <code>python3-venv</code></td>
+</tr>
+<tr>
+<td>CodeQL runtime</td>
+<td><code>default-jre-headless</code></td>
+</tr>
+<tr>
+<td>PostgreSQL</td>
+<td><code>postgresql</code>, <code>postgresql-client</code></td>
+</tr>
+<tr>
+<td>Data and SARIF tools</td>
+<td><code>duckdb</code>, <code>jq</code>, <code>sqlite3</code></td>
+</tr>
+<tr>
+<td>Harness and port inspection</td>
+<td><code>iproute2</code>, <code>lsof</code></td>
+</tr>
+<tr>
+<td>Documentation</td>
+<td><code>mdbook</code></td>
+</tr>
+</tbody>
+</table>
+<p>The script requires Go 1.25 or newer after apt installation. Debian
+sid currently satisfies that requirement. It fails clearly if a
+configured mirror offers an older version rather than silently
+installing a second Go toolchain. It likewise verifies the repository’s
+mdBook 0.5 minimum after installation.</p>
+<p><code>devscripts</code> provides <code>dget</code>, and
+<code>dpkg-dev</code> provides <code>dpkg-source</code>; both are called
+directly by CGA preparation’s Debian source materialization workflow.
+PostgreSQL and DuckDB are intentionally system packages on this
+dedicated development VM.</p>
+<h2 id="cached-upstream-tools">Cached upstream tools</h2>
+<p>CodeQL is required, and the community MinIO server is optional
+(<code>--with-minio</code>); neither is installed from Debian packages.
+Downloads are retained under the sibling artifact tree:</p>
+<pre class="text"><code>single-machine-mrva-artifacts/tools/
+|-- codeql-2.27.1/codeql/
+|-- downloads/codeql-bundle-v2.27.1-codeql-bundle-linux-ARCH.tar.gz
+`-- minio-ARCH/minio</code></pre>
+<p>The default artifact path is derived from the repository location.
+Override it with <code>TOOLS_DIR</code> or <code>--tools-dir</code>:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="va">TOOLS_DIR</span><span class="op">=</span>/srv/mrva-artifacts/tools <span class="dt">\</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="ex">./vm-setup/debian-sid/install-dependencies.sh</span></span></code></pre></div>
+<p>The installer:</p>
+<ol type="1">
+<li>uses an existing complete CodeQL bundle without downloading it
+again;</li>
+<li>otherwise downloads the pinned architecture-specific archive and
+checksum once (<code>linux-arm64</code> on ARM64, <code>linux64</code>
+on x86_64), verifies the archive, and extracts it atomically;</li>
+<li>links the cached CodeQL binary as
+<code>/usr/local/bin/codeql</code>; and</li>
+<li>writes <code>/etc/profile.d/mrva-codeql.sh</code> with
+<code>CODEQL_JAVA_HOME=/usr</code> and a <code>PATH</code> entry for the
+extracted CodeQL tree.</li>
+</ol>
+<p>With <code>--with-minio</code> (also enabled by
+<code>--with-optional</code>) it additionally reuses or downloads the
+architecture-specific community MinIO server once and links it as
+<code>/usr/local/bin/minio</code>. Local runs do not need MinIO (they
+use filesystem storage) and large deployments use a provided S3
+service.</p>
+<p>The CodeQL bundle is subject to GitHub’s CodeQL terms. MinIO is
+fetched from the community server download endpoint; the installer
+intentionally does not install the Debian <code>minio</code> package
+because that name may refer to AIStor.</p>
+<h2 id="optional-table-tools">Optional table tools</h2>
+<p>The names typed at the command line are not always Debian package
+names:</p>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>Requested command</th>
+<th>Debian package checked</th>
+<th>Installed command</th>
+<th>Sid status on 2026-09-16</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>vd</code></td>
+<td><code>visidata</code></td>
+<td><code>vd</code></td>
+<td>Available</td>
+</tr>
+<tr>
+<td><code>mlr</code></td>
+<td><code>miller</code></td>
+<td><code>mlr</code></td>
+<td>Available</td>
+</tr>
+<tr>
+<td><code>cvslens</code></td>
+<td><code>csvlens</code></td>
+<td><code>csvlens</code></td>
+<td>Unavailable; <code>cvslens</code> was also a typo</td>
+</tr>
+<tr>
+<td><code>tsv-utils</code></td>
+<td><code>tsv-utils</code></td>
+<td><code>tsv-summarize</code> and related tools</td>
+<td>Unavailable</td>
+</tr>
+<tr>
+<td><code>xsv</code></td>
+<td><code>xsv</code></td>
+<td><code>xsv</code></td>
+<td>Unavailable</td>
+</tr>
+<tr>
+<td><code>qsv</code></td>
+<td><code>qsv</code></td>
+<td><code>qsv</code></td>
+<td>Unavailable</td>
+</tr>
+</tbody>
+</table>
+<p>Repository availability changes over time. Treat <code>--list</code>
+as authoritative; the date-stamped status above explains the original
+failed <code>apt install</code>.</p>
+<p>For simple viewing, the required <code>bsdextrautils</code> package
+provides <code>column</code>, and the required <code>less</code> package
+supplies horizontal scrolling. No optional package is needed for:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cut</span> <span class="at">-f1-3,5</span> step-060.ram <span class="kw">|</span> <span class="ex">column</span> <span class="at">-t</span> <span class="at">-s</span> <span class="st">$&#39;</span><span class="dt">\t</span><span class="st">&#39;</span> <span class="kw">|</span> <span class="fu">less</span> <span class="at">-S</span></span></code></pre></div>
+<h2 id="optional-development-packages">Optional development
+packages</h2>
+<p><code>--with-dev-tools</code> offers Debian-packaged repository
+checks and auxiliary workflows: <code>shellcheck</code>,
+<code>shfmt</code>, <code>yamllint</code>, <code>nodejs</code>,
+<code>npm</code>, <code>ruby-mdl</code>, <code>graphviz</code>,
+<code>pandoc</code>, <code>tmux</code>, and <code>yq</code>. Each is
+candidate-checked before installation. Tools installed through language
+package managers, such as <code>prettier</code>,
+<code>markdownlint-cli</code>, <code>golangci-lint</code>, and
+<code>go-grip</code>, remain explicit follow-up steps in <a
+href="../../INSTALL.html"><code>INSTALL.md</code></a>.</p>
+<h2 id="verification">Verification</h2>
+<p>The installer finishes by printing versions for Go, Python,
+PostgreSQL, SQLite, DuckDB, mdBook, and CodeQL (and MinIO when
+<code>--with-minio</code> is given). Continue with the canonical
+non-destructive preflight:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> cga/system-tests</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ex">./run-system-02</span> preflight</span></code></pre></div>
+</body>
+</html>

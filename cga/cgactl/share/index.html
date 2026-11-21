@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>CGA build controller</title>
+  <link rel="stylesheet" href="/dashboard.css">
+</head>
+<body>
+  <header><h1>CGA build controller</h1><span id="updated">loading</span></header>
+  <main>
+    <section><h2>Campaign</h2><div id="counts" class="cards"></div></section>
+    <section><h2>Builders</h2><div id="builders" class="cards"></div></section>
+    <section><h2>Jobs</h2><div class="table-wrap"><table id="jobs">
+      <thead><tr><th>CVE</th><th>package</th><th>variant</th><th>mode</th>
+        <th>lane</th><th>status</th><th>disposition</th><th>promotion</th>
+        <th>detail</th><th>resources</th><th>builder</th><th>attempt</th><th>updated</th></tr></thead>
+      <tbody></tbody>
+    </table></div></section>
+  </main>
+  <script src="/dashboard.js"></script>
+</body>
+</html>

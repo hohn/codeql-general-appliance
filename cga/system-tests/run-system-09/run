@@ -1,0 +1,524 @@
+#!/usr/bin/env bash
+#
+# run-system-09 -- complete CGA preparation-to-export end-to-end test.
+#
+# This test exercises the entire extended workflow:
+#
+#   CGA preparation: cgacv -> cgasp -> cgadb -> cgaqg
+#                         explicit artifact handoff
+#   CGA:                  cgadl/cgaql -> cgamr -> cgasi -> cgaex
+#
+# It creates one small local Git repository containing a Debian-packaged C
+# source tree and three commits representing vulnerable, patched, and
+# most-recent variants. A localhost HTTP server exposes the repository through
+# Git's dumb-HTTP protocol, keeping the test deterministic and independent of
+# external package archives. CodeQL databases, MRVA execution, SARIF ingestion,
+# and both final exports are real.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SYSTEM_TESTS_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+REPO_ROOT="$(cd "${SYSTEM_TESTS_DIR}/../.." && pwd)"
+CGA_ROOT="${REPO_ROOT}/cga"
+CGA_PREP_ROOT="${REPO_ROOT}/cga"
+cd "$SYSTEM_TESTS_DIR"
+
+export CGA_ROOT
+export CGA_PREP_ROOT
+export RUN_TAG="${RUN_TAG:-cga-system-09}"
+export MRVA_WORK_DIR="${MRVA_WORK_DIR:-/tmp/mrva-cga-system-09}"
+export MRVA_TMP_DIR="${MRVA_TMP_DIR:-/tmp/mrva-${RUN_TAG}}"
+export MRVA_STANDALONE_STORAGE="${MRVA_STANDALONE_STORAGE:-filesystem}"
+export MRVA_DB_SERVE_DIR="${MRVA_DB_SERVE_DIR:-${MRVA_WORK_DIR}/db-serve}"
+export PORT="${PORT:-8081}"
+export DB_SERVER_PORT="${DB_SERVER_PORT:-9080}"
+export CGA_MRVA_SERVER="${CGA_MRVA_SERVER:-http://127.0.0.1:${PORT}}"
+export CODEQL_JAVA_HOME="${CODEQL_JAVA_HOME:-/usr}"
+export POLL_INTERVAL="${POLL_INTERVAL:-2}"
+export POLL_DEADLINE_SECS="${POLL_DEADLINE_SECS:-600}"
+
+TEST_ROOT="${CGA_SYSTEM09_ROOT:-/tmp/cga-system-09}"
+export CGA_TMPDIR="${CGA_TMPDIR:-${TEST_ROOT}/cgast}"
+export CGA_SESSION="${CGA_SESSION:-${TEST_ROOT}/cga-session.json}"
+export CGA_PREP_TMPDIR="${CGA_PREP_TMPDIR:-${TEST_ROOT}/cga-prep-st}"
+export CGA_PREP_SESSION="${CGA_PREP_SESSION:-${TEST_ROOT}/cga-prep-session.json}"
+FIXTURE_ROOT="${TEST_ROOT}/fixture-http"
+FIXTURE_REPO="${FIXTURE_ROOT}/zlib"
+FIXTURE_PORT="${FIXTURE_PORT:-9091}"
+FIXTURE_PID_FILE="${TEST_ROOT}/fixture-http.pid"
+SPEC="${TEST_ROOT}/spec.json"
+SOURCE_ROOT="${TEST_ROOT}/sources"
+QUERY_ROOT="${TEST_ROOT}/queries"
+CATALOG="${TEST_ROOT}/metadata.sql"
+JOBS_ROOT="${TEST_ROOT}/jobs"
+CATALOG_MANIFEST="${TEST_ROOT}/catalogue-manifest.json"
+export CGA_TEST_WORKFLOW="${CGA_TEST_WORKFLOW:-${TEST_ROOT}/analysis}"
+CGA_PREP_WORKFLOW="${CGA_PREP_WORKFLOW:-${TEST_ROOT}/preparation}"
+DOWNLOAD_ROOT="${TEST_ROOT}/downloads"
+INGEST_ROOT="${TEST_ROOT}/ingest"
+HUMAN_EXPORT="${TEST_ROOT}/report.md"
+LLM_EXPORT="${TEST_ROOT}/report.json"
+SUBMISSION="${SUBMISSION:-cga-system-09}"
+USER_NAME="${USER_NAME:-system09}"
+
+if [ -n "${CODEQL_CLI_PATH:-}" ]; then
+    PATH="$(dirname "$CODEQL_CLI_PATH"):${PATH}"
+fi
+export PATH
+
+. "${SYSTEM_TESTS_DIR}/standalone-multi-agent-lib.sh"
+
+mkdir -p "$TEST_ROOT" "$CGA_TMPDIR" "$CGA_PREP_TMPDIR"
+
+cga_step() {
+    cga "$@" || return
+    cga state export --output "$CGA_SESSION"
+}
+
+prep_step() {
+    local CGA_TEST_WORKFLOW="$CGA_PREP_WORKFLOW"
+    CGAST_TMPDIR="$CGA_PREP_TMPDIR" cga "$@" || return
+    cga state export --output "$CGA_PREP_SESSION"
+}
+
+require_command() {
+    command -v "$1" >/dev/null 2>&1 || {
+        echo "ERROR: required command not found: $1" >&2
+        return 1
+    }
+}
+
+fixture_stop() {
+    local pid=""
+    pid="$(cat "$FIXTURE_PID_FILE" 2>/dev/null || true)"
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+        kill "$pid"
+        local _
+        for _ in $(seq 1 30); do
+            kill -0 "$pid" 2>/dev/null || break
+            sleep 0.1
+        done
+    fi
+    rm -f "$FIXTURE_PID_FILE"
+}
+
+fixture_start() {
+    fixture_stop
+    setsid python3 -m http.server "$FIXTURE_PORT" --bind 127.0.0.1 \
+        --directory "$FIXTURE_ROOT" </dev/null \
+        >"${TEST_ROOT}/fixture-http.log" 2>&1 &
+    local pid=$!
+    echo "$pid" > "$FIXTURE_PID_FILE"
+    local _
+    for _ in $(seq 1 30); do
+        if curl -sf "http://127.0.0.1:${FIXTURE_PORT}/zlib/.git/HEAD" \
+                >/dev/null 2>&1; then
+            echo "  fixture Git server up (pid ${pid}, :${FIXTURE_PORT})"
+            return 0
+        fi
+        sleep 0.1
+    done
+    echo "ERROR: fixture Git server did not start" >&2
+    tail -20 "${TEST_ROOT}/fixture-http.log" >&2 || true
+    return 1
+}
+
+write_source_tree() {
+    local return_value="$1" label="$2"
+    cat >"${FIXTURE_REPO}/marker.c" <<EOF
+int cga_variant_marker(void) {
+    return ${return_value};
+}
+EOF
+    cat >"${FIXTURE_REPO}/Makefile" <<'EOF'
+.PHONY: all clean
+all: marker.o
+marker.o: marker.c
+	$(CC) -g -O0 -Wall -Wextra -c marker.c -o marker.o
+clean:
+	rm -f marker.o
+EOF
+    mkdir -p "${FIXTURE_REPO}/debian/source"
+    cat >"${FIXTURE_REPO}/debian/control" <<'EOF'
+Source: zlib
+Section: libs
+Priority: optional
+Maintainer: CGA System Test <cga-system09@example.invalid>
+Build-Depends: gcc, make
+Standards-Version: 4.6.2
+
+Package: zlib-cga-system09
+Architecture: any
+Description: deterministic CGA complete-workflow fixture
+ Small Debian-packaged C source used only by run-system-09.
+EOF
+    cat >"${FIXTURE_REPO}/debian/changelog" <<EOF
+zlib (1.0-${return_value}) unstable; urgency=medium
+
+  * ${label} fixture revision.
+
+ -- CGA System Test <cga-system09@example.invalid>  Thu, 01 Jan 2026 00:00:00 +0000
+EOF
+    cat >"${FIXTURE_REPO}/debian/source/format" <<'EOF'
+3.0 (native)
+EOF
+    cat >"${FIXTURE_REPO}/debian/rules" <<'EOF'
+#!/usr/bin/make -f
+%:
+	dh $@
+EOF
+    chmod +x "${FIXTURE_REPO}/debian/rules"
+}
+
+phase_preflight() {
+    echo "--- preflight ---"
+    local command
+    for command in codeql go git python3 curl cc make psql pg_isready \
+        sqlite3 duckdb; do
+        require_command "$command"
+    done
+    cga_step mx preflight
+}
+
+phase_reset() {
+    echo "--- reset ---"
+    fixture_stop
+    rm -rf "$TEST_ROOT"
+    mkdir -p "$TEST_ROOT" "$CGA_TMPDIR" "$CGA_PREP_TMPDIR"
+    cga_step mx reset
+    cga_step chain start --name analysis
+    prep_step chain start --name preparation
+}
+
+phase_build() {
+    echo "--- build MRVA ---"
+    cga_step mx build
+}
+
+phase_start() {
+    echo "--- start MRVA ---"
+    cga_step mx start
+}
+
+phase_fixtures() {
+    echo "--- create three-revision Debian source fixture ---"
+    rm -rf "$FIXTURE_ROOT"
+    mkdir -p "$FIXTURE_REPO"
+    git -C "$FIXTURE_REPO" init -q
+
+    write_source_tree 0 vulnerable
+    git -C "$FIXTURE_REPO" add .
+    git -C "$FIXTURE_REPO" \
+        -c user.name="CGA System Test" \
+        -c user.email="cga-system09@example.invalid" \
+        commit -q -m "vulnerable fixture"
+    local vulnerable
+    vulnerable="$(git -C "$FIXTURE_REPO" rev-parse HEAD)"
+
+    write_source_tree 1 patched
+    git -C "$FIXTURE_REPO" add .
+    git -C "$FIXTURE_REPO" \
+        -c user.name="CGA System Test" \
+        -c user.email="cga-system09@example.invalid" \
+        commit -q -m "patched fixture"
+    local patched
+    patched="$(git -C "$FIXTURE_REPO" rev-parse HEAD)"
+
+    write_source_tree 2 most-recent
+    git -C "$FIXTURE_REPO" add .
+    git -C "$FIXTURE_REPO" \
+        -c user.name="CGA System Test" \
+        -c user.email="cga-system09@example.invalid" \
+        commit -q -m "most-recent fixture"
+    local recent
+    recent="$(git -C "$FIXTURE_REPO" rev-parse HEAD)"
+
+    git -C "$FIXTURE_REPO" update-server-info
+    fixture_start
+
+    cat >"$SPEC" <<EOF
+{
+  "version": 1,
+  "cves": [{
+    "id": "CVE-2016-9843",
+    "url": "https://www.cve.org/CVERecord?id=CVE-2016-9843",
+    "debian": {
+      "source_package": "zlib",
+      "tracker": "https://security-tracker.debian.org/tracker/CVE-2016-9843"
+    },
+    "language": "cpp",
+    "variants": [
+      {
+        "name": "vulnerable",
+        "version": "1:1.2.8.dfsg-2",
+        "source": {
+          "strategy": "git",
+          "url": "http://127.0.0.1:${FIXTURE_PORT}/zlib/.git",
+          "ref": "${vulnerable}"
+        }
+      },
+      {
+        "name": "patched",
+        "version": "1:1.2.8.dfsg-2+deb8u1",
+        "source": {
+          "strategy": "git",
+          "url": "http://127.0.0.1:${FIXTURE_PORT}/zlib/.git",
+          "ref": "${patched}"
+        }
+      },
+      {
+        "name": "most-recent",
+        "version": "1:1.3.dfsg+really1.3.2-3",
+        "source": {
+          "strategy": "git",
+          "url": "http://127.0.0.1:${FIXTURE_PORT}/zlib/.git",
+          "ref": "${recent}"
+        }
+      }
+    ],
+    "build": {
+      "dependencies": [["true"]],
+      "command": "make clean all"
+    },
+    "queries": [{
+      "id": "cga/system-09-cve-location",
+      "name": "System 09 CVE location",
+      "filename": "CVE-2016-9843-location.ql",
+      "path": "${SCRIPT_DIR}/CVE-2016-9843-location.ql"
+    }]
+  }]
+}
+EOF
+}
+
+phase_prepare() {
+    echo "--- CGA preparation: CVE -> sources -> DB/query artifacts ---"
+    prep_step cv import "$SPEC"
+    prep_step cv validate
+    prep_step cv select --cve CVE-2016-9843
+    prep_step cv expand
+    prep_step sp plan
+    prep_step sp fetch --output-dir "$SOURCE_ROOT"
+    fixture_stop
+    prep_step db plan --mode bm-none --output-dir "$JOBS_ROOT"
+    local job
+    while IFS= read -r job; do
+        prep_step db build --job "$job" --bm-none --output-dir "$MRVA_DB_SERVE_DIR"
+    done < <(python3 - "$JOBS_ROOT/jobs.json" <<'PY'
+import json, sys
+for item in json.load(open(sys.argv[1], encoding="utf-8"))["items"]:
+    print(item["job"])
+PY
+)
+    prep_step cat create --output "$CATALOG" --manifest "$CATALOG_MANIFEST"
+    prep_step cat verify --catalog "$CATALOG" --manifest "$CATALOG_MANIFEST"
+    prep_step qg materialize --output-dir "$QUERY_ROOT"
+    prep_step qg index
+
+    echo "--- explicit CGA preparation -> CGA artifact handoff ---"
+    cga_step dl getmeta "$CATALOG"
+    cga_step dl select
+    cga_step dl download --output-dir "$MRVA_DB_SERVE_DIR"
+    cga_step ql index "$QUERY_ROOT"
+    cga_step ql select
+    cga_step ql pack
+}
+
+phase_submit() {
+    echo "--- submit three variants to MRVA ---"
+    cga_step mr submit \
+        --name "$SUBMISSION" \
+        --user "$USER_NAME" \
+        --language cpp
+}
+
+submission_status() {
+    python3 - "$CGA_SESSION" "$SUBMISSION" <<'PY'
+import json
+import sys
+
+state = json.load(open(sys.argv[1], encoding="utf-8"))
+item = state.get("cgamr-submissions", {}).get(sys.argv[2], {})
+print(item.get("status", ""))
+PY
+}
+
+phase_wait() {
+    echo "--- wait for MRVA completion ---"
+    local deadline status
+    deadline=$(( $(date +%s) + POLL_DEADLINE_SECS ))
+    while :; do
+        cga_step mr status --name "$SUBMISSION"
+        status="$(submission_status)"
+        echo "  status=${status}"
+        case "$status" in
+            succeeded) return 0 ;;
+            failed|cancelled|canceled|timed_out)
+                echo "ERROR: submission ended with ${status}" >&2
+                return 1
+                ;;
+        esac
+        if [ "$(date +%s)" -ge "$deadline" ]; then
+            echo "ERROR: timed out waiting for ${SUBMISSION}" >&2
+            return 1
+        fi
+        sleep "$POLL_INTERVAL"
+    done
+}
+
+phase_download() {
+    echo "--- download SARIF archives ---"
+    cga_step mr download \
+        --name "$SUBMISSION" \
+        --output-dir "$DOWNLOAD_ROOT"
+}
+
+phase_ingest() {
+    echo "--- ingest SARIF ---"
+    cga_step si ingest \
+        --name "$SUBMISSION" \
+        --output-dir "$INGEST_ROOT"
+}
+
+phase_export() {
+    echo "--- export human + LLM results ---"
+    cga_step ex human --output "$HUMAN_EXPORT"
+    cga_step ex llm --output "$LLM_EXPORT"
+}
+
+phase_verify() {
+    echo "--- verify complete workflow ---"
+    cga_step mr verify "$SUBMISSION"
+    cga_step si verify "$SUBMISSION"
+    cga_step mx check
+    python3 - "$CGA_SESSION" "$CGA_PREP_SESSION" "$LLM_EXPORT" "$HUMAN_EXPORT" \
+        "$SUBMISSION" "$CATALOG_MANIFEST" <<'PY'
+import json
+import pathlib
+import sys
+
+state = json.load(open(sys.argv[1], encoding="utf-8"))
+preparation = json.load(open(sys.argv[2], encoding="utf-8"))
+assert not any(
+    key.startswith(("cgadl-", "cgaql-")) for key in preparation
+), preparation
+assert not any(
+    key.startswith(("cgacv-", "cgasp-", "cgadb-", "cgadbplan-", "cgacatalog-", "cgaqg-"))
+    for key in state
+), state
+name = sys.argv[5]
+submission = state["cgamr-submissions"][name]
+assert len(submission["repositories"]) == 3, submission
+assert len(submission["downloads"]) == 3, submission
+databases = json.load(open(sys.argv[6], encoding="utf-8"))["databases"]
+assert len(databases) == 3, databases
+assert {item["variant"] for item in databases} == {
+    "vulnerable", "patched", "most-recent",
+}, databases
+assert all(item["mode"] == "none" for item in databases), databases
+assert all(item["repository"] == "debian/zlib-" + item["sha256"]
+           for item in databases), databases
+assert set(submission["repositories"]) == {
+    item["repository"] for item in databases
+}
+ingestion = state["cgasi-ingestions"][name]
+assert ingestion["finding_count"] == 3, ingestion
+machine = json.load(open(sys.argv[3], encoding="utf-8"))
+assert machine["schema"] == "cga.analysis-export.v2", machine
+assert machine["summary"]["finding_count"] == 3, machine["summary"]
+human = pathlib.Path(sys.argv[4]).read_text(encoding="utf-8")
+assert "Findings: **3**" in human, human
+print("PASS: 1 CVE x 3 variants x 1 query -> 3 findings -> 2 exports")
+PY
+}
+
+phase_info() {
+    cga_step mx info
+    prep_step cv info
+    prep_step sp info
+    prep_step db-plan info
+    prep_step cat info
+    prep_step qg info
+    cga_step mr info
+    cga_step si info
+    cga_step ex info
+    echo "  CGA preparation session: $CGA_PREP_SESSION"
+    echo "  CGA session:  $CGA_SESSION"
+    echo "  human:   $HUMAN_EXPORT"
+    echo "  LLM:     $LLM_EXPORT"
+}
+
+phase_stop() {
+    fixture_stop
+    cga_step mx stop
+}
+
+phase_cleanup() {
+    fixture_stop
+    cga_step mx cleanup
+    rm -rf "$TEST_ROOT"
+}
+
+phase_all() {
+    phase_preflight
+    phase_reset
+    phase_build
+    phase_start
+    phase_fixtures
+    phase_prepare
+    phase_submit
+    phase_wait
+    phase_download
+    phase_ingest
+    phase_export
+    phase_verify
+    echo
+    echo "run-system-09 PASS"
+    echo "MRVA remains running for inspection; use '$0 cleanup' when done."
+}
+
+usage() {
+    cat <<EOF
+usage: $0 COMMAND
+
+Commands:
+  all        run the complete CVE-to-export workflow
+  preflight  check tools/Postgres and reclaim service ports
+  reset      drop MRVA tables and reset system-09 state
+  build      build mrvaserver and mrvaagent
+  start      start standalone MRVA
+  fixtures   create and serve the three-revision source fixture
+  prepare    form source, database, and query libraries
+  submit     submit the three generated databases
+  wait       poll until the submission reaches a terminal state
+  download   download all result archives
+  ingest     ingest SARIF into the cumulative result store
+  export     write human and LLM result exports
+  verify     verify repository, SARIF, finding, export, and log invariants
+  info       print component state and artifact locations
+  stop       stop services but keep state and artifacts
+  cleanup    stop services and remove all system-09 state
+EOF
+}
+
+case "${1:-}" in
+    all) phase_all ;;
+    preflight) phase_preflight ;;
+    reset) phase_reset ;;
+    build) phase_build ;;
+    start) phase_start ;;
+    fixtures) phase_fixtures ;;
+    prepare) phase_prepare ;;
+    submit) phase_submit ;;
+    wait) phase_wait ;;
+    download) phase_download ;;
+    ingest) phase_ingest ;;
+    export) phase_export ;;
+    verify) phase_verify ;;
+    info) phase_info ;;
+    stop) phase_stop ;;
+    cleanup) phase_cleanup ;;
+    help|-h|--help|"") usage ;;
+    *) usage >&2; exit 2 ;;
+esac

@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>CGA preparation</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">CGA preparation</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#cga-preparation" id="toc-cga-preparation">CGA
+preparation</a>
+<ul>
+<li><a href="#command-reference" id="toc-command-reference">Command
+reference</a>
+<ul>
+<li><a href="#orchestration"
+id="toc-orchestration">Orchestration</a></li>
+<li><a href="#cgacv-cve-specifications"
+id="toc-cgacv-cve-specifications"><code>cgacv</code> — CVE
+specifications</a></li>
+<li><a href="#cgasp-source-preparation"
+id="toc-cgasp-source-preparation"><code>cgasp</code> — source
+preparation</a></li>
+<li><a href="#codeql-database-preparation"
+id="toc-codeql-database-preparation">CodeQL database
+preparation</a></li>
+<li><a href="#cgaqg-query-generation"
+id="toc-cgaqg-query-generation"><code>cgaqg</code> — query
+generation</a></li>
+</ul></li>
+<li><a href="#service-lifecycle-commands"
+id="toc-service-lifecycle-commands">Service lifecycle commands</a></li>
+<li><a href="#explicit-handoff-to-cga"
+id="toc-explicit-handoff-to-cga">Explicit handoff to CGA</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="cga-preparation">CGA preparation</h1>
+<p>The preparation tools are the part of the <code>cga/</code>
+collection that produces the inputs the selection side can run. They
+turn CVE specifications into source work items, CodeQL database archives
+plus a catalogue, and a query directory. They do not select an analysis
+or submit one to MRVA. They keep their own preparation session, ports,
+and web page, and hand their outputs to the analysis tools
+(<code>cgadl</code>, <code>cgaql</code>) explicitly.</p>
+<p>The four input-preparation commands are JSON-in/JSON-out filters with
+their own preparation state:</p>
+<pre class="text"><code>cgacv -&gt; cgasp -&gt; cgadb
+                  -&gt; cgaqg</code></pre>
+<p>For guided database preparation use <a
+href="cgaassist/README.html"><code>cga a d</code></a>: <code>fetch</code>,
+<code>build</code>, <code>index</code>, and <code>export</code>. It
+orchestrates the plumbing below in a recorded preparation workflow.
+<code>fetch</code>/<code>build --use-llm</code> enables executing recipe
+supervision and retained repair attempts. Ordinary source versions do
+not require CVE specifications.</p>
+<h2 id="command-reference">Command reference</h2>
+<h3 id="orchestration">Orchestration</h3>
+<table>
+<colgroup>
+<col style="width: 22%" />
+<col style="width: 77%" />
+</colgroup>
+<thead>
+<tr>
+<th>Command</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>./cga/cga-prep-run</code></td>
+<td>Same as <code>start</code>.</td>
+</tr>
+<tr>
+<td><code>./cga/cga-prep-run start</code></td>
+<td>Seed the session if absent, start all four component servers, and
+serve the dashboard on port 8500.</td>
+</tr>
+<tr>
+<td><code>./cga/cga-prep-run all</code></td>
+<td>Alias for <code>start</code>.</td>
+</tr>
+<tr>
+<td><code>./cga/cga-prep-run status</code></td>
+<td>Report whether the dashboard and component servers are running.</td>
+</tr>
+<tr>
+<td><code>./cga/cga-prep-run stop</code></td>
+<td>Stop processes recorded under <code>cga/.run-prep/</code>.</td>
+</tr>
+<tr>
+<td><code>./cga/cga-prep-run seed</code></td>
+<td>Replace the preparation session with the bundled CVE-2016-9843
+dry-run pipeline.</td>
+</tr>
+<tr>
+<td><code>./cga/cga-prep-run outputs</code></td>
+<td>Print absolute paths for the generated database catalogue, database
+directory, and query directory.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="cgacv-cve-specifications"><code>cgacv</code> — CVE
+specifications</h3>
+<table>
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 26%" />
+<col style="width: 53%" />
+</colgroup>
+<thead>
+<tr>
+<th>Command</th>
+<th>Consumes</th>
+<th>Produces or performs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cgacv import SPEC</code></td>
+<td>Versioned CVE JSON file</td>
+<td>Validates, normalizes, and stores <code>cgacv-spec</code>.</td>
+</tr>
+<tr>
+<td><code>cgacv validate [SPEC]</code></td>
+<td>Supplied file or current specification</td>
+<td>Checks the document without changing the selection.</td>
+</tr>
+<tr>
+<td><code>cgacv select [--cve CVE-ID]</code></td>
+<td><code>cgacv-spec</code></td>
+<td>Selects all CVEs or one CVE and writes
+<code>cgacv-selection</code>.</td>
+</tr>
+<tr>
+<td><code>cgacv expand</code></td>
+<td><code>cgacv-selection</code></td>
+<td>Creates vulnerable, patched, and most-recent work items in
+<code>cgacv-work-items</code>.</td>
+</tr>
+<tr>
+<td><code>cgacv info</code></td>
+<td>Current state</td>
+<td>Prints stored CVE artifact paths.</td>
+</tr>
+<tr>
+<td><code>cgacv serve</code></td>
+<td>Session file</td>
+<td>Serves its dashboard fragment on port 8501.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="cgasp-source-preparation"><code>cgasp</code> — source
+preparation</h3>
+<table>
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 19%" />
+<col style="width: 51%" />
+</colgroup>
+<thead>
+<tr>
+<th>Command</th>
+<th>Consumes</th>
+<th>Produces or performs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cga src-prep plan [--manifest FILE]</code></td>
+<td>Source manifest or CVE work items</td>
+<td>Writes the Git, tar/ZIP, or Debian acquisition plan to
+<code>cgasp-plan</code>.</td>
+</tr>
+<tr>
+<td><code>cga src-prep fetch [--manifest FILE] [--use-llm]</code></td>
+<td>Manifest, plan, or work items</td>
+<td>Fetches/extracts source trees, resolves commits and hashes, and
+writes <code>cgasp-sources</code>.</td>
+</tr>
+<tr>
+<td><code>cgasp info</code></td>
+<td>Current state</td>
+<td>Prints plan and source-result paths.</td>
+</tr>
+<tr>
+<td><code>cgasp serve</code></td>
+<td>Session file</td>
+<td>Serves its dashboard fragment on port 8502.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="codeql-database-preparation">CodeQL database preparation</h3>
+<table>
+<colgroup>
+<col style="width: 26%" />
+<col style="width: 21%" />
+<col style="width: 51%" />
+</colgroup>
+<thead>
+<tr>
+<th>Command</th>
+<th>Consumes</th>
+<th>Produces or performs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cga codeql check</code></td>
+<td>Toolchain requirements</td>
+<td>Records CodeQL version, platform, and required pack hashes in
+<code>cgacodeql-check</code>.</td>
+</tr>
+<tr>
+<td><code>cga db plan</code></td>
+<td><code>cgasp-sources</code></td>
+<td>Writes one immutable job per source × mode and records
+<code>cgadbplan-jobs</code>.</td>
+</tr>
+<tr>
+<td><code>cga db build --job FILE --trace\|--bm-none</code></td>
+<td>One job</td>
+<td>Builds and bundles exactly one database and appends one item to
+<code>cgadb-records</code>.</td>
+</tr>
+<tr>
+<td><code>cga db zip --db-dir DIR --output FILE</code></td>
+<td>Existing CodeQL database</td>
+<td>Creates a ZIP archive without rebuilding or uploading the
+database.</td>
+</tr>
+<tr>
+<td><code>cga db validate query</code></td>
+<td><code>cgadb-records</code></td>
+<td>Runs one query against selected built databases and writes
+<code>cgadbvalidate-results</code>.</td>
+</tr>
+<tr>
+<td><code>cga catalog create</code></td>
+<td>Build and validation records</td>
+<td>Writes a generated SQLite catalogue and manifest.</td>
+</tr>
+<tr>
+<td><code>cga catalog merge</code></td>
+<td>Generated plus preserved catalogues</td>
+<td>Verifies and merges records into the final catalogue and
+manifest.</td>
+</tr>
+<tr>
+<td><code>cga catalog verify</code></td>
+<td>Catalogue and manifest</td>
+<td>Rechecks hashes, records, repository equality, and archives.</td>
+</tr>
+<tr>
+<td><code>cga catalog export DIRECTORY</code></td>
+<td>Verified catalogue and manifest</td>
+<td>Publishes ZIPs, relocated <code>metadata.sql</code>, and manifest
+into a new serving directory.</td>
+</tr>
+</tbody>
+</table>
+<p>Built database identities use the upstream repository name plus the
+full bundle SHA-256. Version, mode, and build-repair details remain
+provenance. <code>cga db build --use-llm</code> supervises
+dependency/build discovery without weakening trace checks.
+<code>db-build</code>, <code>db-plan</code>, and
+<code>db-validate</code> are compatibility aliases, not separate
+builders; use <code>cga db ...</code> in new workflows.</p>
+<p>The <code>cgadb serve</code> executable entry point remains internal
+to the preparation dashboard on port 8503. It is not part of the public
+<code>cga db</code> command family.</p>
+<h3 id="cgaqg-query-generation"><code>cgaqg</code> — query
+generation</h3>
+<table>
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 21%" />
+<col style="width: 48%" />
+</colgroup>
+<thead>
+<tr>
+<th>Command</th>
+<th>Consumes</th>
+<th>Produces or performs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cgaqg materialize [--output-dir DIR]</code></td>
+<td>CVE work items or selection</td>
+<td>Copies or writes query definitions and sets
+<code>cgaqg-querydir</code>.</td>
+</tr>
+<tr>
+<td><code>cgaqg index</code></td>
+<td><code>cgaqg-querydir</code></td>
+<td>Builds the SQLite query index in <code>cgaqg-index</code>.</td>
+</tr>
+<tr>
+<td><code>cgaqg info</code></td>
+<td>Current state</td>
+<td>Prints materialized-query and index paths.</td>
+</tr>
+<tr>
+<td><code>cgaqg serve</code></td>
+<td>Session file</td>
+<td>Serves its dashboard fragment on port 8504.</td>
+</tr>
+</tbody>
+</table>
+<p>The component commands read a CGAST JSON object from standard input
+and emit the updated object to standard output, so they compose as
+filters:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="va">state</span><span class="op">=</span><span class="st">&#39;{}&#39;</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="va">state</span><span class="op">=</span><span class="va">$(</span><span class="bu">printf</span> <span class="st">&#39;%s&#39;</span> <span class="st">&quot;</span><span class="va">$state</span><span class="st">&quot;</span> <span class="kw">|</span> <span class="ex">cga</span> cve import spec.json<span class="va">)</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="va">state</span><span class="op">=</span><span class="va">$(</span><span class="bu">printf</span> <span class="st">&#39;%s&#39;</span> <span class="st">&quot;</span><span class="va">$state</span><span class="st">&quot;</span> <span class="kw">|</span> <span class="ex">cga</span> cve select<span class="va">)</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="va">state</span><span class="op">=</span><span class="va">$(</span><span class="bu">printf</span> <span class="st">&#39;%s&#39;</span> <span class="st">&quot;</span><span class="va">$state</span><span class="st">&quot;</span> <span class="kw">|</span> <span class="ex">cga</span> cve expand<span class="va">)</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="va">state</span><span class="op">=</span><span class="va">$(</span><span class="bu">printf</span> <span class="st">&#39;%s&#39;</span> <span class="st">&quot;</span><span class="va">$state</span><span class="st">&quot;</span> <span class="kw">|</span> <span class="ex">cga</span> src-prep plan<span class="va">)</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="va">state</span><span class="op">=</span><span class="va">$(</span><span class="bu">printf</span> <span class="st">&#39;%s&#39;</span> <span class="st">&quot;</span><span class="va">$state</span><span class="st">&quot;</span> <span class="kw">|</span> <span class="ex">cga</span> src-prep fetch<span class="va">)</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="va">state</span><span class="op">=</span><span class="va">$(</span><span class="bu">printf</span> <span class="st">&#39;%s&#39;</span> <span class="st">&quot;</span><span class="va">$state</span><span class="st">&quot;</span> <span class="kw">|</span> <span class="ex">cga</span> db plan <span class="dt">\</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">--mode</span> trace <span class="at">--output-dir</span> jobs<span class="va">)</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> job <span class="kw">in</span> jobs/<span class="pp">*</span>.json<span class="kw">;</span> <span class="cf">do</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="bu">[</span> <span class="st">&quot;</span><span class="va">$(</span><span class="fu">basename</span> <span class="st">&quot;</span><span class="va">$job</span><span class="st">&quot;</span><span class="va">)</span><span class="st">&quot;</span> <span class="ot">=</span> jobs.json <span class="bu">]</span> <span class="kw">&amp;&amp;</span> <span class="cf">continue</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  <span class="va">state</span><span class="op">=</span><span class="va">$(</span><span class="bu">printf</span> <span class="st">&#39;%s&#39;</span> <span class="st">&quot;</span><span class="va">$state</span><span class="st">&quot;</span> <span class="kw">|</span> <span class="ex">cga</span> db build <span class="dt">\</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">--job</span> <span class="st">&quot;</span><span class="va">$job</span><span class="st">&quot;</span> <span class="at">--trace</span> <span class="at">--output-dir</span> databases<span class="va">)</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="cf">done</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="va">state</span><span class="op">=</span><span class="va">$(</span><span class="bu">printf</span> <span class="st">&#39;%s&#39;</span> <span class="st">&quot;</span><span class="va">$state</span><span class="st">&quot;</span> <span class="kw">|</span> <span class="ex">cga</span> catalog create <span class="dt">\</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output</span> metadata.sql <span class="at">--manifest</span> manifest.json<span class="va">)</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="va">state</span><span class="op">=</span><span class="va">$(</span><span class="bu">printf</span> <span class="st">&#39;%s&#39;</span> <span class="st">&quot;</span><span class="va">$state</span><span class="st">&quot;</span> <span class="kw">|</span> <span class="ex">cga</span> query-gen materialize<span class="va">)</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="va">state</span><span class="op">=</span><span class="va">$(</span><span class="bu">printf</span> <span class="st">&#39;%s&#39;</span> <span class="st">&quot;</span><span class="va">$state</span><span class="st">&quot;</span> <span class="kw">|</span> <span class="ex">cga</span> query-gen index<span class="va">)</span></span></code></pre></div>
+<p><code>cga-prep-run start</code> seeds all four panels with a
+network-free dry run of the bundled CVE-2016-9843 sample.
+<code>cga-prep-run seed</code> recreates that preparation session
+explicitly. Run the independent web view at <a
+href="http://127.0.0.1:8500/"
+class="uri">http://127.0.0.1:8500/</a>.</p>
+<p>The page uses ports 8501 through 8504 for <code>cgacv</code>,
+<code>cgasp</code>, <code>cgadb</code>, and <code>cgaqg</code>.
+<code>CGA_PREP_PAGE_PORT</code>, <code>CGA_PREP_CGACV_PORT</code>,
+<code>CGA_PREP_CGASP_PORT</code>, <code>CGA_PREP_CGADB_PORT</code>, and
+<code>CGA_PREP_CGAQG_PORT</code> override those defaults. State lives
+under <code>cga/cga-prep-tmp/</code> unless <code>CGA_PREP_TMPDIR</code>
+or <code>CGA_PREP_SESSION</code> says otherwise.</p>
+<h2 id="service-lifecycle-commands">Service lifecycle commands</h2>
+<p>Reusable service components sit alongside the input-preparation
+components:</p>
+<table>
+<colgroup>
+<col style="width: 26%" />
+<col style="width: 38%" />
+<col style="width: 34%" />
+</colgroup>
+<thead>
+<tr>
+<th>Component</th>
+<th>Lifecycle subcommands</th>
+<th>Owns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="cgapg/README.html"><code>cgapg</code></a></td>
+<td><code>init</code>, <code>start</code>, <code>createdb</code>,
+<code>check</code>, <code>stop</code>, <code>info</code></td>
+<td>Private PostgreSQL cluster.</td>
+</tr>
+<tr>
+<td><a href="cgadbserve/README.html"><code>cgadbserve</code></a></td>
+<td><code>start</code>, <code>check</code>, <code>stop</code>,
+<code>info</code></td>
+<td>Serve database archives to local MRVA workers.</td>
+</tr>
+<tr>
+<td><a href="cgamrva/README.html"><code>cgamrva</code></a></td>
+<td><code>start</code>, <code>check</code>, <code>stop</code>,
+<code>info</code></td>
+<td>MRVA server and its workers only.</td>
+</tr>
+</tbody>
+</table>
+<p>Each tree exposes its executable under <code>bin/</code>. These are
+CLI filters using the shared CGAST JSON protocol, not a separate
+preparation-state type. They preserve unrelated keys and keep their
+service state under their component name. They do not select queries,
+rebuild CodeQL databases, submit analyses, or reset shared services. The
+existing four-panel dashboard is unchanged.</p>
+<p>Study scripts call these commands in a single numbered sequence:
+service preparation, CGA query execution, then service finalization. See
+the <a href="analysis/CVE-2016-9843/query-010/README.html">zlib
+baseline</a>.</p>
+<p>Run lifecycle tests with
+<code>python3 -m unittest discover -s cga/tests -v</code> from the
+repository root.</p>
+<h2 id="explicit-handoff-to-cga">Explicit handoff to CGA</h2>
+<p>After preparation, <code>./cga/cga-prep-run outputs</code> prints the
+absolute paths CGA needs. Load those artifacts into a separate CGA
+session explicitly:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cgadl</span> getmeta /absolute/path/to/metadata.sql</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cgadl</span> select</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="ex">cgadl</span> download</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="ex">cgaql</span> index /absolute/path/to/queries</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="ex">cgaql</span> select</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="ex">cgaql</span> pack</span></code></pre></div>
+<p>The CGA preparation state contains <code>cgadb-records</code>,
+<code>cgacatalog-catalog</code>, <code>cgacatalog-manifest</code>, and
+<code>cgaqg-querydir</code>; it never writes <code>cgadl-*</code> or
+<code>cgaql-*</code> chooser state.</p>
+<p>The CVE preparation samples are in <a
+href="examples/cves/"><code>examples/cves/</code></a>.</p>
+</body>
+</html>

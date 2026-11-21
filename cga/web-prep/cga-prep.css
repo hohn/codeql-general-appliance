@@ -1,0 +1,277 @@
+:root {
+  --cga-bg: #0f1720;
+  --cga-panel: #16212e;
+  --cga-panel2: #1d2b3a;
+  --cga-line: #2b3d50;
+  --cga-fg: #d7e2ee;
+  --cga-dim: #8ba0b5;
+  --cga-accent: #4aa3ff;
+  --cga-ok: #37b24d;
+  --cga-bad: #e03131;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 12px;
+  background: var(--cga-bg);
+  color: var(--cga-fg);
+  font:
+    13px/1.4 ui-monospace,
+    "SF Mono",
+    Menlo,
+    Consolas,
+    monospace;
+}
+
+/* header ---------------------------------------------------------------- */
+#cga-header {
+  margin-bottom: 12px;
+}
+.cga-header-line {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+}
+.cga-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--cga-accent);
+}
+.cga-sub {
+  color: var(--cga-dim);
+}
+.cga-clock {
+  margin-left: auto;
+  color: var(--cga-dim);
+}
+
+/* flow row -------------------------------------------------------------- */
+.cga-flow {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.cga-multiply {
+  align-self: center;
+  color: var(--cga-accent);
+  white-space: nowrap;
+}
+.cga-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cga-libs {
+  flex: 0 0 220px;
+}
+.cga-box {
+  flex: 1;
+  min-width: 180px;
+}
+.cga-arrow {
+  align-self: center;
+  color: var(--cga-dim);
+  font-size: 20px;
+  user-select: none;
+}
+
+/* fragment envelope (shared by all cga* servers, Go and Python) --------- */
+.cga-frag {
+  background: var(--cga-panel);
+  border: 1px solid var(--cga-line);
+  border-radius: 6px;
+  overflow: hidden;
+  height: 100%;
+}
+.cga-slot.cga-box .cga-frag {
+  cursor: pointer;
+}
+.cga-slot.cga-box .cga-frag:hover {
+  border-color: var(--cga-accent);
+}
+.cga-frag-title {
+  background: var(--cga-panel2);
+  padding: 6px 10px;
+  font-weight: 700;
+  border-bottom: 1px solid var(--cga-line);
+}
+.cga-frag-body {
+  padding: 8px 10px;
+}
+
+/* tables ---------------------------------------------------------------- */
+table.cga-kv,
+table.cga-list {
+  border-collapse: collapse;
+  width: 100%;
+}
+table.cga-kv th {
+  text-align: left;
+  color: var(--cga-dim);
+  padding-right: 10px;
+  font-weight: 400;
+  white-space: nowrap;
+  vertical-align: top;
+}
+table.cga-list th {
+  text-align: left;
+  color: var(--cga-dim);
+  border-bottom: 1px solid var(--cga-line);
+  padding: 4px 8px;
+}
+table.cga-list td {
+  padding: 3px 8px;
+  border-bottom: 1px solid #1a2836;
+}
+
+/* requestor status indicator ------------------------------------------- */
+.cga-statind {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.cga-state {
+  border: 1px solid var(--cga-line);
+  border-radius: 3px;
+  padding: 1px 6px;
+  color: var(--cga-dim);
+  font-size: 11px;
+}
+.cga-state.on {
+  background: var(--cga-accent);
+  color: #08131f;
+  border-color: var(--cga-accent);
+  font-weight: 700;
+}
+
+/* hovers ---------------------------------------------------------------- */
+.cga-hover {
+  border-bottom: 1px dotted var(--cga-dim);
+  cursor: help;
+}
+
+/* detail area ----------------------------------------------------------- */
+#cga-detail-bar {
+  color: var(--cga-dim);
+  border-top: 1px solid var(--cga-line);
+  padding: 8px 2px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+#cga-detail-which {
+  color: var(--cga-accent);
+  font-weight: 700;
+}
+.cga-hint {
+  font-size: 11px;
+}
+#cga-reload {
+  margin-left: auto;
+  background: var(--cga-accent);
+  color: #08131f;
+  border: 1px solid var(--cga-accent);
+  border-radius: 4px;
+  padding: 3px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+#cga-reload:hover {
+  filter: brightness(1.15);
+}
+#cga-detail {
+  min-height: 300px;
+}
+
+/* error state ----------------------------------------------------------- */
+.cga-err {
+  background: #2a1417;
+  border: 1px solid var(--cga-bad);
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: #ffb3b3;
+}
+
+/* cgasi Findings view --------------------------------------------------- */
+.cga-erc-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0;
+  color: var(--cga-dim);
+  font-size: 11px;
+}
+.cga-erc {
+  border: 1px solid var(--cga-line);
+  border-radius: 3px;
+  padding: 1px 8px;
+  color: var(--cga-dim);
+}
+.cga-erc.active {
+  background: var(--cga-accent);
+  color: #08131f;
+  border-color: var(--cga-accent);
+  font-weight: 700;
+}
+.cga-erc-select {
+  background: var(--cga-panel2);
+  color: var(--cga-fg);
+  border: 1px solid var(--cga-line);
+  border-radius: 3px;
+  padding: 1px 6px;
+  font: inherit;
+  font-size: 11px;
+}
+.cga-apply {
+  background: var(--cga-accent);
+  color: #08131f;
+  border: 1px solid var(--cga-accent);
+  border-radius: 3px;
+  padding: 1px 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.cga-apply:hover {
+  filter: brightness(1.15);
+}
+tr.cga-filter-row td {
+  padding: 2px 8px 6px;
+  border-bottom: 1px solid var(--cga-line);
+}
+input.cga-filter {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--cga-panel2);
+  color: var(--cga-fg);
+  border: 1px solid var(--cga-line);
+  border-radius: 3px;
+  padding: 2px 5px;
+  font: inherit;
+  font-size: 11px;
+}
+/* Findings can be long: give the table its own vertical scrollbar and keep the
+   column headings + filter inputs pinned while the rows scroll. */
+.cga-scroll {
+  max-height: 60vh;
+  overflow: auto;
+  border: 1px solid var(--cga-line);
+  border-radius: 4px;
+}
+.cga-scroll table.cga-list th {
+  position: sticky;
+  top: 0;
+  background: var(--cga-panel);
+  z-index: 2;
+}
+.cga-scroll tr.cga-filter-row td {
+  position: sticky;
+  top: 26px;
+  background: var(--cga-panel);
+  z-index: 1;
+}

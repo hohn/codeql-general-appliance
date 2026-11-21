@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>preparation-to-analysis end-to-end analysis</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">preparation-to-analysis end-to-end analysis</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#preparation-to-analysis-end-to-end-analysis"
+id="toc-preparation-to-analysis-end-to-end-analysis">preparation-to-analysis
+end-to-end analysis</a>
+<ul>
+<li><a href="#scope-and-notation" id="toc-scope-and-notation">Scope and
+notation</a></li>
+<li><a href="#permanent-test" id="toc-permanent-test">Permanent
+test</a></li>
+<li><a href="#test-snapshot-2026-08-20"
+id="toc-test-snapshot-2026-08-20">Test snapshot: 2026-08-20</a></li>
+<li><a href="#source-fixes-found-by-the-test"
+id="toc-source-fixes-found-by-the-test">Source fixes found by the
+test</a></li>
+<li><a href="#observed-result" id="toc-observed-result">Observed
+result</a></li>
+<li><a href="#completed-result-2026-08-24"
+id="toc-completed-result-2026-08-24">Completed result:
+2026-08-24</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1
+id="preparation-to-analysis-end-to-end-analysis">preparation-to-analysis
+end-to-end analysis</h1>
+<h2 id="scope-and-notation">Scope and notation</h2>
+<p>Let</p>
+<pre class="text"><code>V = {most-recent, patched, vulnerable}
+M = {none, trace}</code></pre>
+<p>For a CVE <code>c</code>, let <code>J(c, v, m)</code> be the set of
+controller jobs for variant <code>v</code> and build mode
+<code>m</code>. A database produced by a job is eligible when:</p>
+<ul>
+<li>the job status matches <code>succeeded*</code>;</li>
+<li>the job disposition is <code>completed</code>;</li>
+<li>a <code>cgactl.promotions</code> row exists for the job; and</li>
+<li>all six databases for the CVE have one common CodeQL toolchain
+identity.</li>
+</ul>
+<p>The set of complete CVEs and the database set are therefore</p>
+<pre class="text"><code>C* = {c | for every (v, m) in V x M, exactly one eligible job is present}
+D_c = {db(j) | j is the eligible member of J(c, v, m), (v, m) in V x M}
+D   = union(D_c for c in C*)</code></pre>
+<p>Thus <code>|D_c| = 6</code> for every <code>c</code> in
+<code>C*</code>. This definition intentionally uses controller state and
+promotion records as well as files in the collection; an archive alone
+does not establish eligibility.</p>
+<p>Let <code>B</code> be the query bindings declared by the CVE
+specifications:</p>
+<pre class="text"><code>B = {(c, q) | the specification for c declares query q}
+A = {(q, d) | (c, q) is in B and d is in D_c}</code></pre>
+<p><code>A</code> is the analysis applicability relation. This is more
+precise than <code>cve_of(q) covers d</code>: a generic query such as
+<code>cpp/overrun-write</code> can be bound to several CVEs and
+therefore has no unique <code>cve_of(q)</code> value.</p>
+<p>The analysis is</p>
+<pre class="text"><code>Analyze : A -&gt; SARIF
+Analyze(q, d) = s_(q,d)</code></pre>
+<p>Operationally, CGA batches the six applicable pairs for one binding
+into one MRVA submission:</p>
+<pre class="text"><code>Analyze(q, D_c) -&gt; {s_(q,d) | d in D_c}</code></pre>
+<p>It does not run the Cartesian product of every query against every
+database.</p>
+<h2 id="permanent-test">Permanent test</h2>
+<p><a
+href="system-tests/run-system-10/run"><code>cga/system-tests/run-system-10/run</code></a>
+is the permanent collection-scale driver. It:</p>
+<ol type="1">
+<li>derives <code>C*</code> and <code>D</code> from the live
+<code>cgactl</code> PostgreSQL database;</li>
+<li>requires the host CodeQL runtime to match the recorded database
+version;</li>
+<li>materializes each CVE’s real query and its sibling <code>.qll</code>
+modules through CGA preparation;</li>
+<li>deduplicates identical query definitions and builds reproducible CGA
+query packs;</li>
+<li>selects exactly <code>D_c</code> and submits one six-database MRVA
+request per query binding;</li>
+<li>downloads and ingests every SARIF archive, exports the human and LLM
+views, and verifies cardinalities across the chain.</li>
+</ol>
+<p>Run all phases with:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">./system-tests/run-system-10/run</span> all</span></code></pre></div>
+<p>The phases are also independently runnable. Runtime state and reports
+are in <code>/tmp/cga-system-10</code>; the test serves the existing
+promoted collection in place and does not copy its database archives.
+See <a
+href="system-tests/run-system-10/README.html"><code>run-system-10/README.md</code></a>
+for the phase list and operating details.</p>
+<h2 id="test-snapshot-2026-08-20">Test snapshot: 2026-08-20</h2>
+<p>The live eligibility query selected 19 complete CVEs and 114
+databases, all built with CodeQL 2.23.9:</p>
+<table>
+<thead>
+<tr>
+<th>CVE</th>
+<th>Debian source package</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CVE-2016-9843</td>
+<td>zlib</td>
+</tr>
+<tr>
+<td>CVE-2018-1000052</td>
+<td>fmtlib</td>
+</tr>
+<tr>
+<td>CVE-2018-1000127</td>
+<td>memcached</td>
+</tr>
+<tr>
+<td>CVE-2018-1000880</td>
+<td>libarchive</td>
+</tr>
+<tr>
+<td>CVE-2018-10887</td>
+<td>libgit2</td>
+</tr>
+<tr>
+<td>CVE-2018-12326</td>
+<td>redis</td>
+</tr>
+<tr>
+<td>CVE-2018-12982</td>
+<td>libpodofo</td>
+</tr>
+<tr>
+<td>CVE-2018-13785</td>
+<td>libpng1.6</td>
+</tr>
+<tr>
+<td>CVE-2018-16554</td>
+<td>jhead</td>
+</tr>
+<tr>
+<td>CVE-2018-17540</td>
+<td>strongswan</td>
+</tr>
+<tr>
+<td>CVE-2018-19886</td>
+<td>faac</td>
+</tr>
+<tr>
+<td>CVE-2018-20182</td>
+<td>rdesktop</td>
+</tr>
+<tr>
+<td>CVE-2018-20534</td>
+<td>libsolv</td>
+</tr>
+<tr>
+<td>CVE-2018-5205</td>
+<td>irssi</td>
+</tr>
+<tr>
+<td>CVE-2019-11072</td>
+<td>lighttpd</td>
+</tr>
+<tr>
+<td>CVE-2019-13115</td>
+<td>libssh2</td>
+</tr>
+<tr>
+<td>CVE-2019-15296</td>
+<td>faad2</td>
+</tr>
+<tr>
+<td>CVE-2019-15945</td>
+<td>opensc</td>
+</tr>
+<tr>
+<td>CVE-2019-5052</td>
+<td>sdl-image1.2</td>
+</tr>
+</tbody>
+</table>
+<p>Those specifications produce 19 bindings but only four distinct query
+IDs:</p>
+<ul>
+<li><code>cga/cve-2016-9843-crc32-location</code></li>
+<li><code>cpp/overrun-write</code></li>
+<li><code>cpp/tainted-arithmetic</code></li>
+<li><code>cpp/tainted-format-string</code></li>
+</ul>
+<p>The resulting applicability relation has
+<code>|A| = 19 x 6 = 114</code> analysis jobs.</p>
+<h2 id="source-fixes-found-by-the-test">Source fixes found by the
+test</h2>
+<p>The first complete-chain attempt found two reproducibility defects,
+one lifecycle defect, and two test-driver resource/observability
+problems:</p>
+<ul>
+<li><code>cgaql</code> used a wildcard language-pack dependency. That
+could select a registry manifest newer than the installed CLI could
+parse. It now resolves and records the exact
+<code>codeql/&lt;language&gt;-all</code> version bundled with the
+selected CodeQL binary, and passes that bundle as the pack search
+path.</li>
+<li>CGA preparation query materialization and CGA query packing copied
+entry-point <code>.ql</code> files but omitted sibling <code>.qll</code>
+support modules. Both stages now preserve those modules; the local
+<code>cpp/tainted-arithmetic</code> copy includes its required
+<code>Bounded.qll</code> module.</li>
+<li>Collection-scale polling originally emitted every repository status
+on every pass. The permanent driver now reports completed, pending, and
+failed submission counts only when they change.</li>
+<li>Four simultaneous CodeQL evaluations exhausted the 36 GiB reference
+VM; individual evaluators reached about 8 GiB RSS despite smaller Java
+heaps. The test now defaults to two MRVA workers while retaining an
+explicit <code>MRVA_POOL_MAX_WORKERS</code> override.</li>
+<li><code>cgamx stop</code> terminated the detached MRVA server but left
+its CodeQL grandchildren running. It now signals the detached process
+group, including agents and their in-flight subprocesses, and has
+regression coverage for the group and fallback paths.</li>
+</ul>
+<p>Regression tests cover the exact bundled dependency and
+sibling-module paths.</p>
+<h2 id="observed-result">Observed result</h2>
+<p>The full verification was intentionally paused on this 36 GiB VM and
+must be resumed as a fresh <code>run-system-10 all</code> run on a
+larger host. The local MRVA state under <code>/tmp</code> is disposable
+and is not part of the promoted database collection.</p>
+<p>Two attempts established the following:</p>
+<ul>
+<li>The first attempt used four workers. At 2026-08-20 14:05:50, the
+kernel OOM killer terminated the CodeQL Java process for
+<code>debian/libarchive-most-recent-none</code> in the CVE-2018-1000880
+submission. MRVA recorded the job as failed; CodeQL exited 137. At the
+OOM event, four evaluators were resident and the killed process had
+approximately 7.8 GiB anonymous RSS. This is a resource failure, not a
+query or database failure, and should be retried on a larger
+machine.</li>
+<li>A clean attempt with two workers successfully completed 24
+repository analyses before the scheduler was deliberately drained. The
+two in-flight libgit2 analyses were allowed to finish, producing a final
+parked state of 26 succeeded and 88 pending analyses, with no terminal
+failures in the second attempt. Even two evaluators reached roughly 8.2
+GiB RSS each and caused two desktop low-memory warnings, so this VM is
+not an appropriate host for the complete sample.</li>
+</ul>
+<p>On the larger host, install the complete CodeQL 2.23.9 bundle and
+DuckDB CLI, make the <code>cgactl</code> PostgreSQL database and
+promoted collection available, and run:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="va">MRVA_POOL_MAX_WORKERS</span><span class="op">=&lt;</span>memory-appropriate-count<span class="op">&gt;</span> <span class="dt">\</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="ex">./system-tests/run-system-10/run</span> all</span></code></pre></div>
+<p>Choose concurrency from measured memory, not CPU count. Some
+remaining analyses may exceed 64 GiB individually; retain any
+exit-137/OOM job identity as a resource failure and retry it on a still
+larger worker rather than classifying its database or query as
+invalid.</p>
+<h2 id="completed-result-2026-08-24">Completed result: 2026-08-24</h2>
+<p>The fresh larger-host run completed the full chain. The host had 98
+GiB RAM and 25 CPUs. The first pass used six standalone workers with
+<code>MRVA_CODEQL_RAM_MB=16384</code> and
+<code>MRVA_CODEQL_THREADS=4</code>; these are evaluator settings rather
+than standalone cgroup limits. All 114 analyses succeeded, so there were
+no memory/CPU failure identities and no 90 GiB/16-core retries were
+needed. The earlier 80% fit figure came from experiments on 2,400
+randomly selected Debian projects and was not treated as a prediction
+for this collection.</p>
+<p>The verified result is:</p>
+<ul>
+<li>19/19 successful submissions;</li>
+<li>114/114 downloaded SARIF archives;</li>
+<li>114/114 ingested SARIF files;</li>
+<li>666 finding rows; and</li>
+<li>a clean MRVA server error gate.</li>
+</ul>
+<p>Large local artifacts are preserved outside Git at
+<code>/mnt/common/home/hohn/work-ghp/single-machine-mrva-artifacts/</code>.
+This includes the promoted <code>db-collection.local/</code> tree and
+the complete run tree under <code>runs/run-system-10-2026-08-24/</code>,
+with separate SHA-256 manifests. The usual
+<code>cga/db-collection.local</code> path is an ignored compatibility
+symlink.</p>
+<p>The analysis proper ran from the first completion at 10:55:58 PDT to
+the last at 11:04:34 PDT. Five-second telemetry observed a maximum
+individual CodeQL Java RSS of 9.62 GiB, maximum concurrent Java RSS of
+50.31 GiB, and minimum host <code>MemAvailable</code> of 36.19 GiB. Six
+Java evaluators were observed concurrently. Per-job runtime ranged from
+7.608 to 85.040 seconds, with a 21.748-second median.</p>
+<p>Runtime outputs remain under <code>/tmp/cga-system-10</code>. A
+durable, tracked copy of the raw status/resource samples, service logs,
+final PostgreSQL state, controller reconstruction, CGA state, reports,
+and checksums is under
+<code>cga/analysis/run-system-10-2026-08-24/</code>.</p>
+<p>The transferred <code>controller/cgactl.pgdump</code> was the
+documented initial backup: it contained all 366 job definitions but only
+the first six promotions. The local controller state was reconstructed
+from the 122 promoted <code>provenance/*/result.json</code> records and
+reproduced the documented eligible set of 19 CVEs/114 databases before
+analysis. The reconstructed controller dump is preserved with the run
+evidence.</p>
+<p>The run also found that an explicit alternate CodeQL bundle was
+shadowed by the driver’s unconditional <code>/usr/local/bin</code> path
+precedence. <code>run-system-10</code> now gives
+<code>CODEQL_CLI_PATH</code> precedence, and its README documents the
+override. MRVA and the database HTTP service were stopped after
+verification; the runtime results and PostgreSQL tables were
+retained.</p>
+</body>
+</html>

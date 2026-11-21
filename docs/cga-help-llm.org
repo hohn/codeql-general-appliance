@@ -1,0 +1,172 @@
+#+TITLE: CGA: LLM exploration entry point
+#+OPTIONS: toc:2 num:nil
+
+This is a selective reading guide, not a tutorial or a command transcript.
+It is maintained independently of the generated human help browser.
+Read one route, not every linked document.
+Paths in file links are relative to this guide; command paths refer to the
+repository checkout or an explicitly chosen workflow.
+
+* Start here
+
+Repository-relative reading order:
+
+#+BEGIN_EXAMPLE
+AGENTS.md
+  -> .agent-notes/README.md (once)
+  -> docs/cga-help-llm.org (one task route)
+  -> relevant live context / cga COMMAND -h
+  -> named contract section / worked example only if needed
+  -> owning component's files and smallest relevant check only if needed
+  -> broader project map only if ownership remains unresolved
+#+END_EXAMPLE
+
+1. If entering directly, read the [[file:../.agent-notes/README.md][agent core]] once for repository
+   invariants. Skip this step if AGENTS.md already directed you through it.
+   Do not recursively load all topic notes, READMEs, examples, or generated HTML.
+2. Identify the user's goal and workspace. For an existing workflow, inspect
+   current evidence before reading implementation code or proposing new work.
+   Choose the relevant read-only projection:
+
+   #+BEGIN_SRC sh
+   # Ordinary recorded workflow:
+   cga -C /path/to/workflow llm context unified
+   # Bench experiment, instead:
+   cga -C /path/to/experiment llm context bench
+   #+END_SRC
+
+   Neither command requires a viewer server or records a workflow step.
+   Their --json form provides structured output. If the required workflow or
+   experiment state is absent, establish the intended inputs; do not initialize
+   or rerun an experiment merely to obtain context.
+3. Choose one task route below. Request =cga COMMAND -h= for the particular
+   operation's syntax, prerequisites, effects, and environment variables.
+   The listed help commands are lookup choices, not a checklist.
+
+For a genuinely new first analysis, =cga help sample 05= provides a fixed,
+single-user five-database Fprintf recipe. =cga h s 05 00= displays workspace
+setup; appending =r= executes that step. Step 00 explicitly creates the
+sample-owned directory and persists settings for subsequent shells/cells.
+Display is read-only; =run= / =r= is not. Do not run a sample to inspect an
+existing experiment. The longer six-database walkthrough remains available as
+=cga help getting-started= (also =cga -hs=).
+
+Stop onboarding when the task, current state, and owning operation are known.
+Follow another link only to resolve a specific missing relationship or fact.
+
+* Task groups
+
+Database creation and query writing are independent inputs to query application.
+Commands may serve several tasks; the groups are routes, not exclusive ownership.
+
+** Create databases
+
+- Entry: =cga a d -h= for guided fetch/build/index/export, or =cga src-prep -h=,
+  =cga db -h=, or =cga catalog -h= for detailed plumbing.
+- Guided workflow: [[file:../cga/cgaassist/README.md][Bash-first assistance: Build a database collection]].
+  =fetch= and =build= accept =--use-llm= for executing recipe supervision and
+  retained repair attempts. Database identities use the completed bundle hash.
+- Read: [[file:../cga/README-prep.md][Preparation]], especially "Explicit handoff to CGA".
+  Consult [[file:../.agent-notes/preparation.md][preparation contracts]] when changing builds, toolchains,
+  catalogues, or artifact handling.
+- Example, only if needed:
+  [[file:../cga/analysis/CVE-2016-9843/query-030/README.md][query-030: Componentized preparation]]. Its architecture/toolchain
+  requirements are specific experimental inputs, not general defaults.
+- Stop when source revision, language/toolchain/build mode, database archives,
+  catalogue, and explicit analysis handoff are identified. Preparation state
+  does not implicitly become analysis state.
+
+** Write and prepare queries
+
+- Entry: =cga a q -h= for Bash-first C++ authoring,
+  =cga query-lib -h= for indexing/selection/packing,
+  =cga coder -h= for the editor, or =cga query-gen -h= for materialization.
+- For authoring, read [[file:../cga/cgaassist/README.md][Bash-first query authoring: Save drafts and publish]].
+  =save= permits unfinished drafts; =publish= requires CodeQL check-only
+  compilation and indexes permanent source paths. It does not create a Bench
+  experiment, launch an editor, or start MRVA.
+- Read: [[file:../cga/cgaql/README.md][query library: Commands]] for the operation being changed.
+  For generated CVE queries, use [[file:../cga/cgaqg/README.md][query generation]] instead of assuming
+  that every query must be generated.
+- For iterative experiments, read "Experiment purpose and contract" and
+  "Session actions" in [[file:../cga/cgabench/README.md][Bench]], then only the relevant query-editing section.
+  [[file:../.agent-notes/preparation.md][Preparation contracts]] explain sibling modules and pack dependency pinning.
+- Stop when query source and dependencies, language, selected query identity,
+  and pack input are known. Distinguish pipeline examples from queries intended
+  to detect a particular vulnerability.
+
+** Apply queries
+
+- Entry: =cga db-lib -h=, =cga query-lib -h=, or =cga mrva-request -h=.
+  Read the specific submit/run/status/download help, not every command's help.
+- Read: [[file:../cga/mrva-flow/README.md][single-user example: Flow]] for selection, packing, execution,
+  ingestion, and export. Read "Run it" before executing its script; it manages
+  shared infrastructure. For the small executable help recipe, use
+  [[file:../cga/samples/05/README.md][help sample 05]]. Use [[file:../cga/sample-05/README.md][sample-05]] only for manually stepped two-user work.
+- Follow [[file:../.agent-notes/mrva-runtime.md][runtime contracts]] for service/configuration changes, or
+  [[file:../.agent-notes/cga.md][CGA integration contracts]] for workflow recording and command routing.
+- Stop when catalogue/archives, query pack, server, named submission, and
+  checkpoints are known. After interruption inspect existing evidence before
+  submitting again. Separate scratch directories do not isolate shared MRVA
+  ports or PostgreSQL.
+
+** Review results
+
+- Entry: =cga sarif-ingest -h= and =cga export -h= for result operations.
+  Start with the existing context projection, not a new ingestion.
+- Read: [[file:../cga/cgasi/README.md][SARIF ingestor: Named ingestion]] and
+  [[file:../cga/cgaex/README.md][result export: LLM export schema]] for evidence/provenance.
+- Use returned visual-element references with =cga show REF= or
+  =cga related REF= for focused read-only inspection; see "Visual element
+  identifiers" in [[file:../cga/README.md][CGA]]. Use "Outline and search" in
+  [[file:../cga/cgauv/README.md][Unified View]] for a narrower workflow projection.
+- For query effectiveness, choose one investigation through the
+  [[file:../cga/analysis/README.md][analysis evidence index]], not the entire artifact tree.
+  Read Bench comparison contracts only when comparing experiment sessions.
+- Stop when a finding can be traced to its query, database, submission, and
+  ingestion. Distinguish execution success, zero findings, candidate evidence,
+  and demonstrated vulnerability detection.
+
+* Reference: follow only when needed
+
+- Syntax and effects: live =cga COMMAND -h=. =cga -h= lists command families.
+  Help requests are read-only; do not assume every command named =info= or
+  =status= is unrecorded. Workflow commands can retain observations.
+- Current evidence: =cga llm context unified= or =cga llm context bench=.
+  "Assistant context" in [[file:../cga/README.md][CGA]] documents structured output and discovery flags.
+  Endpoint flags print addresses; they do not fetch state or prove service health.
+- Workflow/history changes: [[file:../cga/README.md][CGA: Workflows and State]] and
+  [[file:../cga/cgawf/FLOW-SCRIPT-GUIDE.md][flow-script conventions]].
+- Implementation changes: use the command/component map in [[file:../cga/README.md][CGA: Layout]],
+  then the matching topic from the agent core. Keep code, examples, and usage
+  explanations consistent; choose checks in the owning component.
+- Existing fixed e2e cases: [[file:../cga/system-tests/README.md][system-test index]] and
+  [[file:../.agent-notes/system-tests.md][system-test contracts]]. Read the chosen scenario before running it;
+  starting/resetting infrastructure is not read-only exploration.
+* Maintaining this entry point
+
+Keep this file short and hand-maintained. Update routes when command ownership
+or contracts change; keep detailed explanations in the linked canonical source.
+Do not embed the full CLI reference, copy the human tutorial, or record transient
+experiment state here. The HTML export does not generate or overwrite this file.
+
+* Last resort: widen scope only for an unresolved question
+
+Do not visit this section's links as routine onboarding.
+
+1. First follow the selected task's help, contract, and known file/symbol.
+   Search the owning component for the missing relationship, not the whole
+   repository. Follow a cross-component reference only when the evidence
+   crosses that boundary.
+2. If ownership is still unclear, choose the matching question under
+   "Reading paths" in the [[file:../READING-GUIDE.md][advanced project map]]. Read that route, not the
+   entire guide or its example catalogue.
+3. Only if the route still cannot locate the owner, consult "MRVA Repository /
+   Component Layout" in the [[file:../README.md][root README]]. Broaden source search incrementally
+   around the unresolved question; do not collect every directory or README.
+   Stop widening as soon as the owner and next action are known.
+
+The [[file:README.md][documentation index]], [[file:../INTRODUCTORY-GUIDE.md][human introductory guide]], and
+[[file:cga-help.html][main CGA/MRVA help browser]] provide human-facing orientation,
+not prerequisites for LLM exploration. The browser's "LLM start here" links
+back to this focused route and other assistant entry points.

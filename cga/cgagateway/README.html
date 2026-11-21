@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>CGA gateway</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="../../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../../docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">CGA gateway</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#cga-gateway" id="toc-cga-gateway">CGA gateway</a>
+<ul>
+<li><a href="#documentation"
+id="toc-documentation">Documentation</a></li>
+<li><a href="#routes" id="toc-routes">Routes</a></li>
+<li><a href="#unified-viewer-startup"
+id="toc-unified-viewer-startup">Unified viewer startup</a></li>
+<li><a href="#configuration-and-implementation"
+id="toc-configuration-and-implementation">Configuration and
+implementation</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="cga-gateway">CGA gateway</h1>
+<p>One loopback URL joins the existing viewers, dashboards, native VS
+Code editors, and live checkout documentation. It does not start
+workflows, MRVA, viewers, or editors, and does not change their direct
+development ports.</p>
+<p>For unified viewer startup, use <code>cga serve start</code> as
+described below. To run only the gateway with independently managed
+viewers:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> gateway start</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> gateway status</span></code></pre></div>
+<p>On your workstation:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> <span class="at">-o</span> ExitOnForwardFailure=yes <span class="at">-o</span> ServerAliveInterval=60 <span class="dt">\</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">-L</span> 8599:127.0.0.1:8599 hohn@svm</span></code></pre></div>
+<p>Open <strong>http://127.0.0.1:8599/</strong>. To reconnect, run the
+same SSH command and reopen the URL. Add <code>-N -T</code> if you do
+not need an interactive remote shell. Exit SSH to close the tunnel. To
+stop only the remote gateway:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> gateway stop</span></code></pre></div>
+<p>Viewers, editors, MRVA, and experiment state are unaffected by
+stopping the gateway. An unavailable viewer returns HTTP 502; start that
+viewer normally. After upgrading, restart existing Bench/Unified View
+processes so they serve the current code. Reloading alone does not
+update a running Python server.</p>
+<h2 id="documentation">Documentation</h2>
+<p>The landing page links to the <strong>CGA overview</strong>,
+<strong>CGA help</strong>, and <strong>Reference manual</strong>.
+<code>/documentation/</code> serves the repository’s documentation entry
+point; relative links to component references, installation guides,
+stylesheets, and LLM sources stay behind the same gateway. No additional
+HTTP process or SSH forward is needed, even when no viewer workspace is
+configured. Component-directory links open their rendered
+<code>README.html</code> when no <code>index.html</code> is present.</p>
+<p>Files are read from the current checkout on each request, without
+browser caching. Rebuild generated pages after editing their
+sources:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> <span class="at">-C</span> docs html help</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> <span class="at">-C</span> docs book       <span class="co"># optional reference manual</span></span></code></pre></div>
+<p>The gateway does not build documentation on startup. It serves
+document/source files and web assets, not directory listings, hidden
+runtime state, database archives, or symlink targets outside the
+checkout. The <code>.agent-notes/</code> guide sources remain available
+for LLM navigation.</p>
+<p>After upgrading an already-running gateway, stop and start
+<strong>only the gateway</strong> with its original
+<code>--port</code>/<code>--config</code> settings. Viewers and
+workflows need not be restarted. If using <code>cga serve</code>, run
+<code>cga serve start</code> again with its original
+environment/configuration to rejoin the replacement gateway; matching
+viewers are retained. Older gateways cannot be reused until
+upgraded.</p>
+<h2 id="routes">Routes</h2>
+<table>
+<colgroup>
+<col style="width: 42%" />
+<col style="width: 57%" />
+</colgroup>
+<thead>
+<tr>
+<th>Browser path</th>
+<th style="text-align: right;">Default remote loopback port</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/documentation/</code></td>
+<td style="text-align: right;">Gateway itself (8599)</td>
+</tr>
+<tr>
+<td><code>/analysis/</code></td>
+<td style="text-align: right;">8600</td>
+</tr>
+<tr>
+<td><code>/analysis/{cgasv,cgadl,cgaql,cgamr,cgamu,cgasi,cgamx,cgaex}/</code></td>
+<td style="text-align: right;">8601–8608</td>
+</tr>
+<tr>
+<td><code>/preparation/</code></td>
+<td style="text-align: right;">8500</td>
+</tr>
+<tr>
+<td><code>/preparation/{cgacv,cgasp,cgadb,cgaqg}/</code></td>
+<td style="text-align: right;">8501–8504</td>
+</tr>
+<tr>
+<td><code>/unified/</code></td>
+<td style="text-align: right;">8609</td>
+</tr>
+<tr>
+<td><code>/bench/</code></td>
+<td style="text-align: right;">8610</td>
+</tr>
+<tr>
+<td><code>/editors/session-N/</code></td>
+<td style="text-align: right;">Live Bench editor for session N</td>
+</tr>
+<tr>
+<td><code>/flow/</code></td>
+<td style="text-align: right;">8720</td>
+</tr>
+<tr>
+<td><code>/flow/{cgasv,cgadl,cgaql,cgamr,cgamu,cgasi,cgamx,cgaex}/</code></td>
+<td style="text-align: right;">8721–8728</td>
+</tr>
+<tr>
+<td><code>/flow/unified/</code></td>
+<td style="text-align: right;">8729</td>
+</tr>
+<tr>
+<td><code>/sysview</code> and <code>/sysview/data</code></td>
+<td style="text-align: right;">8081</td>
+</tr>
+<tr>
+<td><code>/archives/</code></td>
+<td style="text-align: right;">9080</td>
+</tr>
+</tbody>
+</table>
+<p>Open editors using Bench’s <strong>Open VS Code</strong> control. The
+gateway discovers already-running editors from Bench’s loopback,
+Host-guarded <code>GET /api/editors</code>; it never launches an editor
+merely because a URL was requested. Automatic editor ports work: no
+<code>--editor-port</code> or additional SSH forwards are needed.
+Password authentication stays enabled. Login redirects, per-session
+cookie paths, WebSockets, and editor assets remain behind the
+gateway.</p>
+<p>The gateway keeps browser requests on one origin. It supplies mounted
+component URLs for each dashboard and rewrites only the viewers’
+presentation links and editor descriptors, not workflow evidence,
+transcripts, or artifact contents. Bench/Unified View/VID browser assets
+use mount-relative paths and still work at their direct ports. MRVA’s
+<code>/sysview</code> paths remain unchanged.</p>
+<h2 id="unified-viewer-startup">Unified viewer startup</h2>
+<div class="sourceCode" id="cb5"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> serve start</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> serve status</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> serve stop</span></code></pre></div>
+<p><code>start</code> launches all configured viewers plus the gateway,
+including documentation serving. Missing or unconfigured state is
+printed as <code>SKIP</code>, not created. By default it uses the
+current workflow for analysis/Unified View and, if it contains an
+experiment, Bench; existing analysis/preparation session files; and the
+existing <code>cga/mrva-flow/.cga/</code> workflow. Explicit
+<code>CGAST_SESSION</code>/<code>CGA_SESSION</code>,
+<code>CGA_TMPDIR</code>, <code>CGA_PREP_SESSION</code>, and
+<code>CGA_PREP_TMPDIR</code> are honored. There is no recursive
+workspace search.</p>
+<p>To select separate workspaces, create a JSON file such as:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;analysis&quot;</span><span class="fu">:</span> <span class="fu">{</span><span class="dt">&quot;workflow&quot;</span><span class="fu">:</span> <span class="st">&quot;/path/to/analysis&quot;</span><span class="fu">},</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;preparation&quot;</span><span class="fu">:</span> <span class="fu">{</span><span class="dt">&quot;workflow&quot;</span><span class="fu">:</span> <span class="st">&quot;/path/to/preparation&quot;</span><span class="fu">},</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;bench&quot;</span><span class="fu">:</span> <span class="fu">{</span><span class="dt">&quot;workflow&quot;</span><span class="fu">:</span> <span class="st">&quot;/path/to/experiment&quot;</span><span class="fu">},</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;flow&quot;</span><span class="fu">:</span> <span class="fu">{</span><span class="dt">&quot;workflow&quot;</span><span class="fu">:</span> <span class="st">&quot;/path/to/mrva-flow&quot;</span><span class="fu">},</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;gateway&quot;</span><span class="fu">:</span> <span class="fu">{</span><span class="dt">&quot;port&quot;</span><span class="fu">:</span> <span class="dv">8599</span><span class="fu">}</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> serve start <span class="at">--config</span> /path/to/viewers.json</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> serve status</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> serve stop</span></code></pre></div>
+<p>Paths are relative to the JSON file. Omitted profiles are skipped.
+Each viewer profile accepts either <code>workflow</code> or
+<code>session_file</code> (an existing raw CGAST), never both. Raw
+sessions support dashboards and Bench, but Unified View requires a
+workflow. Bench requires an existing experiment.
+<code>CGA_SERVE_CONFIG</code> selects the same file for future
+shells.</p>
+<p>Optional profile <code>port</code> values select the first port of
+each block: analysis 8600–8609, preparation 8500–8504, flow 8720–8729,
+or Bench 8610. Optional <code>env</code> objects supply per-profile
+string environment overrides. Existing analysis and preparation
+component port variables remain supported. Flow uses its own block
+instead of accidentally inheriting analysis ports; use its
+<code>env</code> for explicit per-component overrides. The gateway’s
+route map is generated from these ports. <code>viewers.json</code> is a
+workspace map, distinct from the route-prefix port map used by
+<code>cga gateway start --config</code>.</p>
+<p>Startup does <strong>not</strong> initialize workflows, seed
+examples, start/reset MRVA, execute queries, or launch
+assistants/editors. Bench uses
+<code>--no-services --no-assistant</code>; its assistant and session
+editors remain available on demand. Sysview and archives are reported as
+external services or skipped when MRVA is unavailable.</p>
+<p>Matching owned viewers are retained on repeat starts. Other occupied
+viewer ports are errors, never reclaimed or silently reused. A running
+independent gateway is reused only when its live route map matches, and
+is left running by <code>cga serve stop</code>. Stop/status use recorded
+process identities, not a possibly changed configuration or current
+directory. Stop closes aggregate-owned Bench editors/shells but never
+stops MRVA or changes experiment data. Failed startup rolls back only
+newly started viewers. Stop before changing active settings.</p>
+<p><code>CGA_SERVE_RUN_DIR</code> selects the aggregate’s runtime
+directory (default <code>cga/.run/viewers/</code>), containing ownership
+records, viewer logs, compiled Go viewers, and independent generated
+configurations for analysis/flow/preparation. Repository web
+configuration files are not overwritten. Use a separate runtime
+directory <strong>and separate ports</strong> for a second
+aggregate.</p>
+<p>The original direct viewer commands remain available for development.
+<code>cga serve build</code>, <code>seed</code>, and
+<code>outputs</code> retain their explicit dashboard-only behavior;
+<code>seed</code> deliberately replaces sample dashboard state.</p>
+<h2 id="configuration-and-implementation">Configuration and
+implementation</h2>
+<p>Go and Python 3 are required; there are no additional packages or
+sudo steps. <code>start</code> builds the standard-library Go reverse
+proxy in <code>cga/.run/gateway/</code>, alongside its PID identity
+record and <code>gateway.log</code>. <code>CGA_GATEWAY_RUN_DIR</code>
+overrides that runtime directory. <code>CGA_GATEWAY_PORT</code> or
+<code>start --port PORT</code> changes the listener.</p>
+<p>Existing <code>CGA_PAGE_PORT</code>, <code>CGA_CGAUV_PORT</code>,
+<code>CGA_&lt;COMPONENT&gt;_PORT</code>, <code>PORT</code> (MRVA),
+<code>CGA_PREP_*_PORT</code>, and <code>DB_SERVER_PORT</code> overrides
+are honored. Start the gateway in the appropriate environment, or supply
+an explicit port map:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;/analysis/&quot;</span><span class="fu">:</span> <span class="dv">8700</span><span class="fu">,</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;/analysis/cgasv/&quot;</span><span class="fu">:</span> <span class="dv">8701</span><span class="fu">,</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;/analysis/cgadl/&quot;</span><span class="fu">:</span> <span class="dv">8702</span><span class="fu">,</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;/analysis/cgaql/&quot;</span><span class="fu">:</span> <span class="dv">8703</span><span class="fu">,</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;/analysis/cgamr/&quot;</span><span class="fu">:</span> <span class="dv">8704</span><span class="fu">,</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;/analysis/cgamu/&quot;</span><span class="fu">:</span> <span class="dv">8705</span><span class="fu">,</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;/analysis/cgasi/&quot;</span><span class="fu">:</span> <span class="dv">8706</span><span class="fu">,</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;/analysis/cgamx/&quot;</span><span class="fu">:</span> <span class="dv">8707</span><span class="fu">,</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;/analysis/cgaex/&quot;</span><span class="fu">:</span> <span class="dv">8708</span><span class="fu">,</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;/bench/&quot;</span><span class="fu">:</span> <span class="dv">18610</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> gateway start <span class="at">--config</span> /absolute/path/gateway.json</span></code></pre></div>
+<p>The JSON object overrides the listed routes; omitted routes retain
+their defaults/environment overrides. Unknown prefixes, invalid ports,
+and routes back to the gateway’s own listener are errors. Restart the
+gateway to apply configuration changes. Flow overrides use the same
+explicit prefix map.</p>
+<p>The listener and all proxy targets are IPv4 loopback-only, for the
+existing trusted single-user SSH workflow, not public hosting or
+multi-user isolation. The gateway rejects non-loopback Host and foreign
+Origin headers, translates accepted same-origin requests to the
+backend’s loopback origin, and preserves the existing JSON/header
+guards. Direct development endpoints remain independent. Stop verifies
+the recorded process identity and does not reclaim arbitrary ports.</p>
+<p>Focused checks:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="bu">cd</span> cga/cgagateway <span class="kw">&amp;&amp;</span> <span class="ex">go</span> test <span class="at">-race</span> ./... <span class="kw">&amp;&amp;</span> <span class="ex">go</span> vet ./...<span class="kw">)</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="bu">cd</span> cga/cgabench <span class="kw">&amp;&amp;</span> <span class="ex">python3</span> <span class="at">-m</span> unittest discover <span class="at">-s</span> tests<span class="kw">)</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="bu">cd</span> cga <span class="kw">&amp;&amp;</span> <span class="ex">python3</span> <span class="at">-m</span> unittest discover <span class="at">-s</span> tests <span class="at">-p</span> test_viewers.py<span class="kw">)</span></span></code></pre></div>
+</body>
+</html>

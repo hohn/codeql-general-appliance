@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Query effectiveness: remaining 16 CVEs</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="../../../../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../../../../docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Query effectiveness: remaining 16 CVEs</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#query-effectiveness-remaining-16-cves"
+id="toc-query-effectiveness-remaining-16-cves">Query effectiveness:
+remaining 16 CVEs</a>
+<ul>
+<li><a href="#conclusion" id="toc-conclusion">Conclusion</a></li>
+<li><a href="#remaining-case-results"
+id="toc-remaining-case-results">Remaining-case results</a></li>
+<li><a href="#query-level-diagnosis"
+id="toc-query-level-diagnosis">Query-level diagnosis</a>
+<ul>
+<li><a href="#cppoverrun-write"
+id="toc-cppoverrun-write"><code>cpp/overrun-write</code></a></li>
+<li><a href="#cpptainted-format-string"
+id="toc-cpptainted-format-string"><code>cpp/tainted-format-string</code></a></li>
+<li><a href="#cpptainted-arithmetic"
+id="toc-cpptainted-arithmetic"><code>cpp/tainted-arithmetic</code></a></li>
+<li><a href="#cve-specific-zlib-location-query"
+id="toc-cve-specific-zlib-location-query">CVE-specific zlib location
+query</a></li>
+</ul></li>
+<li><a href="#implications-for-the-test-design"
+id="toc-implications-for-the-test-design">Implications for the test
+design</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="query-effectiveness-remaining-16-cves">Query effectiveness:
+remaining 16 CVEs</h1>
+<h2 id="conclusion">Conclusion</h2>
+<p><strong>All 16 remaining cases fail as CVE detectors.</strong> Eleven
+produce no findings in any source variant or database mode. The other
+five produce 649 findings, but no vulnerable or patched result location
+or path step enters the known fault file. None qualifies even as the
+file-level “almost found” seen in the zlib positive-control query.</p>
+<p>Together with the initial three-case review, the collection result
+is:</p>
+<table>
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 40%" />
+<col style="width: 30%" />
+</colgroup>
+<thead>
+<tr>
+<th>Assessment</th>
+<th style="text-align: right;">CVEs</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Directly found</td>
+<td style="text-align: right;">0</td>
+<td>No result identifies a known vulnerable operation.</td>
+</tr>
+<tr>
+<td>Almost found</td>
+<td style="text-align: right;">1</td>
+<td>The zlib query selects the right file only; it cannot distinguish
+variants.</td>
+</tr>
+<tr>
+<td>Not found</td>
+<td style="text-align: right;">18</td>
+<td>No result reaches the known fault, or the query emits no
+result.</td>
+</tr>
+</tbody>
+</table>
+<p>This supports calling the existing query set a failure <strong>for
+CVE detection</strong>. It does not mean every reported generic issue is
+false, or that CodeQL cannot express suitable queries. It means these
+query definitions and CVE mappings do not validate the known
+vulnerabilities in this corpus.</p>
+<h2 id="remaining-case-results">Remaining-case results</h2>
+<p>Counts below are <code>none / trace</code>, always compared within
+the same build mode.</p>
+<table>
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 14%" />
+<col style="width: 19%" />
+<col style="width: 19%" />
+<col style="width: 19%" />
+<col style="width: 14%" />
+</colgroup>
+<thead>
+<tr>
+<th>CVE / package</th>
+<th>Query</th>
+<th style="text-align: right;">Vulnerable</th>
+<th style="text-align: right;">Patched</th>
+<th style="text-align: right;">Current</th>
+<th>Evaluation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CVE-2018-1000052 / fmtlib</td>
+<td>format string</td>
+<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;">0 / 0</td>
+<td>No finding for the invalid-format-specifier fault.</td>
+</tr>
+<tr>
+<td>CVE-2018-1000127 / memcached</td>
+<td>arithmetic</td>
+<td style="text-align: right;">6 / 14</td>
+<td style="text-align: right;">6 / 14</td>
+<td style="text-align: right;">49 / 10</td>
+<td>Findings are in <code>memcached.c</code> and current vendor code;
+none reaches <code>items.c:item_free()</code>.</td>
+</tr>
+<tr>
+<td>CVE-2018-10887 / libgit2</td>
+<td>arithmetic</td>
+<td style="text-align: right;">11 / 29</td>
+<td style="text-align: right;">11 / 29</td>
+<td style="text-align: right;">40 / 45</td>
+<td>Many unrelated arithmetic paths; none reaches
+<code>delta.c:git_delta_apply()</code>.</td>
+</tr>
+<tr>
+<td>CVE-2018-12326 / redis</td>
+<td>overrun write</td>
+<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;">0 / 0</td>
+<td>No finding for the <code>redis-cli</code> buffer overflow.</td>
+</tr>
+<tr>
+<td>CVE-2018-12982 / libpodofo</td>
+<td>overrun write</td>
+<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;">0 / 0</td>
+<td>No finding for <code>PdfVariant::DelayedLoad()</code>’s invalid
+read.</td>
+</tr>
+<tr>
+<td>CVE-2018-13785 / libpng</td>
+<td>arithmetic</td>
+<td style="text-align: right;">0 / 2</td>
+<td style="text-align: right;">0 / 2</td>
+<td style="text-align: right;">0 / 1</td>
+<td>Findings are only in <code>contrib/libtests</code>; none reaches
+<code>pngrutil.c</code>.</td>
+</tr>
+<tr>
+<td>CVE-2018-17540 / strongSwan</td>
+<td>overrun write</td>
+<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;">0 / 0</td>
+<td>No finding for the GMP certificate buffer overflow.</td>
+</tr>
+<tr>
+<td>CVE-2018-19886 / FAAC</td>
+<td>overrun write</td>
+<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;">0 / 0</td>
+<td>No finding for <code>huff2.c:huffcode()</code>’s invalid
+dereference.</td>
+</tr>
+<tr>
+<td>CVE-2018-20182 / rdesktop</td>
+<td>overrun write</td>
+<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;">0 / 0</td>
+<td>No finding for the <code>seamless_process_line()</code>
+global-buffer overflow.</td>
+</tr>
+<tr>
+<td>CVE-2018-20534 / libsolv</td>
+<td>overrun write</td>
+<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;">0 / 0</td>
+<td>No finding for the disputed test-suite illegal access.</td>
+</tr>
+<tr>
+<td>CVE-2018-5205 / Irssi</td>
+<td>format string</td>
+<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;">0 / 0</td>
+<td>No finding; the known fault is an incomplete-escape out-of-bounds
+read, not tainted format text.</td>
+</tr>
+<tr>
+<td>CVE-2019-11072 / lighttpd</td>
+<td>arithmetic</td>
+<td style="text-align: right;">25 / 27</td>
+<td style="text-align: right;">25 / 27</td>
+<td style="text-align: right;">136 / 110</td>
+<td>Vulnerable and patched findings are identical and do not enter
+<code>burl.c</code>; current-only <code>burl.c</code> alerts cannot
+validate the original CVE.</td>
+</tr>
+<tr>
+<td>CVE-2019-13115 / libssh2</td>
+<td>arithmetic</td>
+<td style="text-align: right;">15 / 3</td>
+<td style="text-align: right;">3 / 3</td>
+<td style="text-align: right;">4 / 2</td>
+<td>All findings land in <code>misc.c</code>, not the vulnerable
+<code>kex.c</code> path; the vulnerable-only count increase is unrelated
+noise.</td>
+</tr>
+<tr>
+<td>CVE-2019-15296 / FAAD2</td>
+<td>overrun write</td>
+<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;">0 / 0</td>
+<td>No finding for the <code>faad_resetbits()</code> buffer
+overflow.</td>
+</tr>
+<tr>
+<td>CVE-2019-15945 / OpenSC</td>
+<td>overrun write</td>
+<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;">0 / 0</td>
+<td>No finding for <code>decode_bit_string()</code>’s out-of-bounds
+access.</td>
+</tr>
+<tr>
+<td>CVE-2019-5052 / SDL_image</td>
+<td>arithmetic</td>
+<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;">0 / 0</td>
+<td>No finding despite a directly relevant PCX allocation integer
+overflow.</td>
+</tr>
+</tbody>
+</table>
+<p>The exact counts, fault-site labels, fault-file checks, and query IDs
+are in <a
+href="remaining-case-summary.tsv"><code>remaining-case-summary.tsv</code></a>.
+They can be regenerated from the preserved SARIF and tracked report
+with:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> query-effectiveness/summarize-remaining.py <span class="dt">\</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">&gt;</span>query-effectiveness/remaining-case-summary.tsv</span></code></pre></div>
+<p>Run the command from the <code>run-system-10-2026-08-24</code>
+evidence directory.</p>
+<h2 id="query-level-diagnosis">Query-level diagnosis</h2>
+<h3 id="cppoverrun-write"><code>cpp/overrun-write</code></h3>
+<p>This query is assigned to nine CVEs including libarchive. Across 54
+successful analyses it emits zero results. Its implementation is
+substantially narrower than its CVE assignments: it requires product
+flow between a heuristic allocation’s simple size expression and a
+modeled array-function write whose size exceeds the allocation by a
+computed constant delta. Several assigned CVEs are reads or invalid
+dereferences, and even the true write-overflow cases do not necessarily
+have this allocation/write shape.</p>
+<h3
+id="cpptainted-format-string"><code>cpp/tainted-format-string</code></h3>
+<p>Across fmtlib, jhead, and Irssi, only jhead emits results—seven paths
+to an unrelated command-line-controlled <code>sprintf()</code> format
+argument. The query is specifically taint flow from a recognized
+external source to a printf-family format argument. It cannot detect a
+literal but invalid format specifier, an undersized formatted-output
+destination, or an escape-parser out-of-bounds read merely because those
+faults were labeled CWE-134.</p>
+<h3 id="cpptainted-arithmetic"><code>cpp/tainted-arithmetic</code></h3>
+<p>This query emits all 649 generic findings in the remaining set,
+spread across five CVEs; SDL_image emits none. Result volume does not
+correlate with the known faults. Vulnerable and patched counts are
+identical for memcached, libgit2, libpng, and lighttpd. Libssh2 has a
+vulnerable-only count increase in <code>none</code> mode, but every
+result is in <code>misc.c</code>, while the repair is in
+<code>kex.c</code>. The query’s low-precision, broad taint-to-arithmetic
+model creates many review leads without providing CVE identity or
+variant discrimination.</p>
+<h3 id="cve-specific-zlib-location-query">CVE-specific zlib location
+query</h3>
+<p>The custom query is a useful analysis-pipeline positive control, but
+its only predicate is the filename <code>crc32.c</code>. It accounts for
+the collection’s sole “almost found” classification and should not be
+included in a detector success rate.</p>
+<h2 id="implications-for-the-test-design">Implications for the test
+design</h2>
+<p>The six-database matrix and preserved SARIF are useful; they exposed
+the failure clearly. The weak point is treating a broad CWE query as a
+CVE query. Future acceptance should require, for each CVE:</p>
+<ol type="1">
+<li>a source-level oracle naming the vulnerable operation and
+repair;</li>
+<li>a query result whose primary location or path reaches that
+operation;</li>
+<li>vulnerable-to-patched discrimination within at least one build mode;
+and</li>
+<li>an explicit explanation when current-source results represent a
+different issue rather than persistence of the CVE.</li>
+</ol>
+<p>Until a query passes those checks, its output should be labeled a
+generic candidate search, not a CVE detection result.</p>
+</body>
+</html>

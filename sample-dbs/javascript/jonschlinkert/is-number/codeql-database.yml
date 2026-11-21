@@ -1,0 +1,13 @@
+---
+sourceLocationPrefix: /tmp/mrva-db-build/js-is-number
+baselineLinesOfCode: 0
+unicodeNewlines: true
+columnKind: utf16
+primaryLanguage: javascript
+creationMetadata:
+  sha: 98e8ff1da1a89f93d1397a24d7413ed15421c139
+  cliVersion: 2.23.8
+  creationTime: 2026-07-13T23:47:16.094408263Z
+overlayBaseDatabase: false
+overlayDatabase: false
+finalised: true

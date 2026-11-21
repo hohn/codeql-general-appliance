@@ -1,0 +1,42 @@
+# Void/glibc arm64 CodeQL appliance target for Lima.
+#
+# 128 GiB worker profile. Use this for the remaining largest databases after
+# the 16 GiB and 74 GiB passes.
+#
+# Start attempt:
+#   limactl start --name=void-codeql-128g ./lima/void-codeql-128g.yaml
+
+---
+minimumLimaVersion: 2.0.0
+
+vmType: qemu
+nestedVirtualization: true
+arch: aarch64
+cpus: 8
+memory: 128GiB
+disk: 1TiB
+
+ssh:
+   localPort: 65394
+
+images:
+   - location: https://repo-default.voidlinux.org/live/current/void-live-aarch64-20250202-base.iso
+     arch: aarch64
+     digest: sha256:29516e4c7085a49c2e288aafe143d402a6bcda7271f711f1559ad0c1b9cc1a79
+
+mounts: []
+
+containerd:
+   system: false
+   user: false
+
+provision:
+   - mode: system
+     script: |
+        #!/bin/sh
+        set -eu
+        if command -v xbps-install >/dev/null 2>&1 && [ -f /mnt/lima-cidata/scripts/provision-void-codeql.sh ]; then
+          /bin/sh /mnt/lima-cidata/scripts/provision-void-codeql.sh
+        else
+          printf '%s\n' "Void is not installed/provisionable yet; run provision script after first SSH login." >&2
+        fi

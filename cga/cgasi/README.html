@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>cgasi — CodeQL generic appliance: SARIF ingestor</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="../../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../../docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">cgasi — CodeQL generic appliance: SARIF ingestor</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#cgasi-codeql-generic-appliance-sarif-ingestor"
+id="toc-cgasi-codeql-generic-appliance-sarif-ingestor">cgasi — CodeQL
+generic appliance: SARIF ingestor</a>
+<ul>
+<li><a href="#named-ingestion" id="toc-named-ingestion">Named
+ingestion</a></li>
+<li><a href="#commands" id="toc-commands">Commands</a></li>
+<li><a href="#cgast-keys" id="toc-cgast-keys">CGAST keys</a></li>
+<li><a href="#serve-contract" id="toc-serve-contract">Serve
+contract</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="cgasi-codeql-generic-appliance-sarif-ingestor">cgasi — CodeQL
+generic appliance: SARIF ingestor</h1>
+<p><code>cgasi</code> turns downloaded MRVA result archives into one
+cumulative, queryable DuckDB database. It is a CGAST-aware front end to
+<a href="../../sarif-ingest/"><code>sarif-ingest</code></a>: every SARIF
+is converted to an individual SQLite database with
+<code>srfi tolite</code>, then all recorded SQLite inputs are combined
+with <code>srfi toduck</code>.</p>
+<p>Every command reads one CGAST object from stdin, merges its state,
+and writes the result to stdout. Human and query output goes to stderr,
+so <code>cgasi</code> composes with the other <code>cga*</code>
+filters.</p>
+<h2 id="named-ingestion">Named ingestion</h2>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cgasi</span> ingest <span class="at">--name</span> bob-1 [--output-dir DIR]</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cgasi</span> ingest <span class="at">--name</span> eve-1 [--output-dir DIR]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">cgasi</span> verify bob-1 eve-1</span></code></pre></div>
+<p><code>ingest</code> reads the named entry from
+<code>cgamr-submissions</code>, requires a successful submission with
+downloaded result archives, and then:</p>
+<ol type="1">
+<li>extracts <code>results.sarif</code> from every archive;</li>
+<li>creates one SQLite database per SARIF;</li>
+<li>stores the submission’s user on every result row;</li>
+<li>records the submission, session, user, language, query pack, and an
+explicit per-job record in <code>cgasi-ingestions</code>; each job
+carries its repository, status, finding count, MRVA result count,
+artifact size, and archive/SARIF/ SQLite paths;</li>
+<li>rebuilds the single cumulative <code>cgasi-db</code> DuckDB from
+every recorded ingestion, across all users.</li>
+</ol>
+<p>If <code>--output-dir</code> is omitted, the first ingest creates an
+anonymous directory under <code>cga-tmp/</code> and records it as
+<code>cgasi-root</code>. Later ingests reuse that root. An explicit
+shared directory is useful for a repeatable workflow such as <a
+href="../sample-05/README.html"><code>../sample-05/</code></a>.</p>
+<p>The cumulative <code>sarif_results</code> table has these
+columns:</p>
+<pre class="text"><code>user, file_name, kind, rule_id, rule_name, uri,
+start_line, start_column, result_json</code></pre>
+<p><code>user</code> is the MRVA identity recorded by
+<code>cgamr</code>, so queries can isolate one user even though
+<code>cgasi-db</code> is cumulative:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">select</span> <span class="fu">user</span>, rule_id, uri, start_line</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">from</span> sarif_results</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">where</span> <span class="fu">user</span> <span class="op">=</span> <span class="st">&#39;bob&#39;</span>;</span></code></pre></div>
+<h2 id="commands">Commands</h2>
+<div class="sourceCode" id="cb4"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cgasi</span> ingest <span class="at">--name</span> NAME             <span class="co"># named archive -&gt; SQLite -&gt; cumulative DB</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cgasi</span> verify [NAME ...]              <span class="co"># verify files, schemas, and row totals</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="ex">cgasi</span> tolite FILE.sarif <span class="pp">[</span><span class="ss">OUT</span><span class="pp">]</span>        <span class="co"># low-level SARIF -&gt; SQLite</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>             <span class="ex">[--user</span> USER]</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="ex">cgasi</span> toduck OUT [A.sqlite ...]      <span class="co"># low-level SQLite -&gt; cumulative DuckDB</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="ex">cgasi</span> keys                           <span class="co"># list result columns</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="ex">cgasi</span> values user                    <span class="co"># list distinct values of one column</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="ex">cgasi</span> list <span class="pp">[</span><span class="ss">N</span><span class="pp">]</span>                       <span class="co"># list the first N result rows</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="ex">cgasi</span> search [key value ...]         <span class="co"># exact-match search, including user</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="ex">cgasi</span> sql [--query-file FILE]        <span class="co"># execute read-only SQL from cgasi-query</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="ex">cgasi</span> view [--erc 10<span class="kw">|</span><span class="ex">40</span><span class="kw">|</span><span class="ex">100]</span>         <span class="co"># set the Findings view (rows + filters)</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>           <span class="ex">[--user</span> RE] [--rule RE] [--kind RE]</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>           <span class="ex">[--uri</span> RE] [--line RE] <span class="pp">[--</span><span class="ss">clear</span><span class="pp">]</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="ex">cgasi</span> info                           <span class="co"># cumulative database summary</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="ex">cgasi</span> serve                          <span class="co"># serve live /overview and /detail fragments</span></span></code></pre></div>
+<p>The lower-level <code>tolite</code> command records its outputs in
+<code>cgasi-sqlites</code>. <code>toduck</code> uses explicit inputs
+when supplied, or that recorded list otherwise. Only <code>toduck</code>
+and the named <code>ingest</code> workflow write <code>cgasi-db</code>
+because that key always denotes a cumulative DuckDB.</p>
+<p><code>sql</code> opens DuckDB read-only. The query path is supplied
+with <code>--query-file</code> or carried in the CGAST as
+<code>cgasi-query</code>.</p>
+<p><code>view</code> drives the <code>/detail</code> Findings table from
+the CGAST (<code>cgasi-view</code>), so the control lives in Python
+rather than the page. <code>--erc</code> chooses how many entry rows to
+show (10, 40, or 100; default 10). Each
+<code>--user/--rule/--kind/--uri/ --line</code> value is a regular
+expression that filters that column (partial match, so <code>.</code>
+matches any non-empty value); an empty value or <code>--clear</code>
+removes a filter. With no filters the table shows all findings, up to
+the ERC.</p>
+<h2 id="cgast-keys">CGAST keys</h2>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 75%" />
+</colgroup>
+<thead>
+<tr>
+<th>Key</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cgasi-db</code></td>
+<td>cumulative DuckDB across every recorded user/ingestion</td>
+</tr>
+<tr>
+<td><code>cgasi-ingestions</code></td>
+<td>named submissions with explicit per-job provenance</td>
+</tr>
+<tr>
+<td><code>cgasi-root</code></td>
+<td>shared ingestion output directory</td>
+</tr>
+<tr>
+<td><code>cgasi-active</code></td>
+<td>most recently ingested submission</td>
+</tr>
+<tr>
+<td><code>cgasi-sqlites</code></td>
+<td>outputs accumulated by the low-level <code>tolite</code>
+command</td>
+</tr>
+<tr>
+<td><code>cgasi-query</code></td>
+<td>SQL text file used by <code>sql</code></td>
+</tr>
+<tr>
+<td><code>cgasi-view</code></td>
+<td>Findings view: <code>erc</code> plus per-column regex
+<code>filters</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="serve-contract">Serve contract</h2>
+<p><code>cgasi serve</code> starts an HTTP server (default port
+<code>8606</code>, override with <code>CGA_CGASI_PORT</code>) exposing
+<code>/overview</code>, <code>/detail</code>, <code>/healthz</code>, and
+the standard route index. The fragments re-read the session CGAST on
+every request. <code>/overview</code> shows the cumulative database,
+ingestion count, users, and result count. <code>/detail</code> separates
+the per-ingestion provenance from the Findings table. The Findings table
+is driven by <code>cgasi-view</code> (see <code>cgasi view</code>): an
+entry-row count <code>&lt;select&gt;</code>, a per-column regex filter
+row (<code>user</code>, <code>rule</code>, <code>kind</code>,
+<code>uri</code>, <code>line</code>), the matching rows up to the ERC,
+and an <strong>apply</strong> button. The model and control still live
+in the CGAST — the page is only a view. Filling the fields and clicking
+apply simply assembles the equivalent <code>cgasi view …</code> command
+and sends it to the <code>cgamx cmd</code> server
+(<code>POST /run</code>), which runs it as a CGAST filter over the
+shared session. This is identical to typing that <code>cgasi view</code>
+command in the shell. So that unapplied input is never lost, the
+periodic page refresh updates the overview fragments only; use the
+page’s reload button (or an overview click) to refresh the detail after
+applying. A successful SARIF input may contain zero problem/path-problem
+findings; in that case the Findings section says so instead of rendering
+a misleading table row.</p>
+<p><code>cgasi</code> itself is standard-library only. Conversion
+requires Python and the repository’s <code>sarif-ingest/bin/srfi</code>;
+cumulative conversion and querying also require the <code>duckdb</code>
+CLI.</p>
+<p>Structured consumers such as CGA Bench reuse
+<code>cgasi.store.selection_sql</code> for the exact-match search query
+and <code>query_page</code> for a read-only result table.
+<code>query_page</code> returns rows, column names (even for empty
+results), total count, and pagination metadata. It accepts one
+SELECT/CTE, normalizes it with DuckDB’s SQL parser, opens the database
+in read-only/safe mode without initialization files or external access,
+and applies a 15-second timeout per query operation. Existing
+<code>search</code>, <code>sql</code>, and regex-based <code>view</code>
+CLI behavior is unchanged.</p>
+</body>
+</html>

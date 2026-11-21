@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Controller design</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+  </style>
+  <link rel="stylesheet" href="../../../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../../../docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Controller design</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#controller-design" id="toc-controller-design">Controller
+design</a>
+<ul>
+<li><a href="#invariants" id="toc-invariants">Invariants</a></li>
+<li><a href="#campaign-lanes" id="toc-campaign-lanes">Campaign
+lanes</a></li>
+<li><a href="#trust-boundary" id="toc-trust-boundary">Trust
+boundary</a></li>
+<li><a href="#master-collection" id="toc-master-collection">Master
+collection</a></li>
+<li><a href="#recovery" id="toc-recovery">Recovery</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="controller-design">Controller design</h1>
+<p><code>cgactl</code> is the deterministic coordinator for the CVE
+database campaign. A single PostgreSQL database is authoritative for job
+state. Builders are disposable clients and may own at most one leased
+job at a time.</p>
+<h2 id="invariants">Invariants</h2>
+<ul>
+<li>A job is immutable after it is loaded from the campaign
+manifest.</li>
+<li>Claiming is serialized with
+<code>FOR UPDATE SKIP LOCKED</code>.</li>
+<li>A partial unique index permits only one active job per builder.</li>
+<li>Every attempt has a random lease token. Mutations require the
+current job, builder, token, and an unexpired lease.</li>
+<li>Expiration closes the old attempt and requeues the job; it does not
+erase history.</li>
+<li>Database rows contain metadata and artifact references, never large
+blobs.</li>
+<li>The dashboard exposes GET routes only.</li>
+<li>Technical attempt status is separate from campaign <code>lane</code>
+and <code>disposition</code>.</li>
+<li>Every attempt records its base snapshot, resource profile,
+container, and effective environment; later sweeps never overwrite
+earlier attempts.</li>
+<li>An exclusive-host job can start only when no other build is active,
+and no other job can start while it is active.</li>
+<li>Successful attempts enter a durable promotion queue in the same
+transaction as their terminal result.</li>
+</ul>
+<h2 id="campaign-lanes">Campaign lanes</h2>
+<p>The normal path is <code>static</code>. A static technical failure
+stops at <code>awaiting-llm</code>; it does not immediately consume
+another attempt. A controller sweep changes the job to
+<code>queued/llm-repair</code>, after which a new claim creates a new
+attempt. An LLM failure stops at <code>escalated</code>. A master sweep
+may assign a new snapshot, larger resource profile, and exclusive-host
+scheduling before a <code>master-recovery</code> attempt. This makes
+campaign policy explicit and auditable.</p>
+<p>Every claimed attempt must be prepared before execution. The host
+stops its Incus container, restores the registered immutable snapshot,
+applies limits, starts it, and records requested/effective resources.
+Snapshot toolchain identity must equal the job toolchain identity. LLMs
+have unrestricted control inside the resulting disposable container; the
+deterministic controller still owns identity, leases, scheduling,
+validation, and promotion. Claims require an active registered snapshot
+whose toolchain matches the job; unconfigured jobs cannot be claimed.
+Resource profiles may cap concurrent claims in addition to per-container
+CPU/RAM/disk limits. Claim selection holds a scheduler advisory lock
+while checking normal profile concurrency and the exclusive-host
+invariant. When builder metadata includes <code>container</code>, claims
+are additionally restricted to snapshots registered for that container.
+This prevents cloned workers from claiming attempts they cannot reset to
+the recorded baseline.</p>
+<h2 id="trust-boundary">Trust boundary</h2>
+<p>The initial CLI connects directly to PostgreSQL, but all queue
+mutations are implemented by schema functions. A deployment should give
+builder roles only <code>EXECUTE</code> on
+<code>register_builder</code>, <code>claim_job_v2</code>,
+<code>renew_lease</code>, <code>set_phase</code>,
+<code>record_attempt_environment</code>, and <code>finish_job</code>,
+plus only the read access actually required. Schema installation,
+manifest loading, reconciliation, and unrestricted table access remain
+controller privileges.</p>
+<p>The returned claim includes its opaque <code>lease_token</code>. A
+builder must persist that token with its local attempt state and include
+it in every later command. It should renew well before expiry. Losing a
+lease is terminal for that local process: it may retain logs, but must
+not publish a database under the campaign result identity.</p>
+<p>The deployed builder functions are <code>SECURITY DEFINER</code> with
+a fixed search path. The schema revokes public access; a builder role
+receives schema usage and execute permission on only registration,
+claim, renewal, phase, and finish. It receives no direct table
+privileges. Controller-only operations such as manifest loading, retry,
+reconciliation, promotion, and dashboard reads use the database
+owner.</p>
+<h2 id="master-collection">Master collection</h2>
+<p>Promotion is a host/controller operation. It never trusts an artifact
+merely because a builder returned success: it fetches the recorded URI,
+verifies size and digest, asks CodeQL to unbundle and resolve the
+database, then publishes by atomic rename. The qldbstore repository
+identity is the upstream package name plus the full database-bundle
+SHA-256. Variant and mode remain provenance, not identity. The SQLite
+catalogue and provenance sidecar are written only after bundle
+validation. Collection status and reconciliation commands are read-only
+audits. The host promoter claims the durable queue and calls the same
+idempotent promotion operation. A crash leaves either a completed
+promotion or a stale claim that can be requeued; it never authorizes a
+builder to write the master collection.</p>
+<h2 id="recovery">Recovery</h2>
+<p>Run <code>cgactl requeue-expired</code> periodically from exactly one
+reconciler. The operation itself is safe to repeat. PostgreSQL downtime
+pauses claims and updates; it does not invalidate external artifacts.
+Restore coordination from backup, reload the deterministic manifest, and
+reconcile published <code>result.json</code> files when disaster
+recovery is required.</p>
+</body>
+</html>

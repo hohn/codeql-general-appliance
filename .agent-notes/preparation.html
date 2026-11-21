@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Preparation notes</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+  </style>
+  <link rel="stylesheet" href="../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Preparation notes</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#preparation-notes" id="toc-preparation-notes">Preparation
+notes</a>
+<ul>
+<li><a href="#controller-and-large-artifacts"
+id="toc-controller-and-large-artifacts">Controller and large
+artifacts</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="preparation-notes">Preparation notes</h1>
+<p>Start with <a href="../cga/README-prep.md">preparation usage</a> and
+its explicit handoff, not with the controller implementation.</p>
+<ul>
+<li>Preparation and analysis share a tool collection but use separate
+state. Preparation owns source acquisition, toolchain checks, planning,
+independent database builds, validation, catalogues, and query
+materialization. Analysis explicitly imports catalogues with
+<code>cgadl getmeta</code> and query trees with
+<code>cgaql index</code>.</li>
+<li>A <code>cga db build</code> invocation builds one independent source
+copy/database and emits one database record. <code>--trace</code>
+requires nonempty tracer evidence and intercepted processes, without a
+source-scan marker, before bundling.</li>
+<li><code>cga a d</code> guides fetch/build/index/export over the same
+plumbing. Source manifests support Git, tar/ZIP, and Debian acquisition
+without requiring a CVE. Failed matrices resume from the retained
+preparation checkpoint; partial indexing requires
+<code>--allow-partial</code>. See <a
+href="../cga/cgaassist/README.md">assistance</a>.</li>
+<li>Final database repository identity is upstream name plus the full
+bundle SHA-256, assigned after bundling. Selection normalizes legacy
+catalogue rows without rewriting catalogues or existing selections.
+Export preserves identity and verifies relocated catalogue/manifest
+references before publication.</li>
+<li><code>fetch</code>/<code>build --use-llm</code> uses
+<code>cgalib/prep_llm.py</code> for JSON recipe supervision, bounded
+attempts, command logs, and source/build repairs. Normal permissions and
+deterministic source/trace/bundle checks remain in force. The fixed real
+check is
+<code>python3 cga/cgaassist/tests/sqlite_toy.py EXTERNAL_NEW_DIR --use-llm</code>.</li>
+<li><code>cga control measure --cgast-filter -- ...</code> preserves the
+child’s CGAST stdout; telemetry must stay orthogonal to the command’s
+state contract.</li>
+<li>Path-backed <code>.ql</code> queries may need sibling
+<code>.qll</code> modules. Materialization and packing preserve those
+siblings.</li>
+<li><code>cga a q</code> owns independent recorded C++ authoring, not a
+Bench experiment. Editor databases are fixed after <code>prepare</code>.
+<code>save</code> permits unfinished drafts and retains source
+snapshots; <code>publish</code> checks a private copy with CodeQL
+<code>query compile --check-only</code>, refuses package/ID collisions,
+and indexes permanent paths. Query packing preserves nested local
+<code>.qll</code> modules while excluding database/editor scratch. See
+<a href="../cga/cgaassist/README.md">authoring</a>.</li>
+<li><code>cgaql pack</code> pins the exact language library version from
+the selected CodeQL bundle and uses its <code>qlpacks/</code>. Do not
+restore <code>"*"</code> dependencies: registry latest may be unreadable
+by the installed CLI. Explicit overrides are
+<code>CGA_CGAQL_&lt;LANGUAGE&gt;_DEP_VERSION</code>.</li>
+<li>Architecture, toolchain, build mode, and source identity are
+experimental inputs, not incidental environment details. The <a
+href="../cga/analysis/CVE-2016-9843/query-030/README.md">query-030
+example</a> demonstrates explicit preparation and separate
+analysis.</li>
+</ul>
+<h2 id="controller-and-large-artifacts">Controller and large
+artifacts</h2>
+<ul>
+<li><a href="../cga/cgactl/README.md">cgactl</a> coordinates build
+campaigns with small PostgreSQL job/attempt/lease/artifact-reference
+records. Large sources, logs, products, and databases remain in external
+storage.</li>
+<li>Layout: <code>cga/cgactl/{bin,lib,doc,share}</code>. Python invokes
+<code>psql</code>; schema and queue functions are in
+<code>share/schema.sql</code>. Claims use fenced time-limited leases and
+<code>FOR UPDATE SKIP LOCKED</code>.</li>
+<li>Each build attempt prepares its registered container base snapshot
+and records effective resources/toolchain. Keep resource fencing and
+promotion separate from analysis execution.</li>
+<li>The promoted collection lives in the sibling
+<code>single-machine-mrva-artifacts/db-collection.local/</code>; the
+ignored <code>cga/db-collection.local</code> is a compatibility
+symlink.</li>
+<li>Large CVE <code>tmp</code> workspaces are ignored links into the
+external artifact tree, not disposable repository scratch. Preserved
+analyses have manifests anchored by
+<code>cga/analysis/ARTIFACTS.sha256</code>. See the <a
+href="../cga/analysis/README.md">evidence index</a>.</li>
+</ul>
+</body>
+</html>

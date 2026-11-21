@@ -1,0 +1,87 @@
+#+TITLE: State Transition Diagram: Fprintf.ql on databases-20.json
+#+SUBTITLE: Session 49, 5 of 20 repos processed (VS Code filtered 'private' repositories)
+
+* Repos processed (5/20)
+  - bus.bustnl-alarm
+  - fx-pricing.fxhistsv
+  - isa-workflow.m_dejnaxes
+  - ldrv-rave.fomgrsvc
+  - rdce.entfpvsv
+
+* State Transition Table
+  No worker exit/idle-timeout events are present in this log. The workers start with idle_timeout=5m0s (visible in "Worker entering
+  main loop"), but the log window ends at ~22:27:16 — only ~1 minute after the last job completed (22:26:05). The self-termination
+  would fire around ~22:31 (5 min idle), which is outside the captured time range.
+
+  The worker lifecycle events that are captured:
+  - Starting worker pool agent (startup)
+  - Worker registered → RegisterWorker()
+  - Worker entering main loop (with idle_timeout=5m0s)
+  - Claimed job → ClaimJob()
+  - Job completed → CompleteJob()
+  - Result published and confirmed
+
+  Missing (would need a longer log window to capture):
+  - SetWorkerBusy() / SetWorkerIdle() — no calls logged
+  - Worker idle timeout / process exit — would happen ~22:31
+
+
+
+|----------+---------------------------------------------------------------------------------------------+-------------------------------+--------|
+|     Time | Event                                                                                       | state function                | Caller |
+|----------+---------------------------------------------------------------------------------------------+-------------------------------+--------|
+| 22:24:03 | Server receives MRVA request, authenticates user=mhohn5                                     |                               | server |
+| 22:24:03 | Session ID generated: id=49                                                                 | [[file:sql-catalog.org::#NextID][NextID()]]                      | server |
+| 22:24:03 | Extracting query pack, collecting session info                                              |                               | server |
+| 22:24:04 | No local spigot DB; downloading from BCS (44s)                                              |                               | server |
+| 22:24:48 | Job info initialized for 5 repos (empty argo_wf, started_at, completed_at)                  | [[file:sql-catalog.org::#SetJobInfo][SetJobInfo()]]                  | server |
+| 22:24:48 | Jobs added: 5 repos with job_repo_ids 9730-9734, language=cpp                               | [[file:sql-catalog.org::#AddJob][AddJob()]]                      | server |
+| 22:24:48 | All 5 jobs transition: (new) -> pending                                                     | [[file:sql-catalog.org::#SetStatus][SetStatus()]]                   | server |
+| 22:24:54 | Pool scheduler transitions all 5 jobs: pending -> queued                                    | [[file:sql-catalog.org::#TransitionJobsToQueued][TransitionJobsToQueued()]]      | server |
+| 22:24:54 | Pool finds 5 pending jobs, available_slots=10, user running=0                               | [[file:sql-catalog.org::#GetJobsByStatus][GetJobsByStatus()]]             | server |
+| 22:24:54 | Submitting Argo workflow for bus.bustnl-alarm                                               |                               | server |
+| 22:24:55 | Argo workflow submitted: bus.bustnl-alarm (wflo-argo-pw-dev05)                              | [[file:sql-catalog.org::#SetJobInfo][SetJobInfo()]]                  | server |
+| 22:24:55 | Submitting Argo workflow for fx-pricing.fxhistsv                                            |                               | server |
+| 22:24:56 | Argo workflow submitted: fx-pricing.fxhistsv (wflo-argo-ob-dev05)                           | [[file:sql-catalog.org::#SetJobInfo][SetJobInfo()]]                  | server |
+| 22:24:56 | Submitting Argo workflow for isa-workflow.m_dejnaxes                                        |                               | server |
+| 22:24:57 | Argo workflow submitted: isa-workflow.m_dejnaxes (wflo-argo-pw-dev05)                       | [[file:sql-catalog.org::#SetJobInfo][SetJobInfo()]]                  | server |
+| 22:24:57 | Submitting Argo workflow for ldrv-rave.fomgrsvc                                             |                               | server |
+| 22:24:58 | Argo workflow submitted: ldrv-rave.fomgrsvc (wflo-argo-pw-dev05)                            | [[file:sql-catalog.org::#SetJobInfo][SetJobInfo()]]                  | server |
+| 22:24:58 | Submitting Argo workflow for rdce.entfpvsv                                                  |                               | server |
+| 22:24:58 | Worker bbh56 registered, claims bus.bustnl-alarm                                            | [[file:sql-catalog.org::#RegisterWorker][RegisterWorker()]] / [[file:sql-catalog.org::#ClaimJob][ClaimJob()]] | argo   |
+| 22:24:59 | Argo workflow submitted: rdce.entfpvsv (wflo-argo-ob-dev05)                                 | [[file:sql-catalog.org::#SetJobInfo][SetJobInfo()]]                  | server |
+| 22:24:59 | Worker 2x4nd registered, claims fx-pricing.fxhistsv                                         | [[file:sql-catalog.org::#RegisterWorker][RegisterWorker()]] / [[file:sql-catalog.org::#ClaimJob][ClaimJob()]] | argo   |
+| 22:25:00 | Worker 4vmqm registered, claims isa-workflow.m_dejnaxes                                     | [[file:sql-catalog.org::#RegisterWorker][RegisterWorker()]] / [[file:sql-catalog.org::#ClaimJob][ClaimJob()]] | argo   |
+| 22:25:00 | Worker l42wt registered, claims ldrv-rave.fomgrsvc                                          | [[file:sql-catalog.org::#RegisterWorker][RegisterWorker()]] / [[file:sql-catalog.org::#ClaimJob][ClaimJob()]] | argo   |
+| 22:25:01 | Worker qfvgb registered, claims rdce.entfpvsv                                               | [[file:sql-catalog.org::#RegisterWorker][RegisterWorker()]] / [[file:sql-catalog.org::#ClaimJob][ClaimJob()]] | argo   |
+| 22:25:01 | Workers download CodeQL DBs from Spigot/BCS                                                 |                               | argo   |
+| 22:25:27 | bus.bustnl-alarm: analysis completed, result_count=0, status=succeeded                      | [[file:sql-catalog.org::#CompleteJob][CompleteJob()]]                 | argo   |
+| 22:25:28 | Server consumes result for bus.bustnl-alarm                                                 | [[file:sql-catalog.org::#SetResult][SetResult()]]                   | server |
+| 22:25:59 | isa-workflow.m_dejnaxes: analysis completed, result_count=0, status=succeeded               | [[file:sql-catalog.org::#CompleteJob][CompleteJob()]]                 | argo   |
+| 22:26:02 | Server consumes result for isa-workflow.m_dejnaxes                                          | [[file:sql-catalog.org::#SetResult][SetResult()]]                   | server |
+| 22:26:03 | fx-pricing.fxhistsv: analysis completed, result_count=0, status=succeeded                   | [[file:sql-catalog.org::#CompleteJob][CompleteJob()]]                 | argo   |
+| 22:26:04 | WARN: Result not yet available for fx-pricing.fxhistsv (status poll before result consumed) | [[file:sql-catalog.org::#GetResult][GetResult()]]                   | server |
+| 22:26:05 | ldrv-rave.fomgrsvc: analysis completed, result_count=0, status=succeeded                    | [[file:sql-catalog.org::#CompleteJob][CompleteJob()]]                 | argo   |
+| 22:26:05 | rdce.entfpvsv: analysis completed, result_count=0, status=succeeded                         | [[file:sql-catalog.org::#CompleteJob][CompleteJob()]]                 | argo   |
+| 22:26:07 | Server consumes results for rdce.entfpvsv, ldrv-rave.fomgrsvc, fx-pricing.fxhistsv          | [[file:sql-catalog.org::#SetResult][SetResult()]]                   | server |
+| 22:26:07 | All 5 jobs in final state: succeeded                                                        | [[file:sql-catalog.org::#GetSessionStatus][GetSessionStatus()]]            | server |
+|----------+---------------------------------------------------------------------------------------------+-------------------------------+--------|
+
+* Job State Machine
+
+#+begin_example
+  (new) --> pending --> queued --> in_progress --> succeeded
+             |                       |
+             |  TransitionJobs       |  ClaimJob()
+             |  ToQueued()           |
+             v                       v
+         SetStatus()           CompleteJob()
+#+end_example
+
+* Notes
+  - Total wall time: ~2m04s (22:24:03 to 22:26:07)
+  - Spigot DB download: ~44s (22:24:04 to 22:24:48)
+  - Job scheduling + Argo submission: ~6s (22:24:48 to 22:24:54)
+  - Analysis execution: ~33s (22:24:58 to 22:25:27 for fastest, to 22:26:05 for slowest)
+  - All 5 jobs returned result_count=0 (Fprintf.ql found no matches in these repos)
+  - WARN at 22:26:04: server polled fx-pricing.fxhistsv status before RabbitMQ result was consumed

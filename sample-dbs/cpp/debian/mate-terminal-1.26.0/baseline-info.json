@@ -1,0 +1,1 @@
+{"languages":{"cpp":{"displayName":"C/C++","files":["mp3rename.c",".pc/030_fix-format-string.patch/mp3rename.c",".pc/040_dont_open_rdwr.patch/mp3rename.c",".pc/050_recognize_dashp_option.patch/mp3rename.c",".pc/020_old-source-diffs.patch/mp3rename.c"],"linesOfCode":2535,"name":"cpp"},"actions":{"displayName":"GitHub Actions","files":[],"linesOfCode":0,"name":"actions"}}}

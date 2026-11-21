@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>d547859 stale `job_status` rows</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../docs/readme-layout.css" />
+  <script defer=""
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+  type="text/javascript"></script>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">d547859 stale `job_status` rows</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#d547859-stale-job_status-rows"
+id="toc-d547859-stale-job_status-rows">d547859 stale
+<code>job_status</code> rows</a>
+<ul>
+<li><a href="#informal-summary" id="toc-informal-summary">Informal
+summary</a></li>
+<li><a href="#historical-reproduction"
+id="toc-historical-reproduction">Historical reproduction</a></li>
+<li><a href="#verification-branch"
+id="toc-verification-branch">Verification branch</a>
+<ul>
+<li><a href="#initial-master-result"
+id="toc-initial-master-result">Initial master result</a></li>
+<li><a href="#fix" id="toc-fix">Fix</a></li>
+<li><a href="#final-result" id="toc-final-result">Final result</a></li>
+</ul></li>
+<li><a href="#conclusion" id="toc-conclusion">Conclusion</a></li>
+</ul></li>
+<li><a href="#appendix" id="toc-appendix">Appendix</a>
+<ul>
+<li><a href="#branch-status" id="toc-branch-status">Branch
+status</a></li>
+<li><a href="#formal-state-model" id="toc-formal-state-model">Formal
+state model</a>
+<ul>
+<li><a href="#historical-scheduler"
+id="toc-historical-scheduler">Historical scheduler</a></li>
+<li><a href="#demand-based-pool-before-the-orphan-row-fix"
+id="toc-demand-based-pool-before-the-orphan-row-fix">Demand-based pool
+before the orphan-row fix</a></li>
+<li><a href="#corrected-scheduler-and-claim-relation"
+id="toc-corrected-scheduler-and-claim-relation">Corrected scheduler and
+claim relation</a></li>
+</ul></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="d547859-stale-job_status-rows">d547859 stale
+<code>job_status</code> rows</h1>
+<p>Observed and verified on 2026-08-05.</p>
+<h2 id="informal-summary">Informal summary</h2>
+<p>The motivating question was whether stale PostgreSQL
+<code>job_status</code> rows can reproduce the historical two-wave
+zero-runner stall without stopping either server.</p>
+<p>Yes. Four orphan rows marked Queued are sufficient in the historical
+code. The rows do not need matching sessions, job payloads, job
+information, workers, or workflows.</p>
+<h2 id="historical-reproduction">Historical reproduction</h2>
+<p>Branch: <code>repro/d547859-stale-job-status</code></p>
+<p>Commit: <code>4aa3336</code></p>
+<p>Command:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> server-commander</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="va">CODEQL_JAVA_HOME</span><span class="op">=</span>/usr <span class="ex">./run-d547-two-wave.sh</span> stale-queued exactly-one</span></code></pre></div>
+<p>The scenario first completes wave 1 and waits for all four workers to
+exit. It then inserts:</p>
+<pre class="text"><code>session_id = -547859
+owner      = stale-job-status
+repo       = orphan-1 through orphan-4
+status     = Queued</code></pre>
+<p>These rows exist only in <code>job_status</code>. Wave 2 is then
+delivered exactly once: Alice submits through server B and Bob through
+server A. Both servers remain running.</p>
+<p>The observed stalled state was:</p>
+<pre class="text"><code>wave2_pending=4 stale_queued=4 agents=0</code></pre>
+<p>PostgreSQL showed four successful wave-1 jobs, four orphan Queued
+rows, and all four legitimate wave-2 jobs still Pending. Both server
+PIDs were alive.</p>
+<p>The historical scheduler calculated global capacity as:</p>
+<pre class="text"><code>available = max_workers - busy_workers - all_queued_status_rows
+          = 4 - 0 - 4
+          = 0</code></pre>
+<p><code>GetQueuedJobCount</code> counted every Queued
+<code>job_status</code> row without requiring a matching
+<code>analyze_jobs</code> row. Each pool cycle therefore returned before
+selecting the legitimate Pending jobs.</p>
+<p>The harness deleted only the four synthetic status rows as a control.
+Scheduling resumed on the next pool cycle, four fresh workers completed
+wave 2, and all eight results downloaded.</p>
+<p>Evidence:</p>
+<pre class="text"><code>/tmp/mrva-d547-two-wave/stale-queued-exactly-one/evidence-stale-queued.txt
+/tmp/mrva-d547-two-wave/stale-queued-exactly-one/evidence-final.txt</code></pre>
+<h2 id="verification-branch">Verification branch</h2>
+<p>Branch: <code>verify/d547859-stale-job-status</code></p>
+<p>Based on master at <code>a017bb8</code>.</p>
+<p>Command:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="va">CODEQL_JAVA_HOME</span><span class="op">=</span>/usr <span class="dt">\</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="ex">cga/system-tests/run-system-08/run</span> stale-status-recovery</span></code></pre></div>
+<h3 id="initial-master-result">Initial master result</h3>
+<p>The first run against unchanged master failed. Demand-based scaling
+prevented the old zero-runner shape but did not make orphan statuses
+harmless:</p>
+<ol type="1">
+<li><p><code>GetQueuedJobCount</code> treated the four orphan rows as
+demand and spawned four workers.</p></li>
+<li><p><code>ClaimJob</code> selected the first Queued status before
+checking for a matching payload.</p></li>
+<li><p>Loading that payload failed with:</p>
+<pre class="text"><code>ClaimJob: get analyze_job: no rows in result set</code></pre></li>
+<li><p>The transaction rolled back, leaving the same orphan first in
+queue order.</p></li>
+<li><p>Workers repeatedly failed, exited idle, and were replaced.
+Legitimate wave-2 jobs did not complete.</p></li>
+</ol>
+<p>The 30-second diagnostic run accumulated 20 worker rows while four
+live workers continued failing against the same orphan statuses.</p>
+<h3 id="fix">Fix</h3>
+<p>The verification branch changes both relevant state queries:</p>
+<ul>
+<li><code>GetQueuedJobCount</code> counts only Queued rows that join a
+real <code>analyze_jobs</code> payload.</li>
+<li><code>ClaimJob</code> selects only Queued rows that join a real
+<code>analyze_jobs</code> payload.</li>
+</ul>
+<p>The orphan rows are not deleted or silently repaired. They remain
+available for inspection but are excluded from executable demand.</p>
+<h3 id="final-result">Final result</h3>
+<p>The exact scenario then passed:</p>
+<pre class="text"><code>sessions:                    4/4
+succeeded job rows:          8/8
+result rows:                 8/8
+downloaded archives:         8/8
+orphan queued rows retained: 4/4
+manual stale-row deletion:   0
+PASS</code></pre>
+<p>Wave 2 used four fresh workers and completed while all four orphan
+Queued statuses remained in PostgreSQL. Neither server was stopped.</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>The historical scheduler could be indefinitely suppressed by
+arbitrary Queued values in <code>job_status</code>. Demand-based worker
+spawning alone did not fully solve malformed orphan state because
+workers could still select a status with no executable payload.</p>
+<p>The verification branch establishes a stronger invariant: only a
+<code>job_status</code> row backed by <code>analyze_jobs</code> counts
+as queued demand or can be claimed. Orphan status rows therefore cannot
+suppress or poison valid work.</p>
+<h1 id="appendix">Appendix</h1>
+<h2 id="branch-status">Branch status</h2>
+<table>
+<colgroup>
+<col style="width: 28%" />
+<col style="width: 7%" />
+<col style="width: 63%" />
+</colgroup>
+<thead>
+<tr>
+<th>Branch</th>
+<th>Commit</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>repro/d547859-stale-job-status</code></td>
+<td><code>4aa3336</code></td>
+<td>Contains the historical scheduler and reproduces the orphan-Queued
+stall.</td>
+</tr>
+<tr>
+<td><code>verify/d547859-stale-job-status</code></td>
+<td><code>d668662</code></td>
+<td>Contains the regression and verified fix.</td>
+</tr>
+<tr>
+<td><code>master</code></td>
+<td><code>39394d4</code></td>
+<td>Contains the same fix and regression as the verification
+branch.</td>
+</tr>
+</tbody>
+</table>
+<p>The intended alignment is therefore: the error remains reproducible
+only on the <code>repro/</code> branch; both the <code>verify/</code>
+branch and <code>master</code> exclude orphan status rows from queued
+demand and worker claims.</p>
+<h2 id="formal-state-model">Formal state model</h2>
+<p>Let a job key be</p>
+<p><span class="math display">\[
+k = (s, o, r)
+\]</span></p>
+<p>where <span class="math inline">\(s\)</span> is a session ID, <span
+class="math inline">\(o\)</span> an owner, and <span
+class="math inline">\(r\)</span> a repository. Define:</p>
+<p><span class="math display">\[
+\begin{aligned}
+J &amp;= \{k : k \text{ has a row in } \texttt{analyze\_jobs}\}, \\
+S(k) &amp;\in \{\mathsf{Pending},\mathsf{Queued},\mathsf{InProgress},
+                 \mathsf{Succeeded},\ldots\}, \\
+Q &amp;= \{k : S(k)=\mathsf{Queued}\}, \\
+Q_v &amp;= Q \cap J, \\
+O &amp;= Q \setminus J, \\
+B &amp;= \text{number of Busy workers}, \\
+W &amp;= \text{configured maximum workers}.
+\end{aligned}
+\]</span></p>
+<p>Thus <span class="math inline">\(Q_v\)</span> is executable queued
+work and <span class="math inline">\(O\)</span> is the set of orphan
+Queued status rows. In this experiment:</p>
+<p><span class="math display">\[
+W=4,\qquad |O|=4.
+\]</span></p>
+<p>Let <span class="math inline">\(P_2\)</span> be the four legitimate
+wave-2 jobs. Immediately after delivery:</p>
+<p><span class="math display">\[
+|P_2|=4,\qquad B=0,\qquad |Q_v|=0,\qquad |O|=4.
+\]</span></p>
+<h3 id="historical-scheduler">Historical scheduler</h3>
+<p>The historical capacity calculation was</p>
+<p><span class="math display">\[
+A_{\mathrm{old}} = W-B-|Q|.
+\]</span></p>
+<p>Because <span
+class="math inline">\(Q=Q_v\mathbin{\dot\cup}O\)</span>,</p>
+<p><span class="math display">\[
+A_{\mathrm{old}}
+  = 4-0-(0+4)
+  = 0.
+\]</span></p>
+<p>The Pending-to-Queued transition was enabled only when <span
+class="math inline">\(A_{\mathrm{old}}&gt;0\)</span>. Therefore</p>
+<p><span class="math display">\[
+(|P_2|,|Q_v|,|O|,B)=(4,0,4,0)
+\longrightarrow (4,0,4,0).
+\]</span></p>
+<p>This is a fixed point while the orphan rows persist:</p>
+<p><span class="math display">\[
+\forall n\ge 0,\qquad T_{\mathrm{old}}^n(4,0,4,0)=(4,0,4,0).
+\]</span></p>
+<p>No server failure is required. Both pool managers repeatedly observe
+the same global PostgreSQL state and compute zero available
+capacity.</p>
+<h3 id="demand-based-pool-before-the-orphan-row-fix">Demand-based pool
+before the orphan-row fix</h3>
+<p>Demand-based scaling changed the worker target to</p>
+<p><span class="math display">\[
+R_{\mathrm{old}}=\min(W,B+|Q|).
+\]</span></p>
+<p>For the orphan state,</p>
+<p><span class="math display">\[
+R_{\mathrm{old}}=\min(4,0+4)=4,
+\]</span></p>
+<p>so four workers were spawned. However, the claim operation
+selected</p>
+<p><span class="math display">\[
+o=\min_{\mathrm{lex}} Q.
+\]</span></p>
+<p>The synthetic orphan keys used session ID <span
+class="math inline">\(-547859\)</span>, so an orphan sorted before every
+legitimate positive session ID. Since <span
+class="math inline">\(o\notin J\)</span>, payload lookup was
+undefined:</p>
+<p><span class="math display">\[
+\operatorname{payload}(o)=\bot.
+\]</span></p>
+<p>The claim transaction therefore rolled back:</p>
+<p><span class="math display">\[
+\mathsf{Queued}
+\xrightarrow{\text{select }o}
+\xrightarrow{\operatorname{payload}(o)=\bot}
+\mathsf{rollback}.
+\]</span></p>
+<p>Rollback preserved the original state:</p>
+<p><span class="math display">\[
+S(o)=\mathsf{Queued},\qquad Q&#39;=Q.
+\]</span></p>
+<p>Every worker selected the same first orphan again. This produced a
+livelock:</p>
+<p><span class="math display">\[
+Q \xrightarrow{\mathsf{ClaimJob}} Q
+  \xrightarrow{\mathsf{ClaimJob}} Q
+  \xrightarrow{\mathsf{ClaimJob}} \cdots
+\]</span></p>
+<p>Workers existed, but no valid job made progress.</p>
+<h3 id="corrected-scheduler-and-claim-relation">Corrected scheduler and
+claim relation</h3>
+<p>The fix replaces every queued-demand and queued-claim domain <span
+class="math inline">\(Q\)</span> with <span
+class="math inline">\(Q_v=Q\cap J\)</span>:</p>
+<p><span class="math display">\[
+A_{\mathrm{new}}=W-B-|Q_v|,
+\]</span></p>
+<p><span class="math display">\[
+R_{\mathrm{new}}=\min(W,B+|Q_v|),
+\]</span></p>
+<p><span class="math display">\[
+\mathsf{Claimable}=Q_v.
+\]</span></p>
+<p>The complete corrected evolution is:</p>
+<p><span class="math display">\[
+\begin{aligned}
+x_0 &amp;: (|P_2|,|Q_v|,|O|,B)=(4,0,4,0), \\
+A_{\mathrm{new}}(x_0) &amp;= 4-0-0=4, \\
+x_0 &amp;\xrightarrow{\mathsf{queue}} x_1=(0,4,4,0), \\
+R_{\mathrm{new}}(x_1) &amp;= \min(4,0+4)=4, \\
+x_1 &amp;\xrightarrow{\mathsf{spawn+claim}} x_2=(0,0,4,4), \\
+x_2 &amp;\xrightarrow{\mathsf{complete}} x_3=(0,0,4,0).
+\end{aligned}
+\]</span></p>
+<p>At <span class="math inline">\(x_3\)</span>, all four wave-2 jobs are
+Succeeded. The orphan set is deliberately unchanged:</p>
+<p><span class="math display">\[
+O_3=O_0,\qquad |O_3|=4.
+\]</span></p>
+<p>Therefore the safety property established by the regression is:</p>
+<p><span class="math display">\[
+O\cap J=\varnothing
+\implies
+\left(
+  O\text{ neither contributes to demand nor belongs to the claim domain}
+\right).
+\]</span></p>
+</body>
+</html>

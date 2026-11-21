@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# Internal lifecycle helper for the public `cga uv` command.
+set -euo pipefail
+
+SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PORT="${CGA_CGAUV_PORT:-8609}"
+RUN_DIR="${CGA_UV_RUN_DIR:-${CGA_RUN_DIR:-${SELF_DIR}/.run}/unified-view}"
+PIDFILE="${RUN_DIR}/cgauv.pid"
+LOGFILE="${RUN_DIR}/cgauv.log"
+
+mkdir -p "$RUN_DIR"
+
+is_up() {
+    curl -fsS "http://127.0.0.1:${PORT}/healthz" >/dev/null 2>&1
+}
+
+start() {
+    if is_up; then
+        printf 'cgauv already up on :%s\n' "$PORT"
+        return
+    fi
+    setsid "${SELF_DIR}/cgauv/bin/cgauv" serve \
+        </dev/null >"$LOGFILE" 2>&1 &
+    local pid=$!
+    disown "$pid" 2>/dev/null || true
+    printf '%s\n' "$pid" >"$PIDFILE"
+    local _
+    for _ in $(seq 1 40); do
+        if is_up; then
+            printf 'CGA Unified View: http://127.0.0.1:%s/ (pid %s)\n' \
+                "$PORT" "$pid"
+            return
+        fi
+        sleep 0.25
+    done
+    printf 'ERROR: cgauv did not start; see %s\n' "$LOGFILE" >&2
+    return 1
+}
+
+stop() {
+    local pid=""
+    if [ -f "$PIDFILE" ]; then
+        pid="$(cat "$PIDFILE")"
+    fi
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+        kill "$pid"
+        printf 'stopped cgauv (pid %s)\n' "$pid"
+    fi
+    rm -f "$PIDFILE"
+}
+
+status() {
+    if is_up; then
+        printf 'cgauv :%s UP\n' "$PORT"
+    else
+        printf 'cgauv :%s down\n' "$PORT"
+        return 1
+    fi
+}
+
+case "${1:-start}" in
+    start) start ;;
+    stop) stop ;;
+    status) status ;;
+    -h|--help|help) printf 'usage: cga uv [start|stop|status]\n' ;;
+    *) printf 'usage: cga uv [start|stop|status]\n' >&2; exit 2 ;;
+esac

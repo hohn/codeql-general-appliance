@@ -1,0 +1,1299 @@
+\documentclass[11pt]{article}
+
+% Load the geometry package to set margins
+\usepackage[lmargin=2cm,rmargin=2cm,tmargin=1.8cm,bmargin=1.8cm]{geometry}
+
+% increase nesting depth
+
+\usepackage{enumitem}
+\setlistdepth{9}
+%
+\renewlist{itemize}{itemize}{9}
+\setlist[itemize,1]{label=\textbullet}
+\setlist[itemize,2]{label=--}
+\setlist[itemize,3]{label=*}
+\setlist[itemize,4]{label=•}
+\setlist[itemize,5]{label=–}
+\setlist[itemize,6]{label=>}
+\setlist[itemize,7]{label=»}
+\setlist[itemize,8]{label=›}
+\setlist[itemize,9]{label=·}
+%
+\renewlist{enumerate}{enumerate}{9}
+\setlist[enumerate,1]{label=\arabic*.,ref=\arabic*}
+\setlist[enumerate,2]{label=\alph*.),ref=\theenumi\alph*}
+\setlist[enumerate,3]{label=\roman*.),ref=\theenumii\roman*}
+\setlist[enumerate,4]{label=\Alph*.),ref=\theenumiii\Alph*}
+\setlist[enumerate,5]{label=\Roman*.),ref=\theenumiv\Roman*}
+\setlist[enumerate,6]{label=\arabic*),ref=\theenumv\arabic*}
+\setlist[enumerate,7]{label=\alph*),ref=\theenumvi\alph*}
+\setlist[enumerate,8]{label=\roman*),ref=\theenumvii\roman*}
+\setlist[enumerate,9]{label=\Alph*),ref=\theenumviii\Alph*}
+
+
+% Load CM Bright for math
+\usepackage{amsmath}  % Standard math package
+\usepackage{amssymb}  % Additional math symbols
+\usepackage{cmbright} % Sans-serif math font that complements Fira Sans
+
+\usepackage{fourier}
+
+% Font configuration
+% \usepackage{bera}
+% or
+% Load Fira Sans for text
+\usepackage{fontspec}
+\setmainfont{Fira Sans}  % System-installed Fira Sans
+\renewcommand{\familydefault}{\sfdefault}  % Set sans-serif as default
+
+% pseudo-code with math
+\usepackage{listings}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{colortbl}
+% Set TT font
+% \usepackage{inconsolata}
+% or
+\setmonofont{IBMPlexMono-Light}
+% Define custom settings for listings
+\lstset{
+  language=Python,
+  basicstyle=\ttfamily\small,        % Monospaced font
+  commentstyle=\itshape\color{gray}, % Italic and gray for comments
+  keywordstyle=\color{blue},         % Keywords in blue
+  stringstyle=\color{red},           % Strings in red
+  mathescape=true,                   % Enable math in comments
+  breaklines=true,                   % Break long lines
+  numbers=left,                      % Add line numbers
+  numberstyle=\tiny\color{gray},     % Style for line numbers
+  frame=single,                      % Add a frame around the code
+}
+
+\usepackage{newfloat}  % Allows creating custom float types
+
+% Define 'listing' as a floating environment
+\DeclareFloatingEnvironment[
+fileext=lol,
+listname=List of Listings,
+name=Listing
+]{listing}
+
+% To prevent floats from moving past a section boundary but still allow some floating:
+\usepackage{placeins}
+% used with \FloatBarrier
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{booktabs} % for \toprule, \midrule, \bottomrule
+
+% Title, Author, and Date (or Report Number)
+\title{MRVA for CodeQL:\\Argo Workflows and Fair Scheduling Architecture}
+\author{Michael Hohn}
+\date{Technical Report 20260219}
+
+\hypersetup{
+  pdfauthor={Michael Hohn},
+  pdftitle={MRVA for CodeQL: Argo Workflows and Fair Scheduling Architecture},
+  pdfkeywords={CodeQL, MRVA, Argo Workflows, Fair Scheduling, Kubernetes},
+  pdfsubject={},
+  pdfcreator={Claude Code},
+  pdflang={English}}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+\section{MRVA System Architecture Summary}
+
+The MRVA system is a distributed platform for executing CodeQL queries across multiple repositories. The system has evolved from a RabbitMQ-based agent polling architecture to a centralized Argo Workflows scheduler with fair scheduling capabilities.
+
+\subsection{Current Architecture (Argo Workflows)}
+
+The server-side system is deployed in Kubernetes and comprises several key components:
+
+\begin{itemize}
+\item \textbf{Server}: Acts as the central API coordinator and result aggregator.
+\item \textbf{Scheduler}: Centralized fair scheduler with leader election that manages job distribution.
+\item \textbf{Argo Workflows}: Kubernetes-based workflow orchestration platform that executes jobs as pods.
+\item \textbf{PostgreSQL Database}: Stores job metadata, status, timing information, and leader election state.
+\item \textbf{MinIO}: Provides storage for queries and results.
+\item \textbf{HEPC}: HTTP endpoint that hosts and serves CodeQL databases.
+\end{itemize}
+
+On the client side, users interact with the system through:
+\begin{itemize}
+\item \textbf{VSCode-CodeQL}: A graphical interface integrated with Visual Studio Code.
+\item \textbf{gh-mrva CLI}: A command-line interface that connects to the server.
+\end{itemize}
+
+\subsection{Key Architectural Features}
+
+The new architecture provides:
+
+\begin{itemize}
+\item \textbf{Fair Resource Allocation}: Round-robin scheduling ensures equitable distribution of compute resources across users.
+\item \textbf{Leader Election}: Multiple scheduler instances can run for high availability, with database-based leader election.
+\item \textbf{Dynamic Resource Allocation}: Jobs execute as on-demand Kubernetes pods with explicit CPU/memory limits.
+\item \textbf{Comprehensive Tracking}: Database stores user attribution, timing metrics, and workflow correlation.
+\item \textbf{Observable Workflows}: Integration with Argo Workflows provides full visibility into job execution.
+\end{itemize}
+
+The full system details can be found in the source code at \texttt{github.com/PSA-MRVA/mrvacommander}. This document provides a mathematical specification of the scheduling and execution model.
+
+\section{Distributed Query Execution with Fair Scheduling}
+
+\subsection{Execution Overview}
+
+The MRVA system executes CodeQL queries across multiple repositories using a centralized fair scheduler that coordinates with Argo Workflows for job execution. The execution process follows this structured workflow:
+
+\begin{enumerate}
+\item A client submits a set of queries $\mathcal{Q}$ targeting a repository set $\mathcal{R}$.
+\item The server stores jobs with user attribution in the PostgreSQL database.
+\item The leader scheduler polls for pending jobs and applies fair scheduling policies.
+\item Selected jobs are submitted to Argo Workflows as Kubernetes pod specifications.
+\item Argo Workflows creates and manages pods that execute the CodeQL queries.
+\item Results are collected and returned to the server and forwarded to the client.
+\end{enumerate}
+
+This full round-trip can be expressed as:
+
+\begin{equation}
+  C \xrightarrow{(\mathcal{Q}, \mathcal{R}, u)} S
+  \xrightarrow{\text{store}} D
+  \xrightarrow{\text{poll}} \Sigma_L
+  \xrightarrow{\text{submit}} \Omega
+  \xrightarrow{\text{execute}} \omega_i
+  \xrightarrow{\mathcal{R}_i^{\mathcal{Q}}} C
+\end{equation}
+
+where the Client submits queries to the Server, which stores jobs in the Database. The Leader Scheduler polls for jobs, applies fair scheduling, and submits selected jobs to Argo Workflows. Workflows execute queries and return results to the Client.
+
+A more rigorous description of this flow is in Section \ref{sec:full-round-trip}.
+
+\subsection{Comparison with Previous Architecture}
+
+The previous architecture used RabbitMQ queues with autonomous agent polling. The new architecture replaces this with:
+
+\begin{center}
+\begin{tabular}{p{5cm}|p{5cm}|p{5cm}}
+\toprule
+\textbf{Aspect} & \textbf{Old (RabbitMQ)} & \textbf{New (Argo)} \\
+\midrule
+Job Distribution & RabbitMQ queue & PostgreSQL database \\
+Execution Model & Agent polls queue & Scheduler pushes to Argo \\
+Worker Management & Fixed agent containers & Dynamic Kubernetes pods \\
+Fairness & First-come-first-served & Fair scheduling by user \\
+Coordination & Queue-based & Leader-elected scheduler \\
+High Availability & Multiple agents & Leader election \\
+Resource Allocation & Static (agent count) & Dynamic (pod creation) \\
+\midrule
+Flow Notation & $Q \xrightarrow{\text{poll}} \alpha$ & $D \xrightarrow{\text{poll}} \Sigma_L \xrightarrow{\text{submit}} \Omega$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Symbols and Notation}
+\label{sec:symbols-notation}
+
+We define the following symbols for entities in the updated system:
+
+\begin{center}
+  \begin{longtable}{p{4cm}p{2.5cm}p{7.5cm}}
+    \toprule
+    \textbf{Concept} & \textbf{Symbol} & \textbf{Description} \\
+    \midrule
+    \endfirsthead
+
+    \toprule
+    \textbf{Concept} & \textbf{Symbol} & \textbf{Description} \\
+    \midrule
+    \endhead
+
+    \midrule
+    \endfoot
+
+    \bottomrule
+    \endlastfoot
+
+    \multicolumn{3}{l}{\textit{Core Components}} \\
+    Client & $C$ & Source of query submission \\
+    Server & $S$ & Central API coordinator \\
+    Database & $D$ & PostgreSQL database storing job state \\
+    Scheduler & $\Sigma$ & Centralized fair scheduler \\
+    Leader & $L$ & Current scheduler instance holding leader lock \\
+    Leader Scheduler & $\Sigma_L$ & Active scheduler with leadership \\
+    Argo Workflows & $\Omega$ & Kubernetes workflow orchestration platform \\
+    Workflow Instance & $\omega_i$ & Individual workflow (pod) executing job $i$ \\
+    \midrule
+
+    \multicolumn{3}{l}{\textit{User and Resource Management}} \\
+    User Set & $U$ & Set of all users in the system \\
+    User & $u \in U$ & Individual user identified by JWT \\
+    User of Job $i$ & $u_i$ & User who submitted job $i$ \\
+    Running Count & $n_u^r$ & Number of jobs currently running for user $u$ \\
+    Pending Count & $n_u^p$ & Number of jobs pending for user $u$ \\
+    Recent Runtime & $\tau_u$ & Total runtime (seconds) for user $u$ in recent window \\
+    Runtime Window & $T_w$ & Time window for runtime tracking (default: 3600s) \\
+    \midrule
+
+    \multicolumn{3}{l}{\textit{Capacity and Scheduling}} \\
+    Max Workers & $W$ & Maximum concurrent jobs (configurable, default: 10) \\
+    Running Jobs Count & $W_r$ & Current number of running jobs \\
+    Available Slots & $W_a$ & Available worker slots: $W_a = W - W_r$ \\
+    Priority Function & $\pi(u)$ & User priority for scheduling \\
+    User Allocation & $a_u$ & Number of jobs allocated to user $u$ in cycle \\
+    \midrule
+
+    \multicolumn{3}{l}{\textit{Queries and Repositories}} \\
+    Query Suite & $\mathcal{Q}$ & Collection of queries submitted by client \\
+    Repository List & $\mathcal{R}$ & Collection of repositories \\
+    $i$-th Repository & $\mathcal{R}_i$ & Specific repository indexed by $i$ \\
+    $j$-th Query & $\mathcal{Q}_j$ & Specific query from suite indexed by $j$ \\
+    Query Result & $r_{i,j,k}$ & $k$-th result from query $j$ on repository $i$ \\
+    Query Result Set & $\mathcal{R}_i^{\mathcal{Q}_j}$ & All results for query $j$ on repository $i$ \\
+    Accumulated Results & $\mathcal{R}_i^{\mathcal{Q}}$ & All results from all queries on $\mathcal{R}_i$ \\
+    \midrule
+
+    \multicolumn{3}{l}{\textit{Job Metadata and State}} \\
+    Job Specification & $J_i$ & Job identifier: $(s, o, r)$ (session, owner, repo) \\
+    Job Status & $\sigma_i$ & Status: Pending, InProgress, Succeeded, Failed, Canceled \\
+    Job Set for User & $J_u$ & Set of jobs submitted by user $u$ \\
+    Completed Jobs & $J_u^{completed}$ & Completed jobs for user $u$ \\
+    \midrule
+
+    \multicolumn{3}{l}{\textit{Timing Information}} \\
+    Created Time & $t_i^{created}$ & Timestamp when job $i$ was created \\
+    Started Time & $t_i^s$ & Timestamp when job $i$ started execution \\
+    Completed Time & $t_i^c$ & Timestamp when job $i$ completed \\
+    Current Time & $t_{now}$ & Current system time \\
+    \midrule
+
+    \multicolumn{3}{l}{\textit{Workflow Correlation}} \\
+    Argo Workflow ID & $\omega_i^{id}$ & Argo workflow metadata (JSON) for job $i$ \\
+    Workflow Phase & $\phi_i$ & Argo workflow phase: Pending, Running, Succeeded, Failed, Error \\
+    \midrule
+
+    \multicolumn{3}{l}{\textit{Leader Election}} \\
+    Lock Name & $\ell$ & Leader lock identifier (e.g., "mrva-scheduler") \\
+    Instance ID & $\Sigma_i$ & Scheduler instance identifier \\
+    Lock Expiration & $T_{exp}$ & Lock expiration time (default: 30 seconds) \\
+    Leader Check Interval & $T_{check}$ & Leader election check interval (default: 10s) \\
+    Scheduler Poll Interval & $T_{poll}$ & Scheduler polling frequency (default: 10s) \\
+  \end{longtable}
+\end{center}
+
+\section{Database Schema}
+
+The database schema has been extended to support fair scheduling and Argo Workflows integration.
+
+\subsection{Extended \texttt{job\_info} Table}
+
+The \texttt{job\_info} table stores metadata for each job:
+
+\begin{center}
+\begin{longtable}{p{4.5cm}p{2.5cm}p{7cm}}
+\toprule
+\textbf{Column} & \textbf{Type} & \textbf{Description} (Symbol) \\
+\midrule
+\endfirsthead
+
+\toprule
+\textbf{Column} & \textbf{Type} & \textbf{Description} (Symbol) \\
+\midrule
+\endhead
+
+\midrule
+\endfoot
+
+\bottomrule
+\endlastfoot
+
+\texttt{session\_id} & INTEGER & Session identifier (part of $J_i$) \\
+\texttt{owner} & TEXT & Repository owner (part of $J_i$) \\
+\texttt{repo} & TEXT & Repository name (part of $J_i$) \\
+\texttt{payload} & JSONB & Job metadata including query pack location \\
+\hline
+\multicolumn{3}{l}{\textit{Extensions for Fair Scheduling}} \\
+\texttt{user\_id} & TEXT & User from JWT ($u_i$) \\
+\texttt{started\_at} & TIMESTAMP & Start time ($t_i^s$) \\
+\texttt{completed\_at} & TIMESTAMP & Completion time ($t_i^c$) \\
+\texttt{argo\_workflow\_id} & TEXT & Argo workflow metadata ($\omega_i^{id}$) \\
+\end{longtable}
+\end{center}
+
+Primary key: \texttt{(session\_id, owner, repo)}
+
+Indices:
+\begin{itemize}
+\item \texttt{idx\_job\_info\_user\_started} on \texttt{(user\_id, started\_at)}
+\item \texttt{idx\_job\_info\_workflow} on \texttt{(argo\_workflow\_id)} where \texttt{argo\_workflow\_id != ''}
+\end{itemize}
+
+\subsection{New \texttt{scheduler\_lock} Table}
+
+The \texttt{scheduler\_lock} table enables leader election among multiple scheduler instances:
+
+\begin{center}
+\begin{tabular}{p{4.5cm}p{2.5cm}p{7cm}}
+\toprule
+\textbf{Column} & \textbf{Type} & \textbf{Description} \\
+\midrule
+\texttt{lock\_name} & TEXT & Lock identifier (PRIMARY KEY) \\
+\texttt{instance\_id} & TEXT & Scheduler instance holding lock \\
+\texttt{acquired\_at} & TIMESTAMP & When lock was acquired \\
+\texttt{expires\_at} & TIMESTAMP & When lock expires (30s) \\
+\texttt{heartbeat\_at} & TIMESTAMP & Last heartbeat timestamp \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Fair Scheduling Algorithm}
+
+\subsection{Mathematical Formulation}
+
+The fair scheduling algorithm ensures equitable resource distribution across users based on three criteria:
+
+\begin{enumerate}
+\item Current running job count per user
+\item Recent runtime consumption
+\item Pending job count
+\end{enumerate}
+
+\subsubsection{Fairness Metrics}
+
+For each user $u \in U$ with pending jobs, we track:
+
+\begin{itemize}
+\item $n_u^r$ - Number of currently running jobs
+\item $n_u^p$ - Number of pending jobs
+\item $\tau_u$ - Recent runtime (seconds consumed in window $T_w$)
+\end{itemize}
+
+\subsubsection{Priority Ordering}
+
+Users are sorted by a lexicographic priority function $\pi(u)$:
+
+\begin{equation}
+\pi: U \to \mathbb{N} \times \mathbb{R} \times \mathbb{N}
+\end{equation}
+
+\begin{equation}
+\pi(u) = (n_u^r, \tau_u, -n_u^p)
+\end{equation}
+
+Total ordering: $u_1 \prec u_2$ if and only if $\pi(u_1) <_{lex} \pi(u_2)$
+
+This gives priority to users with:
+\begin{enumerate}
+\item Fewer running jobs (minimize $n_u^r$)
+\item Less recent runtime (minimize $\tau_u$)
+\item More pending jobs (maximize $n_u^p$, hence minimize $-n_u^p$)
+\end{enumerate}
+
+\subsubsection{Recent Runtime Calculation}
+
+The recent runtime $\tau_u$ for user $u$ is computed from completed jobs within the time window:
+
+\begin{equation}
+\tau_u = \sum_{i \in J_u^{completed}} \delta_i \cdot (t_i^c - t_i^s)
+\end{equation}
+
+where:
+\begin{itemize}
+\item $J_u^{completed} = \{i : u_i = u \land \sigma_i = \text{Succeeded} \land t_i^c \neq \text{NULL}\}$
+\item $\delta_i = \begin{cases}
+  1 & \text{if } t_i^c \geq t_{now} - T_w \\
+  0 & \text{otherwise}
+  \end{cases}$
+\item $T_w$ is the runtime window (default: 3600 seconds)
+\end{itemize}
+
+
+In SQL form:
+\begin{lstlisting}[language=SQL, numbers=none]
+SELECT COALESCE(SUM(
+  EXTRACT(EPOCH FROM (completed_at - started_at))
+), 0)
+FROM job_info
+WHERE user_id = user
+  AND completed_at IS NOT NULL
+  AND started_at IS NOT NULL
+  AND completed_at >= NOW() - INTERVAL 'window seconds'
+\end{lstlisting}
+
+\subsubsection{Slot Allocation Algorithm}
+
+Given $W_a$ available worker slots, allocate jobs using round-robin:
+
+\begin{algorithm}[H]
+\caption{Fair Slot Allocation}
+\begin{algorithmic}[1]
+\Procedure{AllocateSlots}{$U_{pending}, W_a$}
+  \State $\text{sorted} \gets \text{sort}(U_{pending}, \text{key}=\pi)$
+  \Comment{Sort by priority}
+
+  \For{$u \in \text{sorted}$}
+    \State $a_u \gets 0$ \Comment{Initialize allocation count}
+  \EndFor
+
+  \State $\text{remaining} \gets W_a$
+
+  \While{$\text{remaining} > 0$}
+    \State $\text{scheduled} \gets \texttt{false}$
+
+    \For{$u \in \text{sorted}$}
+      \If{$a_u < n_u^p$}
+        \Comment{User has more pending jobs to schedule}
+        \State $a_u \gets a_u + 1$
+        \State $\text{remaining} \gets \text{remaining} - 1$
+        \State $\text{scheduled} \gets \texttt{true}$
+
+        \If{$\text{remaining} = 0$}
+          \State \textbf{break}
+        \EndIf
+      \EndIf
+    \EndFor
+
+    \If{\textbf{not} $\text{scheduled}$}
+      \State \textbf{break}
+      \Comment{No more jobs to schedule}
+    \EndIf
+  \EndWhile
+
+  \State \Return $\{a_u : u \in U_{pending}\}$
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Example}
+
+Given:
+\begin{itemize}
+\item User A: $n_A^r = 2$, $n_A^p = 100$, $\tau_A = 3600s$
+\item User B: $n_B^r = 0$, $n_B^p = 10$, $\tau_B = 0s$
+\item User C: $n_C^r = 1$, $n_C^p = 50$, $\tau_C = 1800s$
+\item Available slots: $W_a = 4$
+\end{itemize}
+
+Priority ordering:
+\begin{equation}
+\pi(B) = (0, 0, -10) \prec \pi(C) = (1, 1800, -50) \prec \pi(A) = (2, 3600, -100)
+\end{equation}
+
+Sorted order: $B, C, A$
+
+Round-robin allocation:
+\begin{enumerate}
+\item Slot 1 → B (allocation: B=1, C=0, A=0, remaining=3)
+\item Slot 2 → C (allocation: B=1, C=1, A=0, remaining=2)
+\item Slot 3 → A (allocation: B=1, C=1, A=1, remaining=1)
+\item Slot 4 → B (allocation: B=2, C=1, A=1, remaining=0)
+\end{enumerate}
+
+Result: B gets 2 jobs, C gets 1 job, A gets 1 job.
+
+\section{Leader Election Protocol}
+
+Multiple scheduler instances coordinate using database-based leader election to ensure only one scheduler actively manages job distribution at any time.
+
+\subsection{Lock Acquisition}
+
+A scheduler instance $\Sigma_i$ attempts to acquire lock $\ell$:
+
+\begin{algorithm}[H]
+\caption{Acquire Leader Lock}
+\begin{algorithmic}[1]
+\Procedure{AcquireLock}{$\ell, \Sigma_i, T_{exp}$}
+  \State $t_{now} \gets \text{current\_time}()$
+
+  \State \textbf{Execute SQL:}
+  \State \quad \texttt{INSERT INTO scheduler\_lock}
+  \State \quad \texttt{(lock\_name, instance\_id, acquired\_at, expires\_at, heartbeat\_at)}
+  \State \quad \texttt{VALUES}($\ell$, $\Sigma_i$, $t_{now}$, $t_{now} + T_{exp}$, $t_{now}$)
+  \State \quad \texttt{ON CONFLICT (lock\_name) DO UPDATE SET}
+  \State \quad \quad \texttt{instance\_id = }$\Sigma_i$\texttt{,}
+  \State \quad \quad \texttt{acquired\_at = }$t_{now}$\texttt{,}
+  \State \quad \quad \texttt{expires\_at = }$t_{now} + T_{exp}$\texttt{,}
+  \State \quad \quad \texttt{heartbeat\_at = }$t_{now}$
+  \State \quad \texttt{WHERE scheduler\_lock.expires\_at < }$t_{now}$
+
+  \State \textbf{Verify:}
+  \State \quad \texttt{SELECT instance\_id FROM scheduler\_lock WHERE lock\_name = }$\ell$
+
+  \State \Return \texttt{(instance\_id == }$\Sigma_i$\texttt{)}
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+The \texttt{ON CONFLICT} clause with \texttt{WHERE expires\_at < NOW()} ensures that only expired locks can be taken over, preventing conflicts between healthy scheduler instances.
+
+\subsection{Lock Renewal}
+
+The leader instance $\Sigma_L$ renews its lock periodically:
+
+\begin{equation}
+\begin{split}
+\text{Renew}(\ell, \Sigma_L, T_{exp}): & \text{ UPDATE scheduler\_lock} \\
+& \text{ SET expires\_at = }t_{now} + T_{exp}\text{, heartbeat\_at = }t_{now} \\
+& \text{ WHERE lock\_name = }\ell \text{ AND instance\_id = }\Sigma_L
+\end{split}
+\end{equation}
+
+If the update affects 0 rows, the instance has lost leadership (another instance acquired the lock).
+
+\subsection{Lock Release}
+
+On graceful shutdown, the scheduler releases its lock:
+
+\begin{equation}
+\text{Release}(\ell, \Sigma_i): \text{ DELETE FROM scheduler\_lock WHERE lock\_name = }\ell \text{ AND instance\_id = }\Sigma_i
+\end{equation}
+
+\subsection{Leader Election Timeline}
+
+\begin{itemize}
+\item Lock expiration: $T_{exp} = 30$ seconds
+\item Leader check interval: $T_{check} = 10$ seconds
+\item Scheduler poll interval: $T_{poll} = 10$ seconds (configurable)
+\end{itemize}
+
+If a scheduler crashes, its lock naturally expires within 30 seconds, allowing another instance to take over.
+
+\section{Argo Workflows Integration}
+
+\subsection{Workflow Submission}
+
+When a job $J_i$ is selected for execution, the scheduler submits it to Argo Workflows:
+
+\begin{algorithm}[H]
+\caption{Submit Job to Argo Workflows}
+\begin{algorithmic}[1]
+\Procedure{SubmitWorkflow}{$J_i, \mathcal{Q}$}
+  \State $\text{spec} \gets \text{CreateWorkflowSpec}(J_i, \mathcal{Q})$
+  \State $\text{token} \gets \text{GetArgoToken}()$ \Comment{Exchange ADPRD for DNA-SRE token}
+
+  \State \textbf{HTTP POST:} \texttt{/api/v1/workflows/\{namespace\}}
+  \State \quad \textbf{Headers:} \texttt{Authorization: Bearer }\text{token}
+  \State \quad \textbf{Body:} \text{spec}
+
+  \State $\omega_i^{id} \gets \text{response.metadata}$ \Comment{Extract workflow name, UID, cluster}
+
+  \State \Return $\omega_i^{id}$
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+The workflow specification includes:
+\begin{itemize}
+\item Container image: \texttt{agent-commander-argo:latest}
+\item Command: \texttt{/layers/paketo-buildpacks\_go-build/targets/bin/mrvaagent}
+\item Job argument: \texttt{--job '<job\_json>'}
+\item Environment variables: CodeQL CLI path, BCS credentials, RabbitMQ config, HEPC config
+\item Resource limits: 4 CPU, 16Gi memory
+\end{itemize}
+
+\subsection{Workflow Status Polling}
+
+The scheduler periodically polls Argo for workflow status:
+
+\begin{algorithm}[H]
+\caption{Poll Workflow Status}
+\begin{algorithmic}[1]
+\Procedure{GetWorkflowStatus}{$\omega_i^{id}$}
+  \State $\text{token} \gets \text{GetArgoToken}()$
+  \State $\text{metadata} \gets \text{parse\_json}(\omega_i^{id})$
+
+  \State \textbf{HTTP GET:} \texttt{/api/v1/workflows/\{namespace\}/\{name\}}
+  \State \quad \textbf{Headers:} \texttt{Authorization: Bearer }\text{token}
+
+  \State $\phi_i \gets \text{response.status.phase}$
+  \Comment{Pending, Running, Succeeded, Failed, Error}
+
+  \State \Return $\phi_i$
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Status Mapping}
+
+Argo workflow phases are mapped to internal job statuses:
+
+\begin{center}
+\begin{tabular}{p{4cm}p{4cm}p{6cm}}
+\toprule
+\textbf{Argo Phase} ($\phi_i$) & \textbf{Job Status} ($\sigma_i$) & \textbf{Action} \\
+\midrule
+Pending & InProgress & No change (wait) \\
+Running & InProgress & No change (wait) \\
+Succeeded & Succeeded & Set $t_i^c = t_{now}$ \\
+Failed & Failed & Set $t_i^c = t_{now}$ \\
+Error & Failed & Set $t_i^c = t_{now}$ \\
+Unknown & Failed & Set $t_i^c = t_{now}$ (failsafe) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Complete Scheduling Loop}
+
+The scheduler main loop integrates leader election, fair scheduling, Argo submission, and status polling:
+
+% \caption{Scheduler Main Loop}
+\begin{algorithmic}[1]
+\Procedure{SchedulerLoop}{$\Sigma_i, W, T_w, T_{poll}$}
+  \State $\ell \gets \text{"mrva-scheduler"}$
+  \State $is\_leader \gets \texttt{false}$
+  \State $T_{exp} \gets 30$ seconds
+  \State $T_{check} \gets 10$ seconds
+
+  \While{\textbf{not} stopped}
+    \State \Comment{------ Leader Election Phase ------}
+    \If{$is\_leader$}
+      \State $renewed \gets \text{RenewLock}(\ell, \Sigma_i, T_{exp})$
+      \If{\textbf{not} $renewed$}
+        \State $is\_leader \gets \texttt{false}$
+        \State Log("Lost leadership")
+      \EndIf
+    \Else
+      \State $acquired \gets \text{AcquireLock}(\ell, \Sigma_i, T_{exp})$
+      \If{$acquired$}
+        \State $is\_leader \gets \texttt{true}$
+        \State Log("Became leader")
+      \EndIf
+    \EndIf
+
+    \State \Comment{------ Scheduling Phase (only if leader) ------}
+    \If{$is\_leader$}
+      \State $J_{running} \gets \{J_i : \sigma_i = \text{InProgress}\}$
+      \State $W_r \gets |J_{running}|$
+      \State $W_a \gets W - W_r$
+
+      \If{$W_a > 0$}
+        \State $J_{pending} \gets \{J_i : \sigma_i = \text{Pending}\}$
+
+        \If{$|J_{pending}| > 0$}
+          \State \Comment{Group jobs by user}
+          \State $U_{pending} \gets \{u_i : J_i \in J_{pending}\}$
+
+          \For{$u \in U_{pending}$}
+            \State $J_u \gets \{J_i \in J_{pending} : u_i = u\}$
+            \State $n_u^p \gets |J_u|$
+            \State $n_u^r \gets |\{J_i \in J_{running} : u_i = u\}|$
+            \State $\tau_u \gets \sum_{i \in J_u^{completed}} \delta_i \cdot (t_i^c - t_i^s)$
+          \EndFor
+
+          \State \Comment{Fair allocation}
+          \State $allocations \gets \text{AllocateSlots}(U_{pending}, W_a)$
+
+          \State \Comment{Submit jobs to Argo}
+          \For{$u \in U_{pending}$}
+            \State $jobs \gets \text{first}(J_u, allocations[u])$
+            \For{$J_i \in jobs$}
+              \State $\omega_i^{id} \gets \Omega.\text{SubmitWorkflow}(J_i)$
+              \State $t_i^s \gets t_{now}$
+              \State $\sigma_i \gets \text{InProgress}$
+              \State Update database: $(J_i, \omega_i^{id}, t_i^s, \sigma_i)$
+            \EndFor
+          \EndFor
+        \EndIf
+      \EndIf
+
+      \State \Comment{------ Status Polling Phase ------}
+      \For{$J_i \in J_{running}$}
+        \State $\omega_i^{id} \gets \text{GetWorkflowID}(D, J_i)$
+        \State $\phi_i \gets \Omega.\text{GetWorkflowStatus}(\omega_i^{id})$
+
+        \If{$\phi_i = \text{"Succeeded"}$}
+          \State $\sigma_i \gets \text{Succeeded}$
+          \State $t_i^c \gets t_{now}$
+          \State Update database: $(J_i, \sigma_i, t_i^c)$
+        \ElsIf{$\phi_i \in \{\text{"Failed"}, \text{"Error"}\}$}
+          \State $\sigma_i \gets \text{Failed}$
+          \State $t_i^c \gets t_{now}$
+          \State Update database: $(J_i, \sigma_i, t_i^c)$
+        \EndIf
+      \EndFor
+    \EndIf
+
+    \State Sleep($\min(T_{check}, T_{poll})$)
+  \EndWhile
+
+  \State \Comment{------ Graceful Shutdown ------}
+  \If{$is\_leader$}
+    \State $\text{ReleaseLock}(\ell, \Sigma_i)$
+  \EndIf
+\EndProcedure
+\end{algorithmic}
+
+\newpage
+
+
+\section{Full Round-Trip Representation}
+\label{sec:full-round-trip}
+
+The complete round-trip from query submission to result delivery:
+
+\begin{equation}
+\begin{split}
+C &\xrightarrow{(\mathcal{Q}, \mathcal{R}, u)} S \\
+S &\xrightarrow{\forall \mathcal{R}_i: (J_i, u_i, \sigma_i=\text{Pending})} D \\
+D &\xleftarrow[\text{poll}]{\Sigma_L} \text{Leader Election} \\
+\Sigma_L &\xrightarrow[\text{fair schedule}]{\pi(u), W_a} \text{Select } \{J_1, \ldots, J_k\} \\
+\{J_1, \ldots, J_k\} &\xrightarrow{\text{submit}} \Omega \\
+\Omega &\xrightarrow{\text{create pods}} \{\omega_1, \ldots, \omega_k\} \\
+\omega_i &\xrightarrow{\text{execute}(\mathcal{Q}, \mathcal{R}_i)} \mathcal{R}_i^{\mathcal{Q}} \\
+\mathcal{R}_i^{\mathcal{Q}} &\xrightarrow{\text{store results}} S \xrightarrow{\text{update}(t_i^c, \sigma_i)} D \\
+S &\xrightarrow{\mathcal{R}_i^{\mathcal{Q}}} C
+\end{split}
+\end{equation}
+
+Detailed explanation:
+\begin{enumerate}
+\item $C \to S$: Client submits query suite $\mathcal{Q}$, repository list $\mathcal{R}$, and user $u$ to server
+\item $S \to D$: Server creates jobs $J_i$ for each repository with status Pending
+\item $D \leftarrow \Sigma_L$: Leader scheduler polls database for pending jobs
+\item $\Sigma_L$: Applies fair scheduling algorithm to select jobs
+\item $\Sigma_L \to \Omega$: Submits selected jobs to Argo Workflows
+\item $\Omega \to \{\omega_i\}$: Argo creates Kubernetes pods for each job
+\item $\omega_i$: Pod executes queries and generates results $\mathcal{R}_i^{\mathcal{Q}}$
+\item $\omega_i \to S$: Results returned to server
+\item $S \to D$: Server updates job status and completion time
+\item $S \to C$: Server forwards results to client
+\end{enumerate}
+
+\section{Result Representation}
+
+The result representation is unchanged from the previous architecture.
+
+For the complete collection of results across all repositories and queries:
+\begin{equation}
+  \mathcal{R}^{\mathcal{Q}} = \bigcup_{i=1}^{N} \bigcup_{j=1}^{M}
+  \left\{ r_{i,j,1}, r_{i,j,2}, \dots, r_{i,j,k_{i,j}} \right\}
+\end{equation}
+
+where:
+\begin{itemize}
+\item $N$ is the total number of repositories
+\item $M$ is the total number of queries in $\mathcal{Q}$
+\item $k_{i,j}$ is the number of results from executing query $\mathcal{Q}_j$ on repository $\mathcal{R}_i$
+\end{itemize}
+
+An individual result from the $i$-th repository, $j$-th query, and $k$-th result is:
+\begin{equation}
+  r_{i,j,k}
+\end{equation}
+
+\section{Properties and Invariants}
+
+\subsection{Capacity Constraint}
+
+At all times, the number of running jobs cannot exceed the maximum worker capacity:
+
+\begin{equation}
+W_r \leq W
+\end{equation}
+
+where $W_r = |\{i : \sigma_i = \text{InProgress}\}|$
+
+\subsection{Fairness Property}
+
+For any two users $u_1, u_2$ with pending jobs, the difference in running jobs is bounded:
+
+\begin{equation}
+|n_{u_1}^r - n_{u_2}^r| \leq \max(n_{u_1}^p, n_{u_2}^p)
+\end{equation}
+
+In steady state with sufficient pending jobs, each user gets approximately equal share:
+
+\begin{equation}
+\lim_{t \to \infty} \frac{n_{u_1}^r}{n_{u_2}^r} \approx 1
+\end{equation}
+
+\subsection{Leadership Invariant}
+
+At most one scheduler instance holds the leader lock at any time:
+
+\begin{equation}
+|\{\Sigma_i : \text{holds\_lock}(\ell, \Sigma_i)\}| \leq 1
+\end{equation}
+
+This is enforced by the database primary key constraint on \texttt{lock\_name} and the atomic \texttt{ON CONFLICT} operation.
+
+\subsection{Job Lifecycle}
+
+Every job follows the state transition:
+
+\begin{equation}
+\sigma_i: \text{Pending} \to \text{InProgress} \to \{\text{Succeeded}, \text{Failed}, \text{Canceled}\}
+\end{equation}
+
+with timing constraints:
+\begin{equation}
+t_i^{created} \leq t_i^s \leq t_i^c
+\end{equation}
+
+Jobs in \texttt{Pending} state have $t_i^s = \text{NULL}$.
+
+Jobs in \texttt{InProgress} state have $t_i^s \neq \text{NULL}$ and $t_i^c = \text{NULL}$.
+
+Jobs in terminal states (\texttt{Succeeded}, \texttt{Failed}, \texttt{Canceled}) have both timestamps set.
+
+\subsection{Workflow Correlation}
+
+Every job in \texttt{InProgress} or terminal state has a non-empty Argo workflow ID:
+
+\begin{equation}
+\sigma_i \in \{\text{InProgress}, \text{Succeeded}, \text{Failed}\} \implies \omega_i^{id} \neq \text{''}
+\end{equation}
+
+\section{Configuration Parameters}
+
+The scheduler behavior can be tuned using environment variables:
+
+\begin{center}
+\begin{longtable}{p{3.5cm}p{1.5cm}p{2cm}p{7cm}}
+\toprule
+\textbf{Parameter} & \textbf{Symbol} & \textbf{Default} & \textbf{Description} \\
+\midrule
+\endfirsthead
+
+\toprule
+\textbf{Parameter} & \textbf{Symbol} & \textbf{Default} & \textbf{Description} \\
+\midrule
+\endhead
+
+\midrule
+\endfoot
+
+\bottomrule
+\endlastfoot
+
+Max Workers & $W$ & 10 & Maximum concurrent jobs (pod count limit) \\
+Poll Interval & $T_{poll}$ & 10s & Frequency of scheduling cycles \\
+Runtime Window & $T_w$ & 3600s & Time window for recent runtime calculation \\
+Lock Expiration & $T_{exp}$ & 30s & Leader lock expiration time \\
+Leader Check & $T_{check}$ & 10s & Leader election check interval \\
+\end{longtable}
+\end{center}
+
+Environment variables:
+\begin{itemize}
+\item \texttt{MRVA\_SCHEDULER\_MAX\_WORKERS} - Sets $W$
+\item \texttt{MRVA\_SCHEDULER\_POLL\_INTERVAL\_SECONDS} - Sets $T_{poll}$
+\item \texttt{MRVA\_SCHEDULER\_RECENT\_RUNTIME\_WINDOW\_SECONDS} - Sets $T_w$
+\end{itemize}
+
+The lock expiration ($T_{exp}$) and leader check interval ($T_{check}$) are currently hardcoded in the implementation.
+
+\section{Messages and Their Types}
+\label{sec:msg-types}
+
+The message types remain largely unchanged from the previous architecture, with additions for new fields:
+
+\begin{longtable}{|p{4.5cm}|p{4.5cm}|p{5cm}|}
+  \hline
+  \rowcolor{gray!20} \textbf{Type Name} & \textbf{Field} & \textbf{Type} \\
+  \hline
+  \endfirsthead
+
+  \hline
+  \rowcolor{gray!20} \textbf{Type Name} & \textbf{Field} & \textbf{Type} \\
+  \hline
+  \endhead
+
+  \hline
+  \endfoot
+
+  \hline
+  \endlastfoot
+
+  JobInfo & QueryLanguage & string \\
+                                        & CreatedAt & string \\
+                                        & UpdatedAt & string \\
+                                        & StartedAt & string (new) \\
+                                        & CompletedAt & string (new) \\
+                                        & User & string (new) \\
+                                        & ArgoWorkflowID & string (new) \\
+                                        & SkippedRepositories & SkippedRepositories \\
+  \hline
+
+  \multicolumn{3}{l}{\textit{(Other message types unchanged from previous spec)}} \\
+\end{longtable}
+
+The four new fields in \texttt{JobInfo} correspond to the database schema extensions:
+\begin{itemize}
+\item \texttt{StartedAt} ($t_i^s$) - RFC3339 timestamp
+\item \texttt{CompletedAt} ($t_i^c$) - RFC3339 timestamp
+\item \texttt{User} ($u_i$) - User identifier from JWT
+\item \texttt{ArgoWorkflowID} ($\omega_i^{id}$) - JSON string containing Argo workflow metadata
+\end{itemize}
+
+\section{Implementation Notes}
+
+\subsection{Code References}
+
+The mathematical specification corresponds to these implementation files:
+
+\begin{itemize}
+\item \textbf{Scheduler loop}: \texttt{pkg/scheduler/scheduler.go:116-196}
+\item \textbf{Fair scheduling}: \texttt{pkg/scheduler/scheduler.go:302-395}
+\item \textbf{Argo submission}: \texttt{pkg/scheduler/argo\_client.go:420-533}
+\item \textbf{Leader election}: \texttt{pkg/state/state\_postgres.go:770-853}
+\item \textbf{Runtime queries}: \texttt{pkg/state/state\_postgres.go:604-663}
+\end{itemize}
+
+\subsection{Database Migration}
+
+The schema changes are documented in:
+\begin{itemize}
+\item \texttt{db\_schema\_changes/scheduler/SCHEDULER\_DB\_SCHEMA\_CHANGES.md}
+\item \texttt{db\_schema\_changes/scheduler/migrate\_database\_schema.sql}
+\end{itemize}
+
+The migration is idempotent and safe to run on existing databases.
+
+\subsection{Observability}
+
+Job execution can be monitored through:
+\begin{itemize}
+\item Argo Workflows UI: \url{https://workflows.cncr-api.prod.example.com}
+\item Database queries: \texttt{SELECT * FROM job\_info WHERE user\_id = '<user>'}
+\item Scheduler logs: Leader election events, job selection, submission status
+\end{itemize}
+
+\newpage
+\section{Execution Loop in Pseudo-Code}
+\noindent\textbf{Listing: Distributed Query Execution with Fair Scheduling and Argo Workflows}
+
+\begin{lstlisting}[language=Python]
+# Distributed Query Execution with Argo Workflows, Fair Scheduling, and Postgres
+
+# Initialization
+$\mathcal{R}$ = set()  # Repository list
+$U$ = set()  # User set
+$D$ = PostgresDB()  # PostgreSQL database for job state and leader election
+$S$ = Server()  # Server (API coordinator)
+$\Sigma$ = Scheduler()  # Fair scheduler
+$\Omega$ = ArgoWorkflows()  # Argo Workflows orchestration
+MinIO = ObjectStore()  # MinIO storage for queries and results
+HEPC = DatabaseServer()  # HEPC serves CodeQL databases
+$W$ = 10  # Maximum concurrent workers
+$T_w$ = 3600  # Runtime window (seconds)
+
+# Client submits queries
+$C$ submits ($\mathcal{Q}$, $\mathcal{R}$, $u$) to $S$
+
+# Server stores jobs in database
+for $\mathcal{R}_i$ in $\mathcal{R}$:
+    $J_i$ = JobSpec(session_id, owner, repo)
+    $D$.store_job($J_i$, user=$u$, status="Pending", payload=$\mathcal{Q}$)
+
+# Scheduler main loop (with leader election)
+while True:
+    # Leader election
+    if $\Sigma$.acquire_leader_lock($D$):
+        is_leader = True
+    else:
+        is_leader = False
+        sleep($T_{poll}$)
+        continue
+
+    # Get running jobs count
+    $J_{running}$ = $D$.get_jobs(status="InProgress")
+    $W_r$ = len($J_{running}$)
+    $W_a$ = $W$ - $W_r$  # Available slots
+
+    if $W_a$ > 0:
+        # Get pending jobs grouped by user
+        $J_{pending}$ = $D$.get_jobs(status="Pending")
+        $U_{pending}$ = {$u_i$ for $J_i$ in $J_{pending}$}
+
+        # Calculate fairness metrics for each user
+        user_metrics = {}
+        for $u$ in $U_{pending}$:
+            $n_u^p$ = $D$.count_jobs(user=$u$, status="Pending")
+            $n_u^r$ = $D$.count_jobs(user=$u$, status="InProgress")
+            $\tau_u$ = $D$.sum_recent_runtime(user=$u$, window=$T_w$)
+            user_metrics[$u$] = ($n_u^r$, $\tau_u$, -$n_u^p$)
+
+        # Sort users by priority (lexicographic ordering)
+        sorted_users = sorted($U_{pending}$, key=lambda u: user_metrics[u])
+
+        # Fair allocation using round-robin
+        allocations = allocate_slots(sorted_users, user_metrics, $W_a$)
+
+        # Submit jobs to Argo Workflows
+        for $u$ in sorted_users:
+            $jobs$ = $D$.get_jobs(user=$u$, status="Pending", limit=allocations[$u$])
+            for $J_i$ in $jobs$:
+                # Create workflow spec with environment variables
+                # $J_i$ contains query pack location reference (not the pack itself)
+                # Agent will fetch query pack from MinIO and DB from HEPC
+                workflow_spec = create_workflow_spec(
+                    job=$J_i$,  # Contains $\mathcal{Q}$.location reference
+                    env_vars={
+                        "MRVA_HEPC_ENDPOINT": HEPC.endpoint,
+                        "MRVA_BCS_ENDPOINT": MinIO.endpoint,
+                        "MRVA_BUCKET": MinIO.bucket,
+                        # ... other config
+                    }
+                )
+
+                # Submit to Argo
+                $\omega_i^{id}$ = $\Omega$.submit_workflow(workflow_spec)
+
+                # Update job in database
+                $D$.update_job($J_i$,
+                    status="InProgress",
+                    started_at=$t_{now}$,
+                    argo_workflow_id=$\omega_i^{id}$)
+
+    # Poll Argo for workflow status updates
+    for $J_i$ in $J_{running}$:
+        $\omega_i^{id}$ = $D$.get_workflow_id($J_i$)
+        $\phi_i$ = $\Omega$.get_workflow_status($\omega_i^{id}$)
+
+        if $\phi_i$ == "Succeeded":
+            # Agent has stored results in MinIO
+            $\mathcal{R}_i^{\mathcal{Q}}$ = MinIO.get_results($J_i$)
+            $D$.update_job($J_i$, status="Succeeded", completed_at=$t_{now}$)
+            $S$.send_results_to_client($C$, $\mathcal{R}_i^{\mathcal{Q}}$)
+
+        elif $\phi_i$ in ["Failed", "Error"]:
+            $D$.update_job($J_i$, status="Failed", completed_at=$t_{now}$)
+
+    sleep($T_{poll}$)
+\end{lstlisting}
+
+\newpage
+
+\noindent\textbf{Listing: Agent Execution Inside Argo Workflow Pod}
+
+\begin{lstlisting}[language=Python]
+# Agent execution inside Argo workflow pod
+# Receives job via command-line argument: --job '<job_json>'
+# Environment variables provide MinIO and HEPC configuration
+
+# Parse job from command-line argument
+$J_i$ = parse_args()["--job"]  # Contains session_id, owner, repo, and $\mathcal{Q}$.location
+
+# Get environment variables for MinIO and HEPC
+minio_endpoint = os.getenv("MRVA_BCS_ENDPOINT")
+minio_bucket = os.getenv("MRVA_BUCKET")
+minio_access_key = os.getenv("MRVA_BCS_ACCESS_KEY")  # From Kubernetes secret
+minio_secret_key = os.getenv("MRVA_BCS_SECRET_KEY")  # From Kubernetes secret
+hepc_endpoint = os.getenv("MRVA_HEPC_ENDPOINT")
+codeql_cli_path = os.getenv("CODEQL_CLI_PATH")
+
+# Initialize storage clients
+MinIO = MinIOClient(minio_endpoint, minio_bucket, minio_access_key, minio_secret_key)
+HEPC = HEPCClient(hepc_endpoint)
+
+# Fetch query pack from MinIO using reference in job
+$\mathcal{Q}$ = MinIO.get($J_i$.query_pack_location)
+extract_query_pack($\mathcal{Q}$, "/tmp/queries")
+
+# Fetch CodeQL database from HEPC
+db_url = HEPC.get_database_url($J_i$.owner, $J_i$.repo, $J_i$.language)
+$DB_i$ = download_and_extract(db_url, "/tmp/databases")
+
+# Execute CodeQL queries against database
+$\mathcal{R}_i^{\mathcal{Q}}$ = set()  # Results for this repository
+for $\mathcal{Q}_j$ in $\mathcal{Q}$:
+    # Run CodeQL CLI
+    results = run_command([
+        codeql_cli_path, "database", "analyze",
+        $DB_i$,
+        "/tmp/queries",
+        "--format=sarif-latest",
+        "--output=/tmp/results.sarif"
+    ])
+
+    # Parse SARIF results
+    for result in parse_sarif("/tmp/results.sarif"):
+        $\mathcal{R}_i^{\mathcal{Q}}$.add(result)
+
+# Store results back to MinIO
+results_location = f"{$J_i$.session_id}/{$J_i$.owner}/{$J_i$.repo}/results.json"
+MinIO.put(results_location, $\mathcal{R}_i^{\mathcal{Q}}$)
+
+# Workflow pod exits with success status
+# Argo detects completion and updates workflow phase to "Succeeded"
+exit(0)
+\end{lstlisting}
+
+\newpage
+\section{Execution Loop in Pseudo-Code, algorithmic}
+
+\noindent\textbf{Algorithm: Distribute queries $\mathcal{Q}$ across repositories $\mathcal{R}$
+    using Argo Workflows with fair scheduling}
+
+\begin{algorithmic}[1]
+    \Procedure{FairSchedulingWithArgo}{$\mathcal{Q}, \mathcal{R}, u, W, T_w$}
+
+      \State \Comment{------ Initialization ------}
+      \State $D \gets$ PostgreSQL database
+      \State $S \gets$ Server (API coordinator)
+      \State $\Sigma \gets$ Scheduler instance
+      \State $\Omega \gets$ Argo Workflows
+      \State MinIO $\gets$ Object storage
+      \State HEPC $\gets$ CodeQL database server
+
+      \State \Comment{------ Client Submission ------}
+      \State $C \xrightarrow{(\mathcal{Q}, \mathcal{R}, u)} S$
+
+      \State \Comment{------ Server Stores Jobs in Database ------}
+      \ForAll{$\mathcal{R}_i \in \mathcal{R}$}
+        \State $J_i \gets \text{JobSpec}(\text{session\_id}, \text{owner}, \text{repo})$
+        \State $D.\text{StoreJob}(J_i, u_i=u, \sigma_i=\text{Pending}, \text{payload}=\mathcal{Q})$
+      \EndFor
+
+      \State \Comment{------ Scheduler Main Loop ------}
+      \While{\textbf{not} stopped}
+        \State \Comment{Leader election}
+        \If{\textbf{not} $\Sigma.\text{AcquireLeaderLock}(D)$}
+          \State \textbf{continue}
+        \EndIf
+
+        \State \Comment{Calculate available capacity}
+        \State $J_{running} \gets D.\text{GetJobs}(\sigma=\text{InProgress})$
+        \State $W_r \gets |J_{running}|$
+        \State $W_a \gets W - W_r$
+
+        \If{$W_a > 0$}
+          \State \Comment{------ Fair Scheduling Phase ------}
+          \State $J_{pending} \gets D.\text{GetJobs}(\sigma=\text{Pending})$
+          \State $U_{pending} \gets \{u_i : J_i \in J_{pending}\}$
+
+          \ForAll{$u \in U_{pending}$}
+            \State $n_u^p \gets D.\text{CountJobs}(u, \text{Pending})$
+            \State $n_u^r \gets D.\text{CountJobs}(u, \text{InProgress})$
+            \State $\tau_u \gets D.\text{SumRecentRuntime}(u, T_w)$
+            \Comment{Query Postgres for timing}
+          \EndFor
+
+          \State $\text{sorted} \gets \text{Sort}(U_{pending}, \text{key}=(n_u^r, \tau_u, -n_u^p))$
+          \State $\text{allocations} \gets \text{AllocateSlots}(\text{sorted}, W_a)$
+
+          \State \Comment{------ Submit Jobs to Argo Workflows ------}
+          \ForAll{$u \in \text{sorted}$}
+            \State $\text{jobs} \gets D.\text{GetJobs}(u, \text{Pending}, \text{limit}=\text{allocations}[u])$
+
+            \ForAll{$J_i \in \text{jobs}$}
+              \State $\text{env} \gets \{\text{HEPC.endpoint}, \text{MinIO.endpoint}, \text{MinIO.bucket}, \ldots\}$
+              \Comment{Config as env vars}
+
+              \State $\text{spec} \gets \text{CreateWorkflowSpec}(J_i, \text{env})$
+              \Comment{$J_i$ has $\mathcal{Q}$ location ref}
+              \State $\omega_i^{id} \gets \Omega.\text{SubmitWorkflow}(\text{spec})$
+              \Comment{Submit to Argo}
+
+              \State $D.\text{UpdateJob}(J_i, \sigma_i=\text{InProgress}, t_i^s=t_{now}, \omega_i^{id})$
+              \Comment{Update Postgres}
+            \EndFor
+          \EndFor
+        \EndIf
+
+        \State \Comment{------ Poll Workflow Status ------}
+        \ForAll{$J_i \in J_{running}$}
+          \State $\omega_i^{id} \gets D.\text{GetWorkflowID}(J_i)$
+          \State $\phi_i \gets \Omega.\text{GetWorkflowStatus}(\omega_i^{id})$
+          \Comment{Poll Argo}
+
+          \If{$\phi_i = \text{"Succeeded"}$}
+            \State $\mathcal{R}_i^{\mathcal{Q}} \gets \text{MinIO}.\text{GetResults}(J_i)$
+            \Comment{Results from MinIO}
+            \State $D.\text{UpdateJob}(J_i, \sigma_i=\text{Succeeded}, t_i^c=t_{now})$
+            \State $S \xrightarrow{\mathcal{R}_i^{\mathcal{Q}}} C$
+            \Comment{Send to client}
+          \ElsIf{$\phi_i \in \{\text{"Failed"}, \text{"Error"}\}$}
+            \State $D.\text{UpdateJob}(J_i, \sigma_i=\text{Failed}, t_i^c=t_{now})$
+          \EndIf
+        \EndFor
+
+        \State Sleep($T_{poll}$)
+      \EndWhile
+
+    \EndProcedure
+\end{algorithmic}
+
+\vspace{1em}
+
+\noindent\textbf{Algorithm: Agent Execution Inside Argo Workflow Pod}
+
+\begin{algorithmic}[1]
+    \Procedure{AgentExecute}{$J_i$, env\_vars}
+
+      \State \Comment{------ Parse Job and Configuration ------}
+      \State Parse $J_i$ from command-line argument \texttt{--job}
+      \State $\mathcal{Q}\_\text{location} \gets J_i.\text{query\_pack\_location}$
+      \State $\text{repo\_info} \gets (J_i.\text{owner}, J_i.\text{repo}, J_i.\text{language})$
+
+      \State \Comment{Get configuration from environment variables}
+      \State MinIO $\gets$ \text{MinIOClient}(\text{env[MRVA\_BCS\_ENDPOINT]}, \text{env[MRVA\_BUCKET]}, \ldots)
+      \State HEPC $\gets$ \text{HEPCClient}(\text{env[MRVA\_HEPC\_ENDPOINT]})
+
+      \State \Comment{------ Fetch Query Pack from MinIO ------}
+      \State $\mathcal{Q} \gets \text{MinIO}.\text{Get}(\mathcal{Q}\_\text{location})$
+      \Comment{Download by reference}
+      \State Extract $\mathcal{Q}$ to local filesystem
+
+      \State \Comment{------ Fetch CodeQL Database from HEPC ------}
+      \State $\text{db\_url} \gets \text{HEPC}.\text{GetDatabaseURL}(\text{repo\_info})$
+      \State $DB_i \gets \text{DownloadAndExtract}(\text{db\_url})$
+      \Comment{Download database}
+
+      \State \Comment{------ Execute CodeQL Queries ------}
+      \State $\mathcal{R}_i^{\mathcal{Q}} \gets \emptyset$
+      \Comment{Initialize results}
+
+      \ForAll{$\mathcal{Q}_j \in \mathcal{Q}$}
+        \State Run CodeQL CLI: \texttt{database analyze} $DB_i$ with $\mathcal{Q}_j$
+        \State Parse SARIF output into results
+        \State $\mathcal{R}_i^{\mathcal{Q}} \gets \mathcal{R}_i^{\mathcal{Q}} \cup \text{results}$
+      \EndFor
+
+      \State \Comment{------ Store Results to MinIO ------}
+      \State $\text{results\_location} \gets \text{BuildPath}(J_i.\text{session\_id}, J_i.\text{owner}, J_i.\text{repo})$
+      \State $\text{MinIO}.\text{Put}(\text{results\_location}, \mathcal{R}_i^{\mathcal{Q}})$
+      \Comment{Upload results}
+
+      \State \Comment{------ Complete ------}
+      \State Exit with success status
+      \Comment{Argo updates workflow phase}
+
+    \EndProcedure
+\end{algorithmic}
+
+\section{Conclusion}
+
+The MRVA system has evolved from a stateless RabbitMQ-based architecture to a sophisticated, fair-scheduling system built on Argo Workflows and Kubernetes. The new architecture provides:
+
+\begin{itemize}
+\item \textbf{Fairness}: Round-robin scheduling ensures equitable resource distribution
+\item \textbf{Scalability}: Dynamic pod creation and leader election support high-availability deployments
+\item \textbf{Observability}: Comprehensive tracking of user attribution, timing metrics, and workflow correlation
+\item \textbf{Flexibility}: Configurable parameters allow tuning for different workload characteristics
+\end{itemize}
+
+This mathematical specification provides a formal foundation for understanding, implementing, and extending the MRVA scheduling system.
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: LaTeX
+%%% TeX-master: t
+%%% TeX-engine: luatex
+%%% TeX-command-extra-options: "-synctex=1 -shell-escape -interaction=nonstopmode"
+%%% End:

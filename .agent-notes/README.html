@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Agent core</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+  </style>
+  <link rel="stylesheet" href="../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Agent core</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#agent-core" id="toc-agent-core">Agent core</a>
+<ul>
+<li><a href="#purpose" id="toc-purpose">Purpose</a></li>
+<li><a href="#essential-invariants"
+id="toc-essential-invariants">Essential invariants</a></li>
+<li><a href="#read-only-the-matching-topic"
+id="toc-read-only-the-matching-topic">Read only the matching
+topic</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="agent-core">Agent core</h1>
+<p>Read this file first; do not reread it when a later guide links back
+here. For CGA work, next choose one route in the <a
+href="../docs/cga-help-llm.org">LLM exploration guide</a>. For other
+work, use only the matching topic below. These links are choices, not a
+reading checklist.</p>
+<p>Expand from the task to relevant help/state, a named contract
+section, then the owning component only when needed. Stop expanding when
+the task is answerable.</p>
+<h2 id="purpose">Purpose</h2>
+<p>This entire repository is a science experiment and prototype. The
+goals are handling CodeQL databases and queries, applying queries to
+databases, and supporting humans and LLMs in investigating results.
+Code, usage documentation, and examples evolve together; none is useful
+without the others.</p>
+<p>Examples permit experimentation and are retained for future
+expansion. E2e tests are fixed examples with assertions that test the
+code. Do not equate a successful pipeline with an effective
+vulnerability detector. Remove obsolete documentation rather than
+archiving it; Git retains the history.</p>
+<h2 id="essential-invariants">Essential invariants</h2>
+<ul>
+<li>Use <code>cga</code> for normal recorded workflows. Direct component
+binaries remain JSON-in/JSON-out filters; stdout is state, diagnostics
+belong on stderr.</li>
+<li>Preparation and analysis use separate state with an explicit
+artifact handoff. <code>.cga/</code> owns workflow metadata and local
+runtime/scratch; its configured store owns content-addressed
+objects.</li>
+<li>Large sources, databases, archives, and results belong outside Git
+and outside PostgreSQL. PostgreSQL stores operational state and
+references. Do not delete external artifact trees or treat ignored
+symlinks as junk.</li>
+<li>Preserve operator-supplied configuration. Go fills defaults only
+when env vars are unset; harnesses keep overrides visible. Ask when
+configuration ownership or behavior is ambiguous.</li>
+<li>Keep lifecycle phases decoupled: preflight checks/reclaims; start
+starts. A stale <code>mrvaserver</code> on <code>:8081</code> can serve
+an old binary. Read the relevant lifecycle notes before
+starting/resetting shared infrastructure.</li>
+<li>Bench, mrva-flow, and standalone tests can share MRVA ports and
+PostgreSQL. Separate scratch directories do not make concurrent runs
+independent.</li>
+<li>Server and worker modules use the local sibling
+<code>mrvacommander</code> module. Build/test in the owning module, not
+as one root Go module.</li>
+<li>Preserve examples and update their usage explanations with behavior
+changes. Use the smallest relevant check; do not run a resetting e2e
+just to explore.</li>
+</ul>
+<h2 id="read-only-the-matching-topic">Read only the matching topic</h2>
+<table>
+<colgroup>
+<col style="width: 64%" />
+<col style="width: 35%" />
+</colgroup>
+<thead>
+<tr>
+<th>Task</th>
+<th>Topic</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Host setup, CodeQL Java, Git environment</td>
+<td><a href="environment.md">Environment</a></td>
+</tr>
+<tr>
+<td>Command routing, workflow state, assistant context, VIDs</td>
+<td><a href="cga.md">CGA</a></td>
+</tr>
+<tr>
+<td>Experiment invariants, checkpoints, viewer/editor lifecycle</td>
+<td><a href="bench.md">Bench</a></td>
+</tr>
+<tr>
+<td>Source/database/query preparation, catalogues, controller</td>
+<td><a href="preparation.md">Preparation</a></td>
+</tr>
+<tr>
+<td>Deployment, configuration, scheduling, identity, storage</td>
+<td><a href="mrva-runtime.md">MRVA runtime</a></td>
+</tr>
+<tr>
+<td>Standalone e2e phases and scenario selection</td>
+<td><a href="system-tests.md">System tests</a></td>
+</tr>
+<tr>
+<td>Live sysview, Unified View, replay, shared rendering</td>
+<td><a href="views.md">Views</a></td>
+</tr>
+<tr>
+<td>Markdown, books, generated files, line counting</td>
+<td><a href="documentation.md">Documentation</a></td>
+</tr>
+</tbody>
+</table>
+<p>For live experiment context, prefer the bounded read-only
+<code>cga llm context bench</code> or
+<code>cga llm context unified</code> projection before opening raw
+state, result archives, or implementation trees. See <a
+href="../cga/README.md#assistant-context">Assistant context</a>.</p>
+<p>Only if focused investigation cannot establish ownership, use the <a
+href="../READING-GUIDE.md#reading-paths">advanced project map</a> as a
+last resort.</p>
+<p>Keep this core short. Put new subsystem details in their topic file,
+not here.</p>
+</body>
+</html>

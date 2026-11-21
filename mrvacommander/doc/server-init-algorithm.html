@@ -1,0 +1,753 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<!-- 2026-05-19 Tue 12:53 -->
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MRVA Commander: Initialization and Execution Algorithm</title>
+<meta name="author" content="(generated from source)" />
+<meta name="generator" content="Org Mode" />
+<style type="text/css">
+  #content { max-width: 60em; margin: auto; }
+  .title  { text-align: center;
+             margin-bottom: .2em; }
+  .subtitle { text-align: center;
+              font-size: medium;
+              font-weight: bold;
+              margin-top:0; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { font-family: monospace; color: green; }
+  .priority { font-family: monospace; color: orange; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .org-right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .org-left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .org-center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #e6e6e6;
+    border-radius: 3px;
+    background-color: #f2f2f2;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: auto;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    top: -8px;
+    right: 12px;
+    padding: 3px;
+    color: #555;
+    background-color: #f2f2f299;
+  }
+  pre.src:hover:before { display: inline; margin-top: 14px;}
+  /* Languages per Org manual */
+  pre.src-asymptote:before { content: 'Asymptote'; }
+  pre.src-awk:before { content: 'Awk'; }
+  pre.src-authinfo::before { content: 'Authinfo'; }
+  pre.src-C:before { content: 'C'; }
+  /* pre.src-C++ doesn't work in CSS */
+  pre.src-clojure:before { content: 'Clojure'; }
+  pre.src-css:before { content: 'CSS'; }
+  pre.src-D:before { content: 'D'; }
+  pre.src-ditaa:before { content: 'ditaa'; }
+  pre.src-dot:before { content: 'Graphviz'; }
+  pre.src-calc:before { content: 'Emacs Calc'; }
+  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
+  pre.src-fortran:before { content: 'Fortran'; }
+  pre.src-gnuplot:before { content: 'gnuplot'; }
+  pre.src-haskell:before { content: 'Haskell'; }
+  pre.src-hledger:before { content: 'hledger'; }
+  pre.src-java:before { content: 'Java'; }
+  pre.src-js:before { content: 'Javascript'; }
+  pre.src-latex:before { content: 'LaTeX'; }
+  pre.src-ledger:before { content: 'Ledger'; }
+  pre.src-lisp:before { content: 'Lisp'; }
+  pre.src-lilypond:before { content: 'Lilypond'; }
+  pre.src-lua:before { content: 'Lua'; }
+  pre.src-matlab:before { content: 'MATLAB'; }
+  pre.src-mscgen:before { content: 'Mscgen'; }
+  pre.src-ocaml:before { content: 'Objective Caml'; }
+  pre.src-octave:before { content: 'Octave'; }
+  pre.src-org:before { content: 'Org mode'; }
+  pre.src-oz:before { content: 'OZ'; }
+  pre.src-plantuml:before { content: 'Plantuml'; }
+  pre.src-processing:before { content: 'Processing.js'; }
+  pre.src-python:before { content: 'Python'; }
+  pre.src-R:before { content: 'R'; }
+  pre.src-ruby:before { content: 'Ruby'; }
+  pre.src-sass:before { content: 'Sass'; }
+  pre.src-scheme:before { content: 'Scheme'; }
+  pre.src-screen:before { content: 'Gnu Screen'; }
+  pre.src-sed:before { content: 'Sed'; }
+  pre.src-sh:before { content: 'shell'; }
+  pre.src-sql:before { content: 'SQL'; }
+  pre.src-sqlite:before { content: 'SQLite'; }
+  /* additional languages in org.el's org-babel-load-languages alist */
+  pre.src-forth:before { content: 'Forth'; }
+  pre.src-io:before { content: 'IO'; }
+  pre.src-J:before { content: 'J'; }
+  pre.src-makefile:before { content: 'Makefile'; }
+  pre.src-maxima:before { content: 'Maxima'; }
+  pre.src-perl:before { content: 'Perl'; }
+  pre.src-picolisp:before { content: 'Pico Lisp'; }
+  pre.src-scala:before { content: 'Scala'; }
+  pre.src-shell:before { content: 'Shell Script'; }
+  pre.src-ebnf2ps:before { content: 'ebfn2ps'; }
+  /* additional language identifiers per "defun org-babel-execute"
+       in ob-*.el */
+  pre.src-cpp:before  { content: 'C++'; }
+  pre.src-abc:before  { content: 'ABC'; }
+  pre.src-coq:before  { content: 'Coq'; }
+  pre.src-groovy:before  { content: 'Groovy'; }
+  /* additional language identifiers from org-babel-shell-names in
+     ob-shell.el: ob-shell is the only babel language using a lambda to put
+     the execution function name together. */
+  pre.src-bash:before  { content: 'bash'; }
+  pre.src-csh:before  { content: 'csh'; }
+  pre.src-ash:before  { content: 'ash'; }
+  pre.src-dash:before  { content: 'dash'; }
+  pre.src-ksh:before  { content: 'ksh'; }
+  pre.src-mksh:before  { content: 'mksh'; }
+  pre.src-posh:before  { content: 'posh'; }
+  /* Additional Emacs modes also supported by the LaTeX listings package */
+  pre.src-ada:before { content: 'Ada'; }
+  pre.src-asm:before { content: 'Assembler'; }
+  pre.src-caml:before { content: 'Caml'; }
+  pre.src-delphi:before { content: 'Delphi'; }
+  pre.src-html:before { content: 'HTML'; }
+  pre.src-idl:before { content: 'IDL'; }
+  pre.src-mercury:before { content: 'Mercury'; }
+  pre.src-metapost:before { content: 'MetaPost'; }
+  pre.src-modula-2:before { content: 'Modula-2'; }
+  pre.src-pascal:before { content: 'Pascal'; }
+  pre.src-ps:before { content: 'PostScript'; }
+  pre.src-prolog:before { content: 'Prolog'; }
+  pre.src-simula:before { content: 'Simula'; }
+  pre.src-tcl:before { content: 'tcl'; }
+  pre.src-tex:before { content: 'TeX'; }
+  pre.src-plain-tex:before { content: 'Plain TeX'; }
+  pre.src-verilog:before { content: 'Verilog'; }
+  pre.src-vhdl:before { content: 'VHDL'; }
+  pre.src-xml:before { content: 'XML'; }
+  pre.src-nxml:before { content: 'XML'; }
+  /* add a generic configuration mode; LaTeX export needs an additional
+     (add-to-list 'org-latex-listings-langs '(conf " ")) in .emacs */
+  pre.src-conf:before { content: 'Configuration File'; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.org-right  { text-align: center;  }
+  th.org-left   { text-align: center;   }
+  th.org-center { text-align: center; }
+  td.org-right  { text-align: right;  }
+  td.org-left   { text-align: left;   }
+  td.org-center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara { display: inline; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .equation-container {
+    display: table;
+    text-align: center;
+    width: 100%;
+  }
+  .equation {
+    vertical-align: middle;
+  }
+  .equation-label {
+    display: table-cell;
+    text-align: right;
+    vertical-align: middle;
+  }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  .org-svg { }
+</style>
+</head>
+<body>
+<div id="content" class="content">
+<h1 class="title">MRVA Commander: Initialization and Execution Algorithm</h1>
+<div id="table-of-contents" role="doc-toc">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents" role="doc-toc">
+<ul>
+<li><a href="#overview">1. MRVA Commander: Initialization and Execution Algorithm</a></li>
+<li><a href="#alg1">2. Algorithm 1: Server <code>main()</code></a></li>
+<li><a href="#alg2">3. Algorithm 2: <code>InitRabbitMQ</code></a></li>
+<li><a href="#alg3">4. Algorithm 3: <code>InitMinIOArtifactStore</code></a></li>
+<li><a href="#alg4">5. Algorithm 4: <code>InitHEPCDatabaseStore</code></a></li>
+<li><a href="#alg5">6. Algorithm 5: <code>NewPGState</code></a></li>
+<li><a href="#alg6">7. Algorithm 6: <code>NewArgoClientFromEnv</code></a></li>
+<li><a href="#alg7">8. Algorithm 7: <code>NewCommanderSingle</code></a></li>
+<li><a href="#alg8">9. Algorithm 8: Pool Manager &#x2014; <code>Start()</code> and <code>cycle()</code></a></li>
+<li><a href="#alg9">10. Algorithm 9: <code>reapDeadWorkers</code></a></li>
+<li><a href="#alg10">11. Algorithm 10: <code>queueJobs</code> &#x2014; fair scheduling and Argo submission</a>
+<ul>
+<li><a href="#alg10a">11.1. Algorithm 10a: <code>selectJobsFairly</code></a></li>
+<li><a href="#alg10b">11.2. Algorithm 10b: <code>submitJobToArgo</code></a></li>
+</ul>
+</li>
+<li><a href="#alg11">12. Algorithm 11: <code>pollArgoStatuses</code> &#x2014; reconciliation</a></li>
+<li><a href="#alg12">13. Algorithm 12: Agent <code>main()</code> &#x2014; pool mode worker</a>
+<ul>
+<li><a href="#alg12a">13.1. Algorithm 12a: Termination conditions</a></li>
+</ul>
+</li>
+<li><a href="#alg13">14. Algorithm 13: <code>ClaimJob</code> &#x2014; atomic job acquisition</a></li>
+<li><a href="#alg14">15. Algorithm 14: <code>RunAnalysisJob</code> &#x2014; CodeQL execution</a></li>
+<li><a href="#dep-summary">16. Dependency Summary</a></li>
+</ul>
+</div>
+</div>
+<div id="outline-container-overview" class="outline-2">
+<h2 id="overview"><span class="section-number-2">1.</span> MRVA Commander: Initialization and Execution Algorithm</h2>
+<div class="outline-text-2" id="text-overview">
+<p>
+The system has two binaries: the <b>server</b> (<code>server-commander</code>) and the
+<b>agent</b> (<code>agent-commander-argo</code>).  Let <i>Q</i> = message queue, <i>A</i> = artifact
+store, <i>D</i> = database store, <i>S</i> = persistent state, <i>W</i> = workflow client,
+<i>P</i> = pool manager, <i>C</i> = server.
+</p>
+</div>
+</div>
+<div id="outline-container-alg1" class="outline-2">
+<h2 id="alg1"><span class="section-number-2">2.</span> Algorithm 1: Server <code>main()</code></h2>
+<div class="outline-text-2" id="text-alg1">
+<p>
+Source: <code>server-commander/main.go</code>
+</p>
+
+<p>
+Uses: <a href="#alg2">Alg 2</a>, <a href="#alg3">Alg 3</a>, <a href="#alg4">Alg 4</a>, <a href="#alg5">Alg 5</a>, <a href="#alg6">Alg 6</a>, <a href="#alg7">Alg 7</a>
+</p>
+
+<div class="org-src-container">
+<pre class="src src-nil">Input : mode = "container", env
+Output: running server C
+
+1.  Q, err  &lt;-  deploy.InitRabbitMQ(isAgent=false)           [Alg 2]
+2.  A, err  &lt;-  deploy.InitMinIOArtifactStore()               [Alg 3]
+3.  D, err  &lt;-  deploy.InitHEPCDatabaseStore()                [Alg 4]
+4.  S       &lt;-  state.NewPGState()                            [Alg 5]
+5.  W, err  &lt;-  scheduler.NewArgoClientFromEnv()              [Alg 6]
+6.  V       &lt;-  server.NewVisibles(Q, S, A, D, W)
+7.  C       &lt;-  server.NewCommanderSingle(V)                  [Alg 7]
+8.  block on sigChan
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-alg2" class="outline-2">
+<h2 id="alg2"><span class="section-number-2">3.</span> Algorithm 2: <code>InitRabbitMQ</code></h2>
+<div class="outline-text-2" id="text-alg2">
+<p>
+Source: <code>pkg/deploy/init.go</code> -&gt; <code>pkg/queue/queue_rabbitmq.go</code>
+</p>
+
+<p>
+<code>InitRabbitMQ(isAgent)</code> delegates to <code>initRabbitMQCommon</code>, which validates
+env vars and calls <code>NewRabbitMQQueue</code>.  Inside <code>NewRabbitMQQueue</code>:
+</p>
+
+<div class="org-src-container">
+<pre class="src src-nil">Input : host, port, user, pass, isAgent
+Output: Q with AMQP conn, ch, jobs chan, results chan
+
+1.  url &lt;- "amqp://user:pass@host:port/user"
+2.  conn &lt;- amqp.Dial(url)                      -- up to 5 retries, 3s apart
+3.  ch   &lt;- conn.Channel()
+4.  ch.QueueDeclare("tasks",   durable=F, autoDelete=F,
+                     exclusive=F, noWait=T)                   /* SA */
+5.  ch.QueueDeclare("results", durable=F, autoDelete=F,
+                     exclusive=F, noWait=T)                   /* SA */
+6.  ch.Qos(prefetch=1)
+7.  if isAgent:  go ConsumeJobs; go PublishResults
+    else:        go PublishJobs; go ConsumeResults
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-alg3" class="outline-2">
+<h2 id="alg3"><span class="section-number-2">4.</span> Algorithm 3: <code>InitMinIOArtifactStore</code></h2>
+<div class="outline-text-2" id="text-alg3">
+<p>
+Source: <code>pkg/deploy/init.go</code>
+</p>
+
+<div class="org-src-container">
+<pre class="src src-nil">Input : env
+Output: A : Store
+
+1.  Validate env: MRVA_BCS_{ENDPOINT, ACCESS_KEY, SECRET_KEY},
+                  MRVA_MINIO_VIRTUAL_HOST
+2.  if virtualHost:
+        bucket, host &lt;- split(endpoint, ".")
+        lookup &lt;- DNS
+    else:
+        bucket &lt;- "mrvabucket"; host &lt;- endpoint
+        lookup &lt;- Path
+3.  A &lt;- NewMinIOArtifactStore(host, id, secret, lookup)
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-alg4" class="outline-2">
+<h2 id="alg4"><span class="section-number-2">5.</span> Algorithm 4: <code>InitHEPCDatabaseStore</code></h2>
+<div class="outline-text-2" id="text-alg4">
+<p>
+Source: <code>pkg/deploy/init.go</code>
+</p>
+
+<div class="org-src-container">
+<pre class="src src-nil">Input : env
+Output: D : Store
+
+1.  Validate env: MRVA_HEPC_{ENDPOINT, CACHE_DURATION, DATAVIACLI, OUTDIR, TOOL}
+2.  D &lt;- NewHepcStore(env(MRVA_HEPC_ENDPOINT))
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-alg5" class="outline-2">
+<h2 id="alg5"><span class="section-number-2">6.</span> Algorithm 5: <code>NewPGState</code></h2>
+<div class="outline-text-2" id="text-alg5">
+<p>
+Source: <code>pkg/state/state_postgres.go</code>
+</p>
+
+<div class="org-src-container">
+<pre class="src src-nil">Input : env
+Output: S : PGState (pgxpool)
+
+1.  Validate env: POSTGRES_{USER, PASSWORD, DB, HOST, PORT}
+2.  url &lt;- "postgres://user:pass@host:port/db"
+3.  cfg &lt;- pgxpool.ParseConfig(url)
+4.  if CA cert configured (file or env):
+        cfg.TLSConfig &lt;- {RootCAs: certPool, ServerName: host}
+5.  cfg.MaxConns &lt;- 10
+6.  pool &lt;- pgxpool.NewWithConfig(cfg)
+7.  SetupSchemas(pool)   -- DDL for 8 tables (job_repo_map,
+       session_id_seq, analyze_{results,jobs}, job_{info,status},
+       scheduler_lock, worker_pool)
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-alg6" class="outline-2">
+<h2 id="alg6"><span class="section-number-2">7.</span> Algorithm 6: <code>NewArgoClientFromEnv</code></h2>
+<div class="outline-text-2" id="text-alg6">
+<p>
+Source: <code>pkg/scheduler/argo_client.go</code>
+</p>
+
+<div class="org-src-container">
+<pre class="src src-nil">Input : env
+Output: W : ArgoClient
+
+1.  tier     &lt;- env(MRVA_TIER) or "dev"
+2.  poolMode &lt;- env(MRVA_POOL_MODE) in {"true","1"}, default true
+3.  cfg &lt;- {Tier, Namespace, ArgoAPIBaseURL, ProxyURL,
+            IdentityExchangeURL, PoolMode,
+            CodeQL/BCS/RabbitMQ/HEPC/Postgres params,
+            ADPRDUser, ADPRDPassword}
+4.  Require ADPRD credentials
+5.  httpClient &lt;- {Proxy: proxyURL, Timeout: 30s}
+6.  W &lt;- ArgoClient{cfg, httpClient}
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-alg7" class="outline-2">
+<h2 id="alg7"><span class="section-number-2">8.</span> Algorithm 7: <code>NewCommanderSingle</code></h2>
+<div class="outline-text-2" id="text-alg7">
+<p>
+Source: <code>pkg/server/types.go</code>, <code>pkg/server/server.go</code>
+</p>
+
+<p>
+Uses: <a href="#alg8">Algorithm 8: Pool Manager &#x2014; <code>Start()</code> and <code>cycle()</code></a>
+</p>
+
+<div class="org-src-container">
+<pre class="src src-nil">Input : V = {Q, S, A, D, PoolMgr}
+Output: C : CommanderSingle (running)
+
+1.  C &lt;- CommanderSingle{V}
+2.  go V.PoolManager.Start()                               [Alg 8]
+3.  setupEndpoints(C):
+        register routes (submit, status, cancel, download)
+        go ListenAndServe(port)
+4.  go C.ConsumeResults():
+        loop: r &lt;- &lt;-Q.Results()
+              S.SetResult(r.Spec, r)
+              S.SetStatus(r.Spec, r.Status)
+              PoolMgr.TriggerScheduling()
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-alg8" class="outline-2">
+<h2 id="alg8"><span class="section-number-2">9.</span> Algorithm 8: Pool Manager &#x2014; <code>Start()</code> and <code>cycle()</code></h2>
+<div class="outline-text-2" id="text-alg8">
+<p>
+Source: <code>pkg/pool/pool.go</code>
+</p>
+
+<p>
+Uses: <a href="#alg9">Alg 9</a>, <a href="#alg10">Alg 10</a>, <a href="#alg11">Alg 11</a>
+</p>
+
+<div class="org-src-container">
+<pre class="src src-nil">Input : cfg = {W_{max}, W_{min}, T_{scale}, T_{hb\_exp}}, S, W
+Output: background loop managing workers
+
+Start():
+1.  ticker &lt;- NewTicker(T_{scale})               -- default 15s
+2.  loop:
+        on ticker or wakeChan: cycle()
+
+cycle():
+1.  reapDeadWorkers()                                      [Alg 9]
+2.  queueJobs()                                            [Alg 10]
+3.  pollArgoStatuses()                                     [Alg 11]
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-alg9" class="outline-2">
+<h2 id="alg9"><span class="section-number-2">10.</span> Algorithm 9: <code>reapDeadWorkers</code></h2>
+<div class="outline-text-2" id="text-alg9">
+<p>
+Source: <code>pkg/pool/pool.go:342-359</code>
+</p>
+
+<div class="org-src-container">
+<pre class="src src-nil">1.  stale &lt;- S.GetStaleWorkers(T_{hb\_exp})
+       -- SELECT worker_id WHERE heartbeat_at &lt; NOW() - T_{hb\_exp}
+          AND status IN (Idle, Busy)
+2.  for each w in stale:
+        S.RequeueWorkerJob(w)  -- InProgress -&gt; Queued, clear worker_id
+        S.SetWorkerStatus(w, Exited)
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-alg10" class="outline-2">
+<h2 id="alg10"><span class="section-number-2">11.</span> Algorithm 10: <code>queueJobs</code> &#x2014; fair scheduling and Argo submission</h2>
+<div class="outline-text-2" id="text-alg10">
+<p>
+Source: <code>pkg/pool/pool.go:210-303</code>
+</p>
+
+<p>
+Uses: <a href="#alg10a">Alg 10a</a>, <a href="#alg10b">Alg 10b</a>
+</p>
+
+<div class="org-src-container">
+<pre class="src src-nil">1.  if not TryAdvisoryLock(73001): return   -- single-replica guard
+2.  busy   &lt;- S.CountWorkersByStatus(Busy)
+3.  queued &lt;- S.GetQueuedJobCount()
+4.  avail  &lt;- W_{max} - busy - queued
+5.  if avail &lt;= 0: return
+6.  pending &lt;- S.GetPendingJobs()
+7.  Group pending by user
+8.  For each user u: get runningCount_u, recentRuntime_u
+9.  selected &lt;- selectJobsFairly(...)                       [Alg 10a]
+10. S.TransitionJobsToQueued(selected)       -- Pending -&gt; Queued
+11. for each job in selected:
+        submitJobToArgo(job)                                [Alg 10b]
+</pre>
+</div>
+</div>
+<div id="outline-container-alg10a" class="outline-3">
+<h3 id="alg10a"><span class="section-number-3">11.1.</span> Algorithm 10a: <code>selectJobsFairly</code></h3>
+<div class="outline-text-3" id="text-alg10a">
+<div class="org-src-container">
+<pre class="src src-nil">Input : jobsByUser, runningCounts, runtimes, slots
+Output: selected jobs (at most slots)
+
+1.  Sort users by: runningCount asc, recentRuntime asc, pendingCount desc
+2.  Round-robin: each user gets 1 slot per round
+       until slots exhausted or all users saturated
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-alg10b" class="outline-3">
+<h3 id="alg10b"><span class="section-number-3">11.2.</span> Algorithm 10b: <code>submitJobToArgo</code></h3>
+<div class="outline-text-3" id="text-alg10b">
+<p>
+Source: <code>pkg/pool/pool.go:309-339</code>, <code>pkg/scheduler/argo_client.go:502-623</code>
+</p>
+
+<div class="org-src-container">
+<pre class="src src-nil">1.  wfUID &lt;- W.SubmitWorkflow(job):
+        token  &lt;- getToken()               -- ADPRD identity exchange, cached
+        spec   &lt;- createWorkflowSpec(job):
+            image  &lt;- env(MRVA_ARGO_IMAGE)
+            if poolMode: args = []           -- worker claims from DB
+            else:        args = [--job, JSON] -- single-job mode
+            resources = {cpu: 4, mem: 16Gi}
+        POST spec to Argo API
+        return {name, uid, cluster} as JSON
+2.  S.SetJobInfo(job, {ArgoWorkflowID: wfUID, StartedAt: now})
+    -- status stays Queued; agent's ClaimJob does Queued -&gt; InProgress
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-alg11" class="outline-2">
+<h2 id="alg11"><span class="section-number-2">12.</span> Algorithm 11: <code>pollArgoStatuses</code> &#x2014; reconciliation</h2>
+<div class="outline-text-2" id="text-alg11">
+<p>
+Source: <code>pkg/pool/pool.go:370-473</code>
+</p>
+
+<div class="org-src-container">
+<pre class="src src-nil">1.  if not TryAdvisoryLock(73002): return
+2.  jobs &lt;- S.GetRunningJobs() ++ S.GetQueuedJobs() with ArgoWorkflowID
+3.  for each job:
+        phase &lt;- W.GetWorkflowStatus(job.ArgoWorkflowID)
+        if error and startedAt &lt; 60s ago: skip  -- startup lag
+        if error and startedAt &gt;= 60s:    phase &lt;- "Error"
+        reconcile(job, phase):
+            if phase in {Succeeded, Failed, Error}:
+                S.SetStatus(job, mapPhase(phase))
+                S.SetJobInfo(job, {CompletedAt: now})
+            if phase in {Running, Pending}: no-op
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-alg12" class="outline-2">
+<h2 id="alg12"><span class="section-number-2">13.</span> Algorithm 12: Agent <code>main()</code> &#x2014; pool mode worker</h2>
+<div class="outline-text-2" id="text-alg12">
+<p>
+Source: <code>agent-commander-argo/main.go</code>
+</p>
+
+<p>
+Uses: <a href="#alg13">Alg 13</a>, <a href="#alg14">Alg 14</a>
+</p>
+
+<div class="org-src-container">
+<pre class="src src-nil">Input : env (no --job flag)
+Output: worker loop, exits on idle or drain
+
+ 1.  wID &lt;- hostname-rand()
+ 2.  T_{poll} &lt;- env or 2s;  T_{idle} &lt;- env or 300s;  T_{hb} &lt;- env or 10s
+ 3.  S &lt;- NewPGState()
+ 4.  Q &lt;- InitRabbitMQResultsOnly()       -- publish results only
+ 5.  A &lt;- InitMinIOArtifactStore()
+ 6.  D &lt;- InitHEPCDatabaseStore()
+ 7.  S.RegisterWorker(wID, podName)
+ 8.  go heartbeat(T_{hb}):
+         loop: S.WorkerHeartbeat(wID)     -- update heartbeat_at
+ 9.  t_{idle\_start} &lt;- now()
+10.  loop:                                                  [Alg 12a]
+         if S.GetWorkerStatus(wID) = Draining: break
+         job &lt;- S.ClaimJob(wID)                             [Alg 13]
+         if job = nil:
+             if now() - t_{idle\_start} &gt; T_{idle}: break   -- idle exit
+             sleep(T_{poll}); continue
+         t_{idle\_start} &lt;- now()                            -- reset
+         S.SetWorkerBusy(wID, jobKey)
+         result &lt;- agent.RunAnalysisJob(job, A, D)          [Alg 14]
+         if err: S.CompleteJob(wID, job, Failed)
+         else:   S.CompleteJob(wID, job, result.Status)
+                 Q.PublishResultSync(result)
+         S.SetWorkerIdle(wID)
+11. S.SetWorkerStatus(wID, Exited)
+</pre>
+</div>
+</div>
+<div id="outline-container-alg12a" class="outline-3">
+<h3 id="alg12a"><span class="section-number-3">13.1.</span> Algorithm 12a: Termination conditions</h3>
+<div class="outline-text-3" id="text-alg12a">
+<p>
+The worker exits the loop (step 10) on exactly two conditions:
+</p>
+
+<ol class="org-ol">
+<li><b>Drain signal</b>: pool manager sets worker status to <code>Draining</code> in DB;
+worker sees it on next poll.</li>
+<li><b>Idle timeout</b>: no job claimed for T<sub>idle</sub> (default 300s).
+Timer resets each time a job is successfully claimed.</li>
+</ol>
+
+<p>
+After exiting, the worker marks itself <code>Exited</code> (step 11) and the process
+terminates.  If the process crashes instead (no <code>Exited</code> written), the
+pool manager's <code>reapDeadWorkers</code> (<a href="#alg9">Alg 9</a>) detects the stale heartbeat and
+requeues the in-flight job.
+</p>
+</div>
+</div>
+</div>
+<div id="outline-container-alg13" class="outline-2">
+<h2 id="alg13"><span class="section-number-2">14.</span> Algorithm 13: <code>ClaimJob</code> &#x2014; atomic job acquisition</h2>
+<div class="outline-text-2" id="text-alg13">
+<p>
+Source: <code>pkg/state/state_postgres.go:1027-1094</code>
+</p>
+
+<div class="org-src-container">
+<pre class="src src-nil">Input : wID
+Output: job or nil
+
+1.  BEGIN tx
+2.  SELECT (session_id, owner, repo) FROM job_status
+       WHERE status = Queued
+       ORDER BY session_id, owner, repo
+       LIMIT 1
+       FOR UPDATE SKIP LOCKED              -- concurrent-safe
+3.  if no row: return nil
+4.  UPDATE job_status SET status = InProgress
+5.  UPDATE job_info   SET worker_id = wID, started_at = NOW()
+6.  SELECT payload FROM analyze_jobs
+7.  COMMIT
+8.  return unmarshal(payload)
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-alg14" class="outline-2">
+<h2 id="alg14"><span class="section-number-2">15.</span> Algorithm 14: <code>RunAnalysisJob</code> &#x2014; CodeQL execution</h2>
+<div class="outline-text-2" id="text-alg14">
+<p>
+Source: <code>pkg/agent/agent.go:88-175</code>
+</p>
+
+<div class="org-src-container">
+<pre class="src src-nil">Input : job = {Spec, QueryPackLocation, QueryLanguage}, A, D
+Output: AnalyzeResult = {Spec, ResultCount, ResultLocation, Status, ...}
+
+1.  tmpDir &lt;- mktemp()
+2.  qpData &lt;- A.GetQueryPack(job.QueryPackLocation)
+3.  write qpData to tmpDir/query-pack.tar.gz
+4.  extract to tmpDir/pack/
+5.  dbData &lt;- D.GetDatabase(job.Spec.NWO, job.QueryLanguage)
+6.  write dbData to tmpDir/database.zip
+7.  runResult &lt;- codeql.RunQuery(dbPath, lang, packPath, tmpDir, NWO)
+8.  archive  &lt;- codeql.GenerateResultsZipArchive(runResult)
+9.  loc      &lt;- A.SaveResult(job.Spec, archive)
+10. return {Spec, runResult.ResultCount, loc, Succeeded, ...}
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-dep-summary" class="outline-2">
+<h2 id="dep-summary"><span class="section-number-2">16.</span> Dependency Summary</h2>
+<div class="outline-text-2" id="text-dep-summary">
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Subsystem</th>
+<th scope="col" class="org-left">Symbol</th>
+<th scope="col" class="org-left">Backend</th>
+<th scope="col" class="org-left">Key Env Vars</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left">Queue</td>
+<td class="org-left"><i>Q</i></td>
+<td class="org-left">RabbitMQ</td>
+<td class="org-left">MRVA<sub>RABBITMQ</sub><sub>HOST,PORT,USER,PASSWORD</sub></td>
+</tr>
+
+<tr>
+<td class="org-left">Artifacts</td>
+<td class="org-left"><i>A</i></td>
+<td class="org-left">MinIO/BCS</td>
+<td class="org-left">MRVA<sub>BCS</sub><sub>ENDPOINT,ACCESS<sub>KEY,SECRET</sub><sub>KEY</sub></sub></td>
+</tr>
+
+<tr>
+<td class="org-left">DB Store</td>
+<td class="org-left"><i>D</i></td>
+<td class="org-left">HEPC</td>
+<td class="org-left">MRVA<sub>HEPC</sub><sub>ENDPOINT,&#x2026;</sub></td>
+</tr>
+
+<tr>
+<td class="org-left">State</td>
+<td class="org-left"><i>S</i></td>
+<td class="org-left">PostgreSQL</td>
+<td class="org-left">POSTGRES<sub>USER,PASSWORD,DB,HOST,PORT</sub></td>
+</tr>
+
+<tr>
+<td class="org-left">Workflows</td>
+<td class="org-left"><i>W</i></td>
+<td class="org-left">Argo</td>
+<td class="org-left">MRVA<sub>ARGO</sub><sub>*</sub>, MRVA<sub>ADPRD</sub><sub>*</sub></td>
+</tr>
+
+<tr>
+<td class="org-left">Server</td>
+<td class="org-left"><i>C</i></td>
+<td class="org-left"><i>Q,S,A,D,W</i></td>
+<td class="org-left">SERVER<sub>PORT</sub></td>
+</tr>
+
+<tr>
+<td class="org-left">Pool</td>
+<td class="org-left"><i>P</i></td>
+<td class="org-left"><i>S,W</i></td>
+<td class="org-left">MRVA<sub>POOL</sub><sub>MAX<sub>WORKERS,IDLE</sub><sub>TIMEOUT</sub>,&#x2026;</sub></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="author">Author: (generated from source)</p>
+<p class="date">Created: 2026-05-19 Tue 12:53</p>
+<p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
+</div>
+</body>
+</html>

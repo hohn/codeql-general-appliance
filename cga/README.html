@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>CGA: select and run CodeQL analysis</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../docs/readme-layout.css" />
+  <link rel="stylesheet" href="../docs/cga-reference.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">CGA: select and run CodeQL analysis</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#cga-select-and-run-codeql-analysis"
+id="toc-cga-select-and-run-codeql-analysis">CGA: select and run CodeQL
+analysis</a>
+<ul>
+<li><a href="#unified-cga-command" id="toc-unified-cga-command">Unified
+<code>cga</code> command</a>
+<ul>
+<li><a href="#command-help" id="toc-command-help">Command help</a></li>
+</ul></li>
+<li><a href="#assistant-context" id="toc-assistant-context">Assistant
+context</a></li>
+<li><a href="#visual-element-identifiers-vids"
+id="toc-visual-element-identifiers-vids">Visual element identifiers
+(VIDs)</a></li>
+<li><a href="#workflows" id="toc-workflows">Workflows</a></li>
+<li><a href="#commands" id="toc-commands">Commands</a></li>
+<li><a href="#state" id="toc-state">State</a></li>
+<li><a href="#web-view" id="toc-web-view">Web view</a></li>
+<li><a href="#examples-and-verification"
+id="toc-examples-and-verification">Examples and verification</a></li>
+<li><a href="#layout" id="toc-layout">Layout</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="cga-select-and-run-codeql-analysis">CGA: select and run CodeQL
+analysis</h1>
+<p>Start with the <a href="../docs/cga-overview.html">CGA overview</a>
+for the big picture, fixed Sample 05 example, and installation. Use <a
+href="../docs/cga-help.html">CGA help</a> for tasks and commands, and
+the <a href="../docs/book/index.html">reference manual</a> for detailed
+workflows, components, and operations.</p>
+<p>This page is the CGA command and state reference. This is an
+experimental prototype: usage examples and supporting code evolve
+together.</p>
+<p>CGA selects prepared CodeQL databases and queries, runs them through
+MRVA, ingests SARIF, and exports the results. The preparation utilities
+that generate databases and queries now live in the same
+<code>cga/</code> collection (see <a
+href="README-prep.html"><code>README-prep.md</code></a>) and hand their
+artifacts to the selection side explicitly.</p>
+<pre class="text"><code>DB catalogue -&gt; cgadl --+
+                       +-&gt; cgamr -&gt; cgamu -&gt; cgasi -&gt; cgaex
+query tree  -&gt; cgaql --+</code></pre>
+<h2 id="unified-cga-command">Unified <code>cga</code> command</h2>
+<p><code>cga/cga</code> is a single dispatcher for every tool in this
+collection. Each tool has a short acronym and an explicit long name;
+either works:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> db-lib list          <span class="co"># or: cga dl list</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> query-lib pack       <span class="co"># or: cga ql pack</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> assist database-build <span class="at">-h</span> <span class="co"># or: cga a d -h; guided preparation</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> assist query-writing <span class="at">-h</span> <span class="co"># or: cga a q -h; Bash-first authoring</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> bench serve         <span class="co"># experiment grid, refinement, and result comparison</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> mrva-request submit  <span class="co"># or: cga mr submit</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> chain list           <span class="co"># or: cga cn ls</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> tree show</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> data-flow-graph show <span class="co"># or: cga dfg show</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> control-flow-graph show <span class="co"># or: cga cfg show</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> run start              <span class="co"># analysis dashboard only</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> view <span class="at">--capture</span> ...     <span class="co"># capture/export analysis dashboard</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> uv start               <span class="co"># read-only CGA Unified View</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> uv outline             <span class="co"># searchable text projection</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> uv search Fprintf      <span class="co"># bounded workflow/resource search</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> llm context bench     <span class="co"># assistant context for an experiment (alias: llm cb)</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> llm context unified   <span class="co"># assistant context for a workflow (alias: llm cu)</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> serve start            <span class="co"># analysis + preparation dashboards</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> public-html setup      <span class="co"># static documentation clone + printed setup script</span></span></code></pre></div>
+<p>Install the dispatcher on your user <code>PATH</code> from anywhere
+inside the checkout:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="va">repo_root</span><span class="op">=</span><span class="va">$(</span><span class="fu">git</span> rev-parse <span class="at">--show-toplevel</span><span class="va">)</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">install</span> <span class="at">-d</span> <span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/.local/bin&quot;</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">ln</span> <span class="at">-sfn</span> <span class="st">&quot;</span><span class="va">$repo_root</span><span class="st">/cga/cga&quot;</span> <span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/.local/bin/cga&quot;</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="fu">install</span> <span class="at">-d</span> <span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/.local/share/bash-completion/completions&quot;</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="fu">ln</span> <span class="at">-sfn</span> <span class="st">&quot;</span><span class="va">$repo_root</span><span class="st">/cga/completions/cga.bash&quot;</span> <span class="dt">\</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/.local/share/bash-completion/completions/cga&quot;</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> <span class="at">--help</span></span></code></pre></div>
+<p>If <code>$HOME/.local/bin</code> is not already on <code>PATH</code>,
+add <code>export PATH="$HOME/.local/bin:$PATH"</code> to your shell
+profile. On a dedicated development machine, install the same
+repository-linked command system-wide instead:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> ln <span class="at">-sfn</span> <span class="st">&quot;</span><span class="va">$(</span><span class="fu">git</span> rev-parse <span class="at">--show-toplevel</span><span class="va">)</span><span class="st">/cga/cga&quot;</span> /usr/local/bin/cga</span></code></pre></div>
+<p>Both symlinks intentionally point into the checkout, so dispatcher
+and completion updates take effect immediately. Moving or deleting the
+checkout requires recreating them.</p>
+<p><code>bash-completion</code> discovers the completion automatically
+in new Bash shells. Enable it immediately in the current shell with:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> <span class="st">&quot;</span><span class="va">$(</span><span class="fu">git</span> rev-parse <span class="at">--show-toplevel</span><span class="va">)</span><span class="st">/cga/completions/cga.bash&quot;</span></span></code></pre></div>
+<p><code>cga &lt;TAB&gt;</code> lists every command, a short acronym
+completes to its long form, and
+<code>cga &lt;command&gt; &lt;TAB&gt;</code> lists that command’s
+subcommands. Run <code>cga</code> with no arguments for the full command
+list.</p>
+<h3 id="command-help">Command help</h3>
+<p>Use <code>-h</code> or <code>--help</code> on any command, including
+nested subcommands:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> <span class="at">-h</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> init <span class="at">-h</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> mr submit <span class="at">-h</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> db build <span class="at">-h</span></span></code></pre></div>
+<p>Help uses <strong>Name</strong>, <strong>Synopsis</strong>,
+argument/option lists, <strong>Description</strong>, <strong>Environment
+Variables</strong> when applicable, and a contextual
+<strong>Example</strong>. Headings use the terminal’s native argparse
+emphasis; redirected output remains plain by default. Help explains
+prerequisites, effects, and configuration without starting services,
+reading CGAST input, or recording a workflow step. Short and long
+command aliases share the same help.</p>
+<p>For CGA’s purpose, scale, provenance model, and Linux VM/LLM
+guidance:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> help overview</span></code></pre></div>
+<p>Open the checked-in <a href="../docs/cga-help.html">offline help
+browser</a> without regenerating it; it opens the overview before the
+getting-started walkthrough. Or export a fresh snapshot:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> help <span class="at">--export</span> cga-help.html</span></code></pre></div>
+<p>For a small first analysis, display or execute one fixed sample step
+at a time:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> help sample 05</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> h s 05 00       <span class="co"># display workspace setup</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> h s 05 00 r     <span class="co"># execute that step</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> h s 05 01       <span class="co"># display the next step</span></span></code></pre></div>
+<p>Step numbers and exact step names are interchangeable.
+<code>h</code>, <code>s</code>, and <code>r</code> alias
+<code>help</code>, <code>sample</code>, and <code>run</code>;
+<code>cga help sample-05</code> also opens the overview. Only a trailing
+<code>run</code>/<code>r</code> executes commands. Step 00 explicitly
+creates <code>cga/cga-tmp/help-sample-05/</code> and saves runtime
+settings for later shells or Jupyter cells. The <a
+href="samples/05/README.html">sample recipe</a> lists the complete
+single-user sequence: five fixed prepared databases,
+<code>Fprintf.ql</code>, and SQL showing up to four findings per
+database.</p>
+<p>The longer getting-started walkthrough remains available:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> help getting-started</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> <span class="at">-h</span> <span class="at">-s</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> <span class="at">-hs</span></span></code></pre></div>
+<p>These are equivalent, read-only help requests. The Commands section
+walks through prepared databases and the supplied
+<code>Fprintf.ql</code>, selection, execution, ingestion/export, and
+viewer start/reconnect/stop. It explains separate preparation as a later
+step and identifies the worked examples. Displaying help does not
+execute those commands or require an initialized workflow.</p>
+<p>The other <strong>Start here</strong> guides provide the same
+read-only chapter interface:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> help bash-tutorial-sql</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> help mrva-flow</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> help bench-intro</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> help shell-workflow</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> help two-user-standalone</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> help two-user-workflow</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> help zlib-study</span></code></pre></div>
+<p>Each overview lists chapter names; append one, for example
+<code>cga help mrva-flow inspect</code>. The canonical Markdown supplies
+the displayed instructions. Original HTML remains separately accessible
+and unchanged.</p>
+<p>Open the generated file directly in your desktop browser. If CGA runs
+on a remote VM, copy this one file to the desktop; no viewer server or
+X11 is needed. The HTML embeds the current <code>-h</code> output,
+styles, and navigation, with no external assets or Bench dependency.</p>
+<p>The sidebar follows the reading order <strong>Start here</strong>,
+<strong>LLM start here</strong>, <strong>Task groups</strong>,
+<strong>Reference</strong>. Start here opens getting started by default,
+with embedded chapters for every tutorial and individual sample 05
+steps. <strong>Original write-ups</strong> holds the preserved HTML
+guides under Reference, alongside the collapsible <strong>system
+tests</strong> group below <strong>cga index</strong>. Their links open
+in a separate tab without changing the panes. Both start groups, system
+tests, and Original write-ups are independently collapsible. The four
+task groups are Create databases, Write and prepare queries, Apply
+queries, and Review results. Commands can appear in several task groups;
+shared workflow utilities remain in the alphabetical Reference. Outline
+items select help in the upper-right pane (<strong>PR_t</strong>). The
+<strong>cga index</strong> row opens the top-level help and toggles the
+alphabetical list; it also supports keyboard expansion and collapse. The
+<strong>⊟</strong> header button (<strong>Collapse all</strong> on
+hover) closes the index and all task groups, including the start
+outlines, without changing the displayed help. Click a subcommand link
+there to open its help in the lower-right pane (<strong>PR_b</strong>).
+Selecting another outline item clears PR_b. Both panes scroll
+independently; drag the divider, or focus it and use Up/Down/Home/End,
+to resize them. Deeper commands appear as copyable shell help
+invocations, not further browser navigation. Nothing in the viewer
+executes commands or refreshes state. The header search covers all
+embedded help pages, not just the visible panes. Enter text and press
+<strong>Search</strong> (or Enter) to highlight matching <strong>cga
+index</strong> entries; typing or toggling <strong>Regex</strong> alone
+does not run a search. Matching checks the entire help text, including
+subcommand pages, and expands the index without filtering out
+nonmatches. Select a highlighted entry to inspect its help; matching
+subcommand links and text are highlighted too. Search is
+case-insensitive plain text by default; enable <strong>Regex</strong>
+for JavaScript regular expressions (with multiline anchors). Invalid
+patterns are reported above the index. Clear the input and press
+<strong>Search</strong> to remove highlights. Regenerate the HTML after
+changing CLI help. Existing output files are replaced.
+<code>cga help</code> without arguments still prints the top-level
+terminal help.</p>
+<p>The offline help browser also has Bench-style anchor symbols. Its
+fresh roots identify help controls, groups, documents, command pages,
+and sections. Single-click copies a reference; double-click opens an
+independent inspector with pinned help text, UI properties, related
+help, and copyable context. The adjacent control is never activated.
+<strong>Copy context</strong> supplies JSON for a human/LLM
+conversation; <strong>Copy link</strong> supplies a content-pinned file
+link. Help references use <code>cga://help</code>, not workflow
+<code>cga://vid</code>; they require no server or terminal and are not
+resolved by <code>cga show</code>. See the <a
+href="../docs/README.html#cga-and-mrva-entry-point">documentation entry
+point</a>.</p>
+<h2 id="assistant-context">Assistant context</h2>
+<p>Use the <a href="../docs/cga-help-llm.org">LLM exploration entry
+guide</a> to choose one task route and read only the relevant help,
+contracts, and evidence. It is independent of the all-in-one human help
+browser.</p>
+<p>Start with <code>cga --help</code> and
+<code>cga llm context --help</code>. The CLI is the front door to CGA
+state; text and web endpoints are projections of that state:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> llm context bench       <span class="co"># experiment and session D/Q/J/R summary</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> llm cb                  <span class="co"># short alias</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> llm context unified     <span class="co"># workflow outline, steps, and selected resources</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> llm cu                  <span class="co"># short alias</span></span></code></pre></div>
+<p>Both commands read the current workflow without changing state,
+recording a step, starting services, or requiring an HTTP server. Bench
+uses the addressable experiment model, including recoverable session
+checkpoints; Unified uses the existing outline projection and redacts
+secret-tagged entities by default. Use <code>--json</code> (or global
+<code>cga --json</code>) for the structured projection. Normal workflow
+discovery, <code>-C</code>, <code>--cga-dir</code>, and
+<code>--store</code> apply. Outside a workflow, Bench can read an
+explicit <code>--session-file /path/to/session.json</code>.</p>
+<p>Each source also supports these output-only projections:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> llm context bench <span class="at">--show-html-endpoint</span>  <span class="co"># http://127.0.0.1:8610/</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> llm context bench <span class="at">--show-json-endpoint</span>  <span class="co"># http://127.0.0.1:8610/api/model</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> llm context unified <span class="at">--show-html-endpoint</span> <span class="co"># http://127.0.0.1:8609/</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> llm context unified <span class="at">--show-json-endpoint</span> <span class="co"># http://127.0.0.1:8609/api/outline</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> llm context bench <span class="at">--show-docs</span>           <span class="co"># local documentation paths</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> llm context unified <span class="at">--show-docs</span></span></code></pre></div>
+<p>These flags are mutually exclusive and work without initialized
+state. They print URLs or documentation paths, not fetched content, and
+do not verify that a viewer is running. Start viewers separately with
+<code>cga bench serve</code> or <code>cga uv start</code>. Unified URLs
+honor <code>CGA_CGAUV_PORT</code>; use <code>--port PORT</code> for a
+custom viewer port (including a non-default
+<code>cga bench serve --port PORT</code>). Bench’s <code>/api/llm</code>
+remains available for detailed HTTP interface discovery. Unified
+additionally accepts <code>--detail summary|steps</code> and the
+explicit local <code>--include-sensitive</code> override; do not send
+sensitive output to external LLMs.</p>
+<h2 id="visual-element-identifiers-vids">Visual element identifiers
+(VIDs)</h2>
+<p>Bench, Unified View, CLI output, and assistant context share opaque
+element identifiers. Permanent roots are registered in
+<code>cgalib/vid_registry.py</code>: exactly three lowercase base-36
+characters after <code>:</code>, with no semantic encoding. Never
+reassign a registered root, even if its original element is retired.</p>
+<table>
+<thead>
+<tr>
+<th>Reference</th>
+<th>Logical element</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>:8x1</code></td>
+<td>Experiment</td>
+</tr>
+<tr>
+<td><code>:f3a</code></td>
+<td>Sessions</td>
+</tr>
+<tr>
+<td><code>:f3a,1</code></td>
+<td>Session 1, not revision 1</td>
+</tr>
+<tr>
+<td><code>:f3a,1,J</code></td>
+<td>Session 1’s job stage</td>
+</tr>
+<tr>
+<td><code>:f3a,1,J,2</code></td>
+<td>Its second repository job in accepted database order</td>
+</tr>
+<tr>
+<td><code>:h7m,1</code></td>
+<td>First successful command on the qualified chain</td>
+</tr>
+<tr>
+<td><code>:r6t,1</code></td>
+<td>First workflow-wide failed-attempt index</td>
+</tr>
+<tr>
+<td><code>:91c,1</code></td>
+<td>First workflow-wide retained-artifact index</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> show <span class="at">--registry</span>                 <span class="co"># roots and labels; no workflow required</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> show :f3a,1,J                   <span class="co"># latest properties and accumulated facts</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> show <span class="st">&#39;(:f3a 1 :J)&#39;</span> <span class="at">--json</span>        <span class="co"># equivalent quoted Lisp spelling</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> related :f3a,1,J                <span class="co"># typed links with qualified targets</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> open :f3a,1,J                   <span class="co"># inspector in a running viewer</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> open :h7m,1 <span class="at">--url</span> http://127.0.0.1:8729</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> open :f3a,1 <span class="at">--print-url</span>          <span class="co"># print instead of launching a browser</span></span></code></pre></div>
+<p>Short references use the current workflow, experiment, and chain.
+Copy the returned <code>qualified_ref</code> for that logical object
+independent of the active chain, or <code>pinned_ref</code> to retain
+the exact opening fact frontier. Both use
+<code>cga://vid?workflow=...&amp;chain=...&amp;experiment=...&amp;ref=...</code>;
+a pinned URI adds <code>at=...</code>. Quote URIs in the shell.
+<code>--chain</code> and <code>--at</code> also select context
+explicitly. Frontiers include the immutable node and attempt/artifact
+counter cutoffs, so failures and manual artifacts cannot appear
+retroactively in an already-open inspector. <code>--at NODE</code>
+selects evidence available at that node; copy the full returned frontier
+to include later metadata without advancing it. Foreign-workflow,
+wrong-experiment, stale, and unretained references fail explicitly
+rather than falling back to another object.</p>
+<p>Facts are append-only observations projected from retained immutable
+CGAST snapshots and CAS evidence, not a second authoritative database.
+Existing facts retain their IDs when later observations arrive. CGAST
+dictionaries, session checkpoints, and working files remain mutable
+derived projections; historical VID inspection does not follow their
+current paths. Collection rows carry their immutable
+<code>g&lt;SHA256&gt;</code> generation and original SQLite rowid or
+JSON position, never a filtered/sorted display position. Metadata tags
+remain access-policy metadata, not immutable artifact facts. VID
+inspection rejects secret-tagged objects and conservatively rejects
+state-derived experiment/session histories containing secret-tagged
+steps.</p>
+<p>In either view, a small anchor symbol (Unicode U+2693) follows each
+referenced text label or compact control. Its tooltip and accessible
+name contain the VID; the full root/path no longer occupies screen
+space. A single click only copies the short VID (for example,
+<code>:f3a,1,J</code>). A double-click copies it and opens a separate,
+pinned inspector without applying the adjacent analysis action.
+Clipboard errors are explicit and do not prevent the inspector from
+opening. Presentation-only splitters have no share anchors; their
+previously assigned roots remain reserved. The active origin anchor and
+popup color bar match. Each popup displays its qualified reference,
+properties, accumulated facts, typed relations, and its own xterm.js
+shell. Closing it stops that shell; a 120-second server-side inactivity
+lease covers lost tabs. Viewer shutdown closes all owned shells. Shells
+run as the normal local OS user; they are not a read-only sandbox.</p>
+<p><strong>Paste Copilot command with context</strong> only inserts a
+command; it never sends Enter or starts Copilot. The command points to a
+private <code>context.json</code> with the pinned object and uses normal
+Copilot permissions. Each popup has a separate workspace below
+<code>.cga/tmp/inspectors/</code>; those files remain available after
+the shell stops.</p>
+<p><code>open</code> does not start a viewer. It defaults to Bench
+<code>:8610</code> for experiment, session, and comparison objects,
+otherwise Unified View’s <code>CGA_CGAUV_PORT</code> or
+<code>:8609</code>; use <code>--url</code> for other deployments. Inside
+an inspector terminal, its viewer origin is inherited. Both viewers
+serve <code>/api/vid/registry</code>, <code>/api/vid?ref=REF</code>,
+<code>/api/vid/related?ref=REF</code>, and <code>/vid?ref=REF</code>.
+Terminal operations use the guarded, same-origin JSON endpoint
+<code>/api/vid/terminal</code>.</p>
+<p>For raw CGAST files,
+<code>cga show :f3a,1 --session-file /path/to/session.json</code> and
+the Bench viewer retain observed states under the adjacent
+<code>.cgabench-runtime/session.json/vid/</code>. This adds inspection
+history without rewriting the source file. Unobserved earlier edits
+cannot be reconstructed.</p>
+<h2 id="workflows">Workflows</h2>
+<p><a
+href="cgaassist/README.html#build-a-database-collection"><code>cga a d</code></a>
+provides guided database preparation: fetch named Git or archive
+versions, build one or both extraction modes, index, and export a
+content-addressed collection. Fetch/build can use <code>--use-llm</code>
+to supervise dependency discovery and repair. Detailed recipes remain
+available through <code>src-prep</code>, <code>db</code>, and
+<code>catalog</code> plumbing; archive serving with <code>cga ds</code>
+remains separate.</p>
+<p><a href="cgaassist/README.html"><code>cga a q</code></a> provides
+Bash-first C++ query authoring: start a named workflow, choose and
+download databases, prepare a CodeQL working tree, save drafts, and
+publish to a permanent query library after check-only compilation. It
+neither creates a Bench experiment nor starts MRVA.</p>
+<p><a href="cgabench/README.html"><code>cga bench</code></a> adds an
+addressable experiment grid with independent database/query/job/result
+sessions. It uses existing CGA selection, MRVA, and ingestion
+components, pauses for missing inputs or pending jobs, and compares
+immutable completed SARIF evidence. Its standalone browser supports the
+same mutations as the CLI.</p>
+<p>Initialize a workflow in the directory that will own it:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> my-analysis</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> init .</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> mx preflight</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> chain start</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> mx reset</span></code></pre></div>
+<p><code>cga init -h</code> explains initialization, store selection
+(including environment variables), and the next commands in a minimal
+workflow. Initialization creates <code>.cga/</code>, analogous to
+<code>.git/</code>; it does not start a recorded chain. Run
+<code>cga chain start</code> before the commands whose history you want
+to retain. When a supported component command runs beneath that
+directory, the dispatcher reads the current CGAST, passes it to the
+component on stdin, validates the resulting JSON object, stores it as an
+immutable content-addressed object, and advances the current chain
+atomically. Direct <code>cga*</code> component binaries retain their
+JSON-in/JSON-out interface for low-level use outside a workflow.</p>
+<p>Both analysis commands and CGAST-native preparation/lifecycle
+commands are recorded. This includes
+<code>cga db plan|build|validate</code>, <code>cga codeql</code>,
+<code>cga src-prep</code>, <code>cga catalog</code>,
+<code>cga postgres</code>, <code>cga db-serve</code>, and
+<code>cga mrva-server</code>.
+<code>cga control measure --cgast-filter</code> is also recorded while
+its nested component command runs inside the same atomic workflow
+step.</p>
+<p>Common workflow commands:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> status</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> chain list</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> chain show <span class="at">-v</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> chain start <span class="at">--from</span> <span class="op">&lt;</span>node-or-chain<span class="op">&gt;</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> state show</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> state diff <span class="op">&lt;</span>left<span class="op">&gt;</span> <span class="op">&lt;</span>right<span class="op">&gt;</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> log</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> tree show</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> tree show <span class="at">--format</span> html <span class="at">-o</span> flow.html</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> tree show <span class="at">--format</span> pdf <span class="at">-o</span> flow.pdf</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> doctor</span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> uv start</span></code></pre></div>
+<p>HTML tree output embeds Graphviz SVG and uses the same topology and
+left-aligned multiline labels as PDF output.</p>
+<p>The current object-store root is configured by
+<code>object_store.root</code> in <code>.cga/config</code>. It can be a
+filesystem path, <code>file:</code> URL, or HTTP(S) URL:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> store show</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> store check</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> store verify</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> store set ../../single-machine-mrva-artifacts</span></code></pre></div>
+<p>Every durable reference in <code>.cga/</code> is a normalized
+relative key such as <code>objects/sha256/ab/abcdef...</code>; absolute
+filesystem paths and complete artifact URLs are never stored as object
+references. Changing the root therefore does not rewrite workflow
+history. <code>cga store set</code> rejects a root that lacks currently
+referenced objects unless <code>--allow-missing</code> is explicit.</p>
+<p>CGAST state objects are always stored by content. Durable files
+discovered in component output—including query packs, downloaded result
+archives, SARIF, SQLite/DuckDB stores, and exports—are registered in the
+artifact catalogue and copied into the same content-addressed store.
+Inspect them with:</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> artifact list</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> artifact show <span class="op">&lt;</span>artifact<span class="op">&gt;</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> artifact path <span class="op">&lt;</span>artifact<span class="op">&gt;</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> artifact materialize <span class="op">&lt;</span>artifact<span class="op">&gt;</span> -o FILE</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> artifact verify</span></code></pre></div>
+<p>Global <code>-C DIR</code>, <code>--cga-dir DIR</code>,
+<code>--store ROOT</code>, and <code>CGA_OBJECT_STORE=ROOT</code>
+overrides support scripts and deployment-specific store locations. The
+command-line store override has precedence over the environment, which
+has precedence over <code>.cga/config</code>.</p>
+<p>Recorded component commands also accept common
+<code>--tag PROFILE-OR-KEY:VALUE</code> options before or after the
+component action (but before <code>--</code>). The dispatcher normalizes
+and records them without passing them to component parsers.</p>
+<p>See <a
+href="cgawf/FLOW-SCRIPT-GUIDE.html"><code>cgawf/FLOW-SCRIPT-GUIDE.md</code></a>
+for concise human/LLM-authored flow conventions and a review
+checklist.</p>
+<p>When <code>CGA_DASHBOARD_DUMP</code> is set, every successful
+component command invokes <code>cga view</code> to append a dashboard
+capture. Capture failure is reported as a warning without disguising the
+component command’s successful result.</p>
+<h2 id="commands">Commands</h2>
+<p>State-mutating component commands are JSON-in/JSON-out CGAST filters.
+Human and progress output is written to stderr, leaving stdout
+composable:</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="va">state</span><span class="op">=</span><span class="va">$(</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  <span class="bu">printf</span> <span class="st">&#39;{}\n&#39;</span> <span class="dt">\</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">|</span> <span class="ex">cgadl</span> getmeta /path/to/metadata.sql <span class="dt">\</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">|</span> <span class="ex">cgadl</span> select <span class="at">--user</span> demo primary_language cpp <span class="dt">\</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">|</span> <span class="ex">cgadl</span> download <span class="at">--output-dir</span> <span class="st">&quot;</span><span class="va">$MRVA_DB_SERVE_DIR</span><span class="st">&quot;</span> <span class="dt">\</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">|</span> <span class="ex">cgaql</span> index /path/to/query-tree <span class="dt">\</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">|</span> <span class="ex">cgaql</span> select <span class="at">--user</span> demo language cpp <span class="dt">\</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">|</span> <span class="ex">cgaql</span> pack <span class="dt">\</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">|</span> <span class="ex">cgamr</span> submit <span class="at">--name</span> demo-1 <span class="at">--user</span> demo <span class="at">--language</span> cpp</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="va">)</span></span></code></pre></div>
+<p>The principal commands are:</p>
+<table>
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 39%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Program</th>
+<th>Role</th>
+<th>Typical commands</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cgadl</code></td>
+<td>choose prepared databases</td>
+<td><code>getmeta</code>, <code>list</code>, <code>select</code>,
+<code>download</code></td>
+</tr>
+<tr>
+<td><code>cgaql</code></td>
+<td>choose prepared queries</td>
+<td><code>index</code>, <code>list</code>, <code>select</code>,
+<code>pack</code></td>
+</tr>
+<tr>
+<td><code>cgamr</code></td>
+<td>submit and retrieve MRVA work</td>
+<td><code>submit</code>, <code>status</code>, <code>download</code></td>
+</tr>
+<tr>
+<td><code>cgamu</code></td>
+<td>show the MRVA user view</td>
+<td><code>serve</code></td>
+</tr>
+<tr>
+<td><code>cgasi</code></td>
+<td>ingest and query SARIF</td>
+<td><code>ingest</code>, <code>search</code>, <code>view</code>,
+<code>verify</code></td>
+</tr>
+<tr>
+<td><code>cgaex</code></td>
+<td>export terminal results</td>
+<td><code>human</code>, <code>llm</code></td>
+</tr>
+<tr>
+<td><code>cgadfg</code></td>
+<td>inspect CGAST data/control flow</td>
+<td><code>cga dfg show</code>, <code>cga cfg show</code></td>
+</tr>
+<tr>
+<td><code>cgamx</code></td>
+<td>manage local standalone MRVA</td>
+<td><code>preflight</code>, <code>build</code>, <code>start</code>,
+<code>stop</code></td>
+</tr>
+<tr>
+<td><code>cgasv</code></td>
+<td>dashboard header</td>
+<td><code>serve</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>cgadl getmeta</code> accepts a local SQLite catalogue or URL.
+<code>cgaql index</code> accepts a local directory containing
+<code>.ql</code> files. This explicit loading is the handoff boundary
+from any preparation system, including CGA preparation.</p>
+<h2 id="state">State</h2>
+<p>Top-level <code>cga</code> commands beneath an initialized workflow
+persist state under <code>.cga/</code> and in its configured object
+store. <code>.cga/current.json</code> is a compatibility copy for
+dashboard services; immutable history is authoritative.
+<code>CGA_ROOT</code> and <code>CGA_TMPDIR</code> continue to control
+component-relative paths and scratch space.</p>
+<p>Direct component binaries have no implicit state files. Each reads
+one JSON object from stdin, adds or updates its keys, and writes the
+object to stdout. This interface remains useful for pipelines and tests,
+but normal workflows should use the top-level dispatcher.</p>
+<p><code>cgadfg</code> is a read-only inspector rather than a CGAST
+filter. It reads the legacy manifest format used before
+<code>.cga/</code>. Existing <code>cga dfg</code> and
+<code>cga cfg</code> commands remain available to inspect those
+histories. New workflows use <code>cga tree show</code>, whose text,
+Markdown, DOT, HTML, and PDF formats read <code>.cga/</code>
+directly.</p>
+<p>Selection history is user-tagged. The singular
+<code>cgadl-selection</code>, <code>cgadl-dbdir</code>,
+<code>cgaql-selection</code>, and <code>cgaql-pack</code> values are the
+active inputs to the next <code>cgamr submit</code>.</p>
+<h2 id="web-view">Web view</h2>
+<p>For remote use, <a href="cgagateway/README.html">CGA gateway</a> joins
+the dashboards, Unified Views, Bench, its dynamically allocated VS Code
+editors, MRVA System View, archive browser, and live documentation
+behind one loopback URL:</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> gateway start          <span class="co"># remote: gateway only; start viewers normally</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="co"># workstation:</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> <span class="at">-o</span> ExitOnForwardFailure=yes <span class="at">-o</span> ServerAliveInterval=60 <span class="dt">\</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">-L</span> 8599:127.0.0.1:8599 hohn@svm</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Open http://127.0.0.1:8599/; reconnect with the same SSH command.</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="co"># remote:</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> gateway status</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> gateway stop           <span class="co"># leaves viewers and workflows running</span></span></code></pre></div>
+<p>The landing page also opens the <strong>CGA overview</strong>,
+<strong>CGA help</strong>, and <strong>Reference manual</strong> over
+HTTP from the remote checkout. They need no local checkout or additional
+SSH forward. Documentation is available even with no configured viewers;
+build the optional book with <code>make -C docs book</code>. See <a
+href="cgagateway/README.html#documentation">documentation serving</a> for
+rebuild commands.</p>
+<p>For an ordinary static web server instead of the gateway:</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> public-html setup <span class="op">&gt;</span> /tmp/cga-public-html.sh</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="fu">less</span> /tmp/cga-public-html.sh</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> /tmp/cga-public-html.sh</span></code></pre></div>
+<p>Setup creates <code>~/public_html/single-machine-mrva</code> from the
+installed checkout’s committed HEAD if needed; an existing documentation
+clone is left untouched. Its stdout is a documented Bash script for the
+extra book/lighttpd/permission steps, not a transcript. Review it before
+running; setup itself starts no services and changes no permissions. See
+<a href="../docs/README.html#static-publication-with-lighttpd">static
+publication</a>.</p>
+<p>The direct ports below remain available for development.</p>
+<p>Start the CGA page at <a href="http://127.0.0.1:8600/"
+class="uri">http://127.0.0.1:8600/</a>:</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> serve start     <span class="co"># gateway + every viewer with existing configured state</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> serve status</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> serve stop</span></code></pre></div>
+<p><code>cga serve</code> starts analysis and preparation dashboards,
+Unified Views, Bench, the mrva-flow dashboards, and the gateway against
+existing state only. Missing state is reported as <code>SKIP</code>; it
+never seeds samples, starts MRVA, or prestarts assistants/editors. Open
+<a href="http://127.0.0.1:8599/" class="uri">http://127.0.0.1:8599/</a>.
+Use <code>cga serve start --config /path/to/viewers.json</code> for
+separate workspaces; see <a
+href="cgagateway/README.html#unified-viewer-startup">unified startup</a>.
+Status/stop use the recorded ownership, regardless of the current
+directory. An independent gateway can be reused, but is not stopped by
+the aggregate.</p>
+<p>The direct analysis page remains at <a href="http://127.0.0.1:8600/"
+class="uri">http://127.0.0.1:8600/</a> and preparation at <a
+href="http://127.0.0.1:8500/" class="uri">http://127.0.0.1:8500/</a>.
+The original <code>cga/cga-run</code> and <code>cga/cga-prep-run</code>
+launchers remain available for independent development; do not mix
+lifecycle owners on the same ports.
+<code>cga serve build|seed|outputs</code> retain their explicit
+dashboard-only behavior, including destructive sample replacement with
+<code>seed</code>.</p>
+<p>Use <code>cga run start|stop|status|build|seed</code> for only the
+analysis dashboard. Use <code>cga view</code> to capture it or export a
+replay. The <code>cga-run</code> and <code>cga-view</code> executables
+remain implementation details behind these commands.</p>
+<p>Use <code>cga uv start|stop|status</code> for <strong>CGA Unified
+View</strong>, a separate read-only page on port 8609. It combines the
+active <code>.cga</code> command flow, state deltas, artifacts, source
+excerpts, transcripts, normalized component state, and a compact proxy
+of the MRVA System View. It does not replace the existing views.</p>
+<table>
+<thead>
+<tr>
+<th>Environment variable</th>
+<th style="text-align: right;">Default</th>
+<th>Service</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CGA_PAGE_PORT</code></td>
+<td style="text-align: right;">8600</td>
+<td>composite page</td>
+</tr>
+<tr>
+<td><code>CGA_CGASV_PORT</code></td>
+<td style="text-align: right;">8601</td>
+<td>header</td>
+</tr>
+<tr>
+<td><code>CGA_CGADL_PORT</code></td>
+<td style="text-align: right;">8602</td>
+<td>database chooser</td>
+</tr>
+<tr>
+<td><code>CGA_CGAQL_PORT</code></td>
+<td style="text-align: right;">8603</td>
+<td>query chooser</td>
+</tr>
+<tr>
+<td><code>CGA_CGAMR_PORT</code></td>
+<td style="text-align: right;">8604</td>
+<td>MRVA requestor</td>
+</tr>
+<tr>
+<td><code>CGA_CGAMU_PORT</code></td>
+<td style="text-align: right;">8605</td>
+<td>user view</td>
+</tr>
+<tr>
+<td><code>CGA_CGASI_PORT</code></td>
+<td style="text-align: right;">8606</td>
+<td>SARIF ingest</td>
+</tr>
+<tr>
+<td><code>CGA_CGAMX_PORT</code></td>
+<td style="text-align: right;">8607</td>
+<td>command bridge</td>
+</tr>
+<tr>
+<td><code>CGA_CGAEX_PORT</code></td>
+<td style="text-align: right;">8608</td>
+<td>result export</td>
+</tr>
+<tr>
+<td><code>CGA_CGAUV_PORT</code></td>
+<td style="text-align: right;">8609</td>
+<td>unified view</td>
+</tr>
+</tbody>
+</table>
+<p>Each fragment server exposes <code>/healthz</code>;
+<code>cgasv</code> exposes <code>/header</code>, and the remaining
+visual components expose <code>/overview</code> and
+<code>/detail</code>. The page is read-only except for commands
+intentionally routed through <code>cgamx</code>.</p>
+<p><code>cga view</code> captures the rendered CGA dashboard into JSONL
+and can export a self-contained replay page. It captures only CGA
+components; CGA preparation is a separate dashboard.</p>
+<h2 id="examples-and-verification">Examples and verification</h2>
+<ul>
+<li><a href="sample-05/README.html"><code>sample-05/</code></a>
+demonstrates direct CGA selection and execution using existing database
+and query inputs.</li>
+<li><a href="mrva-flow/README.html"><code>mrva-flow/</code></a> is the
+canonical single-user, operator-driven standalone flow with immutable
+history and dashboard capture.</li>
+<li><a href="sample-05-i/README.html"><code>sample-05-i/</code></a>
+retains the earlier two-user standalone example for experimentation and
+possible expansion.</li>
+<li><a
+href="system-tests/run-system-09/README.html"><code>cga/system-tests/run-system-09</code></a>
+prepares artifacts in a separate CGA preparation session, explicitly
+imports them into CGA, then verifies the complete real
+CodeQL/MRVA/SARIF/export path.</li>
+</ul>
+<p>The LLM export schema is <code>cga.analysis-export.v2</code>;
+submission and job records include zero-finding work and findings retain
+submission, session, job index, and repository provenance.</p>
+<h2 id="layout">Layout</h2>
+<pre class="text"><code>cga/
+  cga           unified two-level command dispatcher
+  cgawf/        .cga workflow, chain, state, store, and artifact implementation
+  completions/  bash completion for cga
+  cga-run       analysis launcher and session (:8600)
+  cga-prep-run  preparation launcher and session (:8500)
+  cgalib/       shared HTTP and CGAST plumbing
+  cgadl/        database library chooser
+  cgaql/        query library chooser and packer
+  cgaassist/    guided database preparation and recorded query authoring
+  cgamr/        MRVA requestor
+  cgamu/        MRVA user view
+  cgasi/        SARIF ingestion
+  cgaex/        human and LLM exports
+  cgadfg/       whole-CGAST run graph inspector
+  cgamx/        local MRVA lifecycle and command bridge
+  cgasv/        dashboard header
+  cga-view/     dashboard capture and replay
+  cgauv/        read-only unified workflow/runtime view
+  cgacc/        native Coder code-server browser workspaces (bin/lib/doc)
+  cgacv/ cgasp/ cgadb/ cgaqg/   preparation: CVE, source, DB, query
+  cgapg/ cgadbserve/ cgamrva/ cgactl/   preparation services and controller
+  sample-05*/   direct-use examples
+  web/          CGA analysis composite page
+  web-prep/     CGA preparation composite page</code></pre>
+</body>
+</html>

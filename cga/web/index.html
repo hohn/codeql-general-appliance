@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>cga &mdash; codeql generic appliance</title>
+    <link rel="stylesheet" href="cga.css?v=theme-toggle-1" />
+  </head>
+  <body>
+    <div id="cga-topbar">
+      <!-- Row 1: header (cgasv/header) -->
+      <div
+        id="cga-header"
+        class="cga-slot"
+        data-comp="cgasv"
+        data-route="/header"
+      ></div>
+      <button id="cga-theme-toggle" type="button">light theme</button>
+    </div>
+
+    <!-- Row 2: chooser -> MRVA -> SARIF -> export flow -->
+    <div id="cga-flow-analysis" class="cga-flow">
+      <!-- left column: DB + query libraries -->
+      <div class="cga-col cga-libs">
+        <div
+          class="cga-slot cga-box"
+          data-comp="cgadl"
+          data-route="/overview"
+        ></div>
+        <div
+          class="cga-slot cga-box"
+          data-comp="cgaql"
+          data-route="/overview"
+        ></div>
+      </div>
+
+      <div class="cga-arrow">&rarr;</div>
+
+      <!-- flow boxes: requestor -> usrview -> sarif ingest -->
+      <div
+        class="cga-slot cga-box"
+        data-comp="cgamr"
+        data-route="/overview"
+      ></div>
+      <div class="cga-arrow">&rarr;</div>
+      <div
+        class="cga-slot cga-box"
+        data-comp="cgamu"
+        data-route="/overview"
+      ></div>
+      <div class="cga-arrow">&rarr;</div>
+      <div
+        class="cga-slot cga-box"
+        data-comp="cgasi"
+        data-route="/overview"
+      ></div>
+      <div class="cga-arrow">&rarr;</div>
+      <div
+        class="cga-slot cga-box"
+        data-comp="cgaex"
+        data-route="/overview"
+      ></div>
+    </div>
+
+    <!-- Row 3: detail area (cga*/detail) -->
+    <div id="cga-detail-bar">
+      cga user view detail &mdash;
+      <span id="cga-detail-which">cgamu</span>
+      <span class="cga-hint">(click any box above to show its detail)</span>
+      <button id="cga-reload" title="re-fetch all fragments">reload</button>
+    </div>
+    <div id="cga-detail" class="cga-slot"></div>
+
+    <script src="cga-config.js"></script>
+    <script src="cga.js?v=theme-toggle-1"></script>
+  </body>
+</html>

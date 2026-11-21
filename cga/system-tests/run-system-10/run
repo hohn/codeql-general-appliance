@@ -1,0 +1,464 @@
+#!/usr/bin/env bash
+#
+# run-system-10 -- analyze every complete promoted CGA preparation CVE database group.
+#
+# A complete group has all three variants in both build modes. Each CVE's
+# declared query is submitted only to that CVE's six databases, then all SARIF
+# is downloaded, ingested, verified, and exported through CGA.
+
+set -Eeuo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SYSTEM_TESTS_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+REPO_ROOT="$(cd "${SYSTEM_TESTS_DIR}/../.." && pwd)"
+CGA_ROOT="${REPO_ROOT}/cga"
+CGA_PREP_ROOT="${REPO_ROOT}/cga"
+
+export CGA_ROOT CGA_PREP_ROOT
+export RUN_TAG="${RUN_TAG:-cga-system-10}"
+export PORT="${PORT:-8081}"
+export DB_SERVER_PORT="${DB_SERVER_PORT:-9080}"
+export CGA_MRVA_SERVER="${CGA_MRVA_SERVER:-http://127.0.0.1:${PORT}}"
+export CODEQL_JAVA_HOME="${CODEQL_JAVA_HOME:-/usr}"
+export MRVA_STANDALONE_STORAGE="${MRVA_STANDALONE_STORAGE:-filesystem}"
+export MRVA_CODEQL_THREADS="${MRVA_CODEQL_THREADS:-2}"
+# CodeQL's off-heap evaluator can materially exceed its Java heap. Two workers
+# leave operational headroom on the 36 GiB reference VM; operators with more
+# memory can override this explicitly.
+export MRVA_POOL_MAX_WORKERS="${MRVA_POOL_MAX_WORKERS:-2}"
+export POLL_INTERVAL="${POLL_INTERVAL:-5}"
+export POLL_DEADLINE_SECS="${POLL_DEADLINE_SECS:-14400}"
+
+TEST_ROOT="${CGA_SYSTEM10_ROOT:-/tmp/cga-system-10}"
+export CGA_TMPDIR="${CGA_TMPDIR:-${TEST_ROOT}/cgast}"
+export CGA_SESSION="${CGA_SESSION:-${TEST_ROOT}/cga-session.json}"
+export MRVA_WORK_DIR="${MRVA_WORK_DIR:-${TEST_ROOT}/mrva}"
+export MRVA_TMP_DIR="${MRVA_TMP_DIR:-${TEST_ROOT}/mrva-runtime}"
+export MRVA_QLDB_DIR="${MRVA_QLDB_DIR:-${MRVA_WORK_DIR}/qldbs}"
+export MRVA_DB_SERVE_DIR="${MRVA_DB_SERVE_DIR:-${CGA_PREP_ROOT}/db-collection.local/databases}"
+
+CGA_PREP_TMPDIR="${CGA_PREP_TMPDIR:-${TEST_ROOT}/cga-prep-st}"
+ELIGIBLE="${TEST_ROOT}/eligible.tsv"
+BINDINGS="${TEST_ROOT}/bindings.tsv"
+QUERY_LIBRARY="${TEST_ROOT}/query-library"
+PACK_MAP="${TEST_ROOT}/pack-map.json"
+DOWNLOAD_ROOT="${TEST_ROOT}/downloads"
+INGEST_ROOT="${TEST_ROOT}/ingest"
+HUMAN_EXPORT="${TEST_ROOT}/report.md"
+LLM_EXPORT="${TEST_ROOT}/report.json"
+SUMMARY="${TEST_ROOT}/summary.json"
+CGACTL_DATABASE_URL="${CGACTL_DATABASE_URL:-postgresql:///cgactl}"
+export CGA_TEST_WORKFLOW="${CGA_TEST_WORKFLOW:-${TEST_ROOT}/analysis}"
+
+# Keep an operator-selected CodeQL bundle ahead of the host default. This is
+# required when the promoted collection's recorded version differs from a
+# /usr/local/bin/codeql installation.
+PATH="${PATH}:/usr/local/bin"
+if [ -n "${CODEQL_CLI_PATH:-}" ]; then
+    PATH="$(dirname "$CODEQL_CLI_PATH"):${PATH}"
+fi
+export PATH
+
+. "${SYSTEM_TESTS_DIR}/standalone-multi-agent-lib.sh"
+
+mkdir -p "$TEST_ROOT" "$CGA_TMPDIR" "$CGA_PREP_TMPDIR"
+
+cga_step() {
+    cga "$@" || return
+    cga state export --output "$CGA_SESSION"
+}
+
+prep_step() {
+    local state="$1" CGA_TEST_WORKFLOW="${1%.json}.workflow"
+    shift
+    CGAST_TMPDIR="$CGA_PREP_TMPDIR" cga "$@" || return
+    cga state export --output "$state"
+}
+
+require_command() {
+    command -v "$1" >/dev/null 2>&1 || {
+        echo "ERROR: required command not found: $1" >&2
+        return 1
+    }
+}
+
+write_eligible() {
+    psql "$CGACTL_DATABASE_URL" -AtF $'\t' -c \
+        "WITH promoted AS (
+           SELECT j.cve, j.spec->>'package' AS package,
+                  j.variant, j.mode, j.toolchain_digest
+           FROM cgactl.jobs j
+           JOIN cgactl.promotions p USING (job_id)
+           WHERE j.status LIKE 'succeeded%'
+             AND j.disposition = 'completed'
+         )
+         SELECT lower(cve), package,
+                min(substring(toolchain_digest from
+                    'codeql:([0-9]+\\.[0-9]+\\.[0-9]+)'))
+         FROM promoted
+         GROUP BY cve, package
+         HAVING count(*) FILTER (
+             WHERE variant IN ('most-recent','patched','vulnerable')
+               AND mode IN ('none','trace')) = 6
+           AND count(DISTINCT variant) = 3
+           AND count(DISTINCT mode) = 2
+           AND count(DISTINCT toolchain_digest) = 1
+         ORDER BY lower(cve)" > "$ELIGIBLE"
+}
+
+selected_count() {
+    python3 - "$CGA_SESSION" <<'PY'
+import json, pathlib, sys
+state = json.load(open(sys.argv[1], encoding="utf-8"))
+path = pathlib.Path(state["cgadl-selection"])
+print(len(json.load(open(path, encoding="utf-8"))["databases"]))
+PY
+}
+
+submission_status() {
+    python3 - "$CGA_SESSION" "$1" <<'PY'
+import json, sys
+state = json.load(open(sys.argv[1], encoding="utf-8"))
+print(state.get("cgamr-submissions", {}).get(sys.argv[2], {}).get("status", ""))
+PY
+}
+
+phase_preflight() {
+    echo "--- preflight ---"
+    local command
+    for command in codeql go python3 psql pg_isready sqlite3 duckdb curl; do
+        require_command "$command"
+    done
+    cga_step mx preflight
+}
+
+phase_reset() {
+    echo "--- reset ---"
+    cga_step mx reset
+    rm -rf "$CGA_PREP_TMPDIR" "${TEST_ROOT}/queries" "$QUERY_LIBRARY" \
+        "$DOWNLOAD_ROOT" "$INGEST_ROOT"
+    rm -f "$ELIGIBLE" "$BINDINGS" "$PACK_MAP" "$HUMAN_EXPORT" \
+        "$LLM_EXPORT" "$SUMMARY"
+    mkdir -p "$CGA_TMPDIR" "$CGA_PREP_TMPDIR"
+    cga_step chain start --name analysis
+}
+
+phase_select() {
+    echo "--- define complete promoted database set D ---"
+    write_eligible || return
+    local count versions runtime
+    count="$(wc -l < "$ELIGIBLE")"
+    [ "$count" -gt 0 ] || { echo "ERROR: D is empty" >&2; return 1; }
+    versions="$(cut -f3 "$ELIGIBLE" | sort -u)"
+    [ "$(printf '%s\n' "$versions" | wc -l)" -eq 1 ] || {
+        echo "ERROR: D contains multiple CodeQL versions: $versions" >&2
+        return 1
+    }
+    runtime="$(codeql version --format=json | python3 -c \
+        'import json,sys; print(json.load(sys.stdin)["version"])')"
+    [ "$runtime" = "$versions" ] || {
+        echo "ERROR: runtime CodeQL $runtime does not match D ($versions)" >&2
+        return 1
+    }
+    echo "  eligible CVEs: $count"
+    echo "  databases:     $((count * 6))"
+    echo "  CodeQL:        $runtime"
+    cga_step dl getmeta "$CGA_PREP_ROOT/db-collection.local/metadata.sql"
+}
+
+phase_build() {
+    echo "--- build MRVA ---"
+    cga_step mx build
+}
+
+phase_start() {
+    echo "--- start MRVA ---"
+    cga_step mx start
+}
+
+phase_queries() {
+    echo "--- CGA preparation materialize; CGA index and pack unique queries ---"
+    [ -s "$ELIGIBLE" ] || { echo "ERROR: run select first" >&2; return 1; }
+    rm -rf "$QUERY_LIBRARY"
+    mkdir -p "$QUERY_LIBRARY"
+    : > "$BINDINGS"
+    local local_state querydir query_id query_path filename query_bundle_dir
+    local destination support
+
+    while IFS=$'\t' read -r cve package toolchain; do
+        local_state="${CGA_PREP_TMPDIR}/${cve}.json"
+        querydir="${TEST_ROOT}/queries/${cve}"
+        prep_step "$local_state" cv import \
+            "$CGA_PREP_ROOT/examples/cves/${cve}/spec.json"
+        prep_step "$local_state" cv select --cve "${cve^^}"
+        prep_step "$local_state" qg materialize --output-dir "$querydir"
+        prep_step "$local_state" qg index
+
+        read -r query_id query_path < <(python3 - "$local_state" <<'PY'
+import json, pathlib, sys
+state = json.load(open(sys.argv[1], encoding="utf-8"))
+manifest = pathlib.Path(state["cgaqg-materialized"])
+record = json.load(open(manifest, encoding="utf-8"))["queries"]
+assert len(record) == 1, record
+print(record[0]["id"], record[0]["materialized_path"])
+PY
+)
+        filename="$(basename "$query_path")"
+        query_bundle_dir="${QUERY_LIBRARY}/${filename%.ql}"
+        mkdir -p "$query_bundle_dir"
+        destination="${query_bundle_dir}/${filename}"
+        if [ -f "$destination" ]; then
+            cmp -s "$query_path" "$destination" || {
+                echo "ERROR: conflicting query file $filename" >&2
+                return 1
+            }
+        else
+            cp "$query_path" "$destination"
+        fi
+        for support in "$querydir"/*.qll; do
+            [ -f "$support" ] || continue
+            destination="${query_bundle_dir}/$(basename "$support")"
+            if [ -f "$destination" ]; then
+                cmp -s "$support" "$destination" || {
+                    echo "ERROR: conflicting support module $(basename "$support")" >&2
+                    return 1
+                }
+            else
+                cp "$support" "$destination"
+            fi
+        done
+        printf '%s\t%s\t%s\n' "$cve" "$package" "$query_id" >> "$BINDINGS"
+    done < "$ELIGIBLE"
+
+    cga_step ql index "$QUERY_LIBRARY"
+    cga_step ql select --user end-to-end
+    cga_step ql pack
+    python3 - "$CGA_SESSION" "$PACK_MAP" "$BINDINGS" <<'PY'
+import json, pathlib, sys
+state = json.load(open(sys.argv[1], encoding="utf-8"))
+selection = json.load(open(state["cgaql-selection"], encoding="utf-8"))
+packs = state["cgaql-pack"]
+queries = selection["queries"]
+assert len(packs) == len(queries), (len(packs), len(queries))
+mapping = {row["id"]: index for index, row in enumerate(queries)}
+pathlib.Path(sys.argv[2]).write_text(
+    json.dumps(mapping, indent=2) + "\n", encoding="utf-8")
+print(f"  query bindings: {sum(1 for _ in open(sys.argv[3], encoding='utf-8'))}")
+print(f"  unique packs:   {len(mapping)}")
+PY
+}
+
+phase_submit() {
+    echo "--- submit each query only to its applicable six databases ---"
+    [ -s "$BINDINGS" ] && [ -s "$PACK_MAP" ] || {
+        echo "ERROR: run queries first" >&2
+        return 1
+    }
+    mkdir -p "$DOWNLOAD_ROOT" "$INGEST_ROOT"
+    while IFS=$'\t' read -r cve package query_id; do
+        sql="${TEST_ROOT}/select-${cve}.sql"
+        printf "SELECT * FROM metadata WHERE build_cid LIKE '%s--%%' ORDER BY git_repo;\n" \
+            "$cve" > "$sql"
+        cga_step dl sql --user end-to-end --query-file "$sql"
+        count="$(selected_count)"
+        [ "$count" -eq 6 ] || {
+            echo "ERROR: $cve selected $count databases, expected 6" >&2
+            return 1
+        }
+        cga_step dl download --output-dir "$MRVA_DB_SERVE_DIR"
+        pack_index="$(python3 -c \
+            'import json,sys; print(json.load(open(sys.argv[1]))[sys.argv[2]])' \
+            "$PACK_MAP" "$query_id")"
+        name="e2e-${cve}"
+        echo "  $cve: package=$package query=$query_id pack=$pack_index dbs=6"
+        cga_step mr submit --name "$name" --user end-to-end \
+            --language cpp --pack-index "$pack_index"
+    done < "$BINDINGS"
+}
+
+phase_wait() {
+    echo "--- wait for all submissions ---"
+    [ -s "$BINDINGS" ] || { echo "ERROR: run queries first" >&2; return 1; }
+    local deadline pending failures name status total summary last_summary
+    total="$(wc -l < "$BINDINGS")"
+    last_summary=""
+    deadline=$(( $(date +%s) + POLL_DEADLINE_SECS ))
+    while :; do
+        pending=0
+        failures=0
+        while IFS=$'\t' read -r cve package query_id; do
+            name="e2e-${cve}"
+            status="$(submission_status "$name")"
+            case "$status" in
+                succeeded) ;;
+                failed|cancelled|canceled|timed_out)
+                    echo "  TERMINAL-FAIL $cve $status" >&2
+                    failures=$((failures + 1))
+                    ;;
+                *)
+                    cga_step mr status --name "$name"
+                    status="$(submission_status "$name")"
+                    case "$status" in
+                        succeeded) ;;
+                        failed|cancelled|canceled|timed_out)
+                            failures=$((failures + 1)) ;;
+                        *) pending=$((pending + 1)) ;;
+                    esac
+                    ;;
+            esac
+        done < "$BINDINGS"
+        summary="completed=$((total - pending - failures)) pending=$pending failures=$failures"
+        if [ "$summary" != "$last_summary" ]; then
+            echo "  $summary"
+            last_summary="$summary"
+        fi
+        [ "$failures" -eq 0 ] || return 1
+        [ "$pending" -ne 0 ] || return 0
+        [ "$(date +%s)" -lt "$deadline" ] || {
+            echo "ERROR: analysis deadline exceeded" >&2
+            return 1
+        }
+        sleep "$POLL_INTERVAL"
+    done
+}
+
+phase_download() {
+    echo "--- download SARIF archives ---"
+    while IFS=$'\t' read -r cve package query_id; do
+        cga_step mr download --name "e2e-${cve}" \
+            --output-dir "${DOWNLOAD_ROOT}/${cve}"
+    done < "$BINDINGS"
+}
+
+phase_ingest() {
+    echo "--- ingest SARIF into cumulative result store ---"
+    while IFS=$'\t' read -r cve package query_id; do
+        cga_step si ingest --name "e2e-${cve}" --output-dir "$INGEST_ROOT"
+    done < "$BINDINGS"
+}
+
+phase_export() {
+    echo "--- export human and LLM reports ---"
+    cga_step ex human --output "$HUMAN_EXPORT"
+    cga_step ex llm --output "$LLM_EXPORT"
+}
+
+phase_verify() {
+    echo "--- verify applicability, MRVA, SARIF, ingestion, and exports ---"
+    names=()
+    while IFS=$'\t' read -r cve package query_id; do
+        names+=("e2e-${cve}")
+    done < "$BINDINGS"
+    cga_step mr verify "${names[@]}"
+    cga_step si verify "${names[@]}"
+    cga_step mx check
+    python3 - "$CGA_SESSION" "$BINDINGS" "$SUMMARY" <<'PY'
+import json, pathlib, sys
+state = json.load(open(sys.argv[1], encoding="utf-8"))
+bindings = [line.rstrip().split("\t") for line in open(sys.argv[2], encoding="utf-8") if line.strip()]
+subs = state["cgamr-submissions"]
+ings = state["cgasi-ingestions"]
+names = [f"e2e-{cve}" for cve, _, _ in bindings]
+summary = {
+    "eligible_cves": len(bindings),
+    "query_bindings": len(bindings),
+    "unique_query_packs": len(set(query for _, _, query in bindings)),
+    "databases": sum(len(subs[name]["repositories"]) for name in names),
+    "successful_submissions": sum(subs[name]["status"] == "succeeded" for name in names),
+    "downloaded_sarif_archives": sum(len(subs[name].get("downloads", [])) for name in names),
+    "ingested_sarif_files": sum(len(ings[name]["jobs"]) for name in names),
+    "finding_rows": sum(ings[name]["finding_count"] for name in names),
+    "cves": [cve for cve, _, _ in bindings],
+}
+assert summary["databases"] == 6 * len(bindings), summary
+assert summary["successful_submissions"] == len(bindings), summary
+assert summary["downloaded_sarif_archives"] == summary["databases"], summary
+assert summary["ingested_sarif_files"] == summary["databases"], summary
+pathlib.Path(sys.argv[3]).write_text(
+    json.dumps(summary, indent=2) + "\n", encoding="utf-8")
+print(json.dumps(summary, indent=2))
+PY
+    echo "run-system-10 PASS"
+}
+
+phase_info() {
+    cga_step mx info
+    cga_step mr info
+    cga_step si info
+    cga_step ex info
+    echo "  eligible: $ELIGIBLE"
+    echo "  bindings: $BINDINGS"
+    echo "  summary:  $SUMMARY"
+    echo "  human:    $HUMAN_EXPORT"
+    echo "  LLM:      $LLM_EXPORT"
+}
+
+phase_stop() {
+    cga_step mx stop
+}
+
+phase_cleanup() {
+    cga_step mx cleanup
+    rm -rf "$TEST_ROOT"
+}
+
+phase_all() {
+    phase_preflight
+    phase_reset
+    phase_select
+    phase_build
+    phase_start
+    phase_queries
+    phase_submit
+    phase_wait
+    phase_download
+    phase_ingest
+    phase_export
+    phase_verify
+    echo "MRVA remains running for inspection; use '$0 cleanup' when done."
+}
+
+usage() {
+    cat <<EOF
+usage: $0 COMMAND
+
+Commands:
+  all       run the complete promoted-CVE analysis workflow
+  preflight check tools/Postgres and reclaim service ports
+  reset     reset standalone MRVA and system-10 state
+  select    derive D from successful, promoted, six-member CVE groups
+  build     build standalone MRVA server and agent
+  start     start standalone MRVA and the collection DB server
+  queries   materialize CVE queries and build unique compatible packs
+  submit    submit one query binding against each CVE's six databases
+  wait      poll all named submissions to a terminal state
+  download  download every result archive
+  ingest    convert SARIF and rebuild the cumulative DuckDB store
+  export    write human Markdown and structured LLM JSON
+  verify    check all cardinality and component invariants
+  info      show state and artifact paths
+  stop      stop services but retain state and artifacts
+  cleanup   stop services and remove system-10 runtime state
+EOF
+}
+
+case "${1:-}" in
+    all) phase_all ;;
+    preflight) phase_preflight ;;
+    reset) phase_reset ;;
+    select) phase_select ;;
+    build) phase_build ;;
+    start) phase_start ;;
+    queries) phase_queries ;;
+    submit) phase_submit ;;
+    wait) phase_wait ;;
+    download) phase_download ;;
+    ingest) phase_ingest ;;
+    export) phase_export ;;
+    verify) phase_verify ;;
+    info) phase_info ;;
+    stop) phase_stop ;;
+    cleanup) phase_cleanup ;;
+    help|-h|--help|"") usage ;;
+    *) usage >&2; exit 2 ;;
+esac

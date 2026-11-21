@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>View and replay notes</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+  </style>
+  <link rel="stylesheet" href="../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">View and replay notes</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#view-and-replay-notes" id="toc-view-and-replay-notes">View
+and replay notes</a>
+<ul>
+<li><a href="#mrva-sysview" id="toc-mrva-sysview">MRVA sysview</a></li>
+<li><a href="#cga-views" id="toc-cga-views">CGA views</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="view-and-replay-notes">View and replay notes</h1>
+<p>Start with the owning usage document: <a
+href="../cga/README.md#web-view">CGA</a>, <a
+href="../cga/cgabench/README.md">Bench</a>, <a
+href="../cga/cgauv/README.md">Unified View</a>, or <a
+href="../sysview-view/README.md">sysview replay</a>.</p>
+<h2 id="mrva-sysview">MRVA sysview</h2>
+<ul>
+<li><code>mrvacommander/pkg/server/sysview.go</code> caches snapshots
+for <code>/sysview/data</code>; <code>/sysview</code> polls them while
+preserving collapse/scroll state.
+<code>MRVA_SYSVIEW_REFRESH_SECONDS</code> overrides refresh timing.</li>
+<li>CSS and renderer JS are shared embedded assets in
+<code>mrvacommander/pkg/sysviewui/</code>. Live sysview and
+<code>sysview-view</code> reuse them; do not fork renderers for
+replay.</li>
+<li>Live rendering consumes <code>renderSteps</code> in short batches so
+Pause can interrupt large DOM builds; replay drains the same steps
+synchronously via <code>render</code>. Pause cancels queued polling, the
+active fetch, and unfinished rendering. Stale cycles must neither paint
+nor schedule another poll after resume. Browser regression:
+<code>cd mrvacommander &amp;&amp; go test ./pkg/server -run TestSysViewPauseInBrowser</code>.</li>
+<li>Go composes HTML using raw strings: do not introduce unescaped
+backticks. Rebuild and restart the server after embedded view changes,
+then reload.</li>
+<li>Job rows retain pack identity derived from submitted bytes and
+report progress independently from worker state. Preserve provenance
+when changing grouping or summaries.</li>
+<li><code>--dbg-dump-sysview</code> writes JSONL;
+<code>MRVA_SYSVIEW_DUMP_PATH</code> selects its path. The harness
+enables it explicitly with <code>MRVA_DBG_DUMP_SYSVIEW=1</code>.</li>
+<li><code>sysview-view</code> reads retained dumps and can export
+self-contained HTML. In the harness, stop retains state/dump; cleanup
+removes runtime state/dump.</li>
+</ul>
+<h2 id="cga-views">CGA views</h2>
+<ul>
+<li><code>cga serve start|status|stop</code>
+(<code>cgalib/viewers.py</code>) aggregates existing configured viewer
+state, reports missing profiles as SKIP, and owns only processes it
+launches. Never seed state or start MRVA/assistants implicitly.
+Dashboard JS configuration stays runtime-local per profile. Direct
+launchers retain their explicit seed/development behavior; do not mix
+port owners.</li>
+<li><code>cga gateway start|status|stop</code> owns an independent
+loopback gateway on 8599. <code>cga/cgagateway/</code> owns
+HTTP/WebSocket routing; <code>cgalib/gateway.py</code> owns lifecycle.
+<code>/documentation/</code> serves live checkout documents and web
+assets under the same origin, including optional built books. Preserve
+repository-relative links, no-cache reads, read-only methods, and the
+runtime/checkout path boundary. No separate documentation process,
+workspace, or port is needed. Preserve mount-relative browser URLs and
+the direct-port development views. Editor routes discover
+already-running sessions through Bench <code>/api/editors</code>;
+discovery must not start editors or return login passwords.</li>
+<li><code>cga view</code> captures dashboard fragments and can export a
+self-contained replay. The mrva-flow example records replay and graph
+exports under <code>.cga/tmp/</code>; <code>CGA_DASHBOARD_DUMP</code>,
+<code>CGA_CFG_EXPORT</code>, and <code>CGA_DFG_EXPORT</code> control the
+relevant outputs.</li>
+<li>The live composite dashboard is a snapshot, not a periodic
+replacement of editable detail fragments. Refreshing must not silently
+discard form input.</li>
+<li><code>cga/cga-view/cgaview/static_server.py</code> serves
+loopback-only/no-cache assets; do not replace it with a generic HTTP
+server.</li>
+<li>Unified View is a read-only normalized workflow projection with a
+server-side sysview proxy. Outline/search omit secret-tagged entities by
+default.</li>
+<li>Dashboard/replay share light/dark preferences; Unified View has
+additional themes. Keep theme changes presentation-only and preserve
+shared state. Bench has its own Apple/Classic presentation contract; see
+<a href="bench.md">Bench notes</a>.</li>
+</ul>
+</body>
+</html>

@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Version Bump Scripts</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="../../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../../docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Version Bump Scripts</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#version-bump-scripts"
+id="toc-version-bump-scripts">Version Bump Scripts</a>
+<ul>
+<li><a href="#quick-reference" id="toc-quick-reference">Quick
+Reference</a></li>
+<li><a href="#scripts" id="toc-scripts">Scripts</a>
+<ul>
+<li><a href="#bump-mrvacommander-version.sh-original-automated"
+id="toc-bump-mrvacommander-version.sh-original-automated">1.
+<code>bump-mrvacommander-version.sh</code> (Original Automated)</a></li>
+<li><a href="#bump-version-interactive.sh-new---interactive-manual"
+id="toc-bump-version-interactive.sh-new---interactive-manual">2.
+<code>bump-version-interactive.sh</code> (NEW - Interactive
+Manual)</a></li>
+<li><a href="#manual-bump-version.sh-new---semi-automated-manual"
+id="toc-manual-bump-version.sh-new---semi-automated-manual">3.
+<code>manual-bump-version.sh</code> (NEW - Semi-Automated
+Manual)</a></li>
+<li><a href="#manual-bump-reference.sh-new---referencechecklist"
+id="toc-manual-bump-reference.sh-new---referencechecklist">4.
+<code>manual-bump-reference.sh</code> (NEW -
+Reference/Checklist)</a></li>
+</ul></li>
+<li><a href="#workflow-comparison" id="toc-workflow-comparison">Workflow
+Comparison</a>
+<ul>
+<li><a href="#automated-workflow-bump-mrvacommander-version.sh"
+id="toc-automated-workflow-bump-mrvacommander-version.sh">Automated
+Workflow (bump-mrvacommander-version.sh)</a></li>
+<li><a href="#interactive-manual-workflow-bump-version-interactive.sh"
+id="toc-interactive-manual-workflow-bump-version-interactive.sh">Interactive
+Manual Workflow (bump-version-interactive.sh)</a></li>
+<li><a href="#semi-automated-manual-workflow-manual-bump-version.sh"
+id="toc-semi-automated-manual-workflow-manual-bump-version.sh">Semi-Automated
+Manual Workflow (manual-bump-version.sh)</a></li>
+</ul></li>
+<li><a href="#common-workflow" id="toc-common-workflow">Common
+Workflow</a></li>
+<li><a href="#environment-variables"
+id="toc-environment-variables">Environment Variables</a></li>
+<li><a href="#version-format" id="toc-version-format">Version
+Format</a></li>
+<li><a href="#directories" id="toc-directories">Directories</a></li>
+<li><a href="#troubleshooting"
+id="toc-troubleshooting">Troubleshooting</a>
+<ul>
+<li><a href="#directory-not-found"
+id="toc-directory-not-found">“Directory not found”</a></li>
+<li><a href="#go-mod-tidy-failed" id="toc-go-mod-tidy-failed">“go mod
+tidy failed”</a></li>
+<li><a href="#build-failed" id="toc-build-failed">“Build
+failed”</a></li>
+<li><a href="#push-failed" id="toc-push-failed">“Push failed”</a></li>
+<li><a href="#tag-already-exists" id="toc-tag-already-exists">“Tag
+already exists”</a></li>
+</ul></li>
+<li><a href="#which-script-should-i-use"
+id="toc-which-script-should-i-use">Which Script Should I Use?</a>
+<ul>
+<li><a href="#use-bump-mrvacommander-version.sh-if"
+id="toc-use-bump-mrvacommander-version.sh-if">Use
+<code>bump-mrvacommander-version.sh</code> if:</a></li>
+<li><a href="#use-bump-version-interactive.sh-if"
+id="toc-use-bump-version-interactive.sh-if">Use
+<code>bump-version-interactive.sh</code> if:</a></li>
+<li><a href="#use-manual-bump-version.sh-if"
+id="toc-use-manual-bump-version.sh-if">Use
+<code>manual-bump-version.sh</code> if:</a></li>
+<li><a href="#use-manual-bump-reference.sh-if"
+id="toc-use-manual-bump-reference.sh-if">Use
+<code>manual-bump-reference.sh</code> if:</a></li>
+</ul></li>
+<li><a href="#examples" id="toc-examples">Examples</a>
+<ul>
+<li><a href="#bump-to-v0.6.0-on-main-branch"
+id="toc-bump-to-v0.6.0-on-main-branch">Bump to v0.6.0 on main
+branch</a></li>
+<li><a href="#bump-to-v0.6.1-on-development-branch"
+id="toc-bump-to-v0.6.1-on-development-branch">Bump to v0.6.1 on
+development branch</a></li>
+</ul></li>
+<li><a href="#future-improvements" id="toc-future-improvements">Future
+Improvements</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="version-bump-scripts">Version Bump Scripts</h1>
+<p>This directory contains several scripts for bumping MRVA component
+versions. Choose the one that fits your workflow.</p>
+<h2 id="quick-reference">Quick Reference</h2>
+<table>
+<colgroup>
+<col style="width: 34%" />
+<col style="width: 33%" />
+<col style="width: 32%" />
+</colgroup>
+<thead>
+<tr>
+<th>Script</th>
+<th>Use Case</th>
+<th>Interaction Level</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bump-mrvacommander-version.sh</code></td>
+<td>Automated PR creation</td>
+<td>Minimal (one confirmation)</td>
+</tr>
+<tr>
+<td><code>bump-version-interactive.sh</code></td>
+<td>Manual workflow with prompts</td>
+<td>High (confirms each step)</td>
+</tr>
+<tr>
+<td><code>manual-bump-version.sh</code></td>
+<td>Semi-automated manual workflow</td>
+<td>Medium (confirms major steps)</td>
+</tr>
+<tr>
+<td><code>manual-bump-reference.sh</code></td>
+<td>Copy-paste reference</td>
+<td>None (reference only)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="scripts">Scripts</h2>
+<h3 id="bump-mrvacommander-version.sh-original-automated">1.
+<code>bump-mrvacommander-version.sh</code> (Original Automated)</h3>
+<p><strong>Use when:</strong> You want to create PRs automatically via
+<code>enterprise-gh</code></p>
+<p><strong>Prerequisites:</strong> -
+<code>enterprise-gh bootstrap</code> has been run - Git credentials
+configured - Access to dpkg-distro-dev</p>
+<p><strong>Usage:</strong></p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">./bump-mrvacommander-version.sh</span> <span class="pp">[</span><span class="ss">branch</span><span class="pp">-</span><span class="ss">name</span><span class="pp">]</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Example:</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">./bump-mrvacommander-version.sh</span> main</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="ex">./bump-mrvacommander-version.sh</span> mh-doc-version-2</span></code></pre></div>
+<p><strong>What it does:</strong> 1. Creates temporary workspace with
+dpkg-distro-dev 2. Clones repos (mrvacommander, server-commander,
+agent-commander-argo) 3. Determines next version number automatically 4.
+Tags mrvacommander 5. Updates dependencies in server-commander and
+agent-commander-argo 6. Creates PRs via
+<code>enterprise-gh create-pr</code></p>
+<p><strong>Note:</strong> Currently has a 404 error with PR creation
+that needs fixing.</p>
+<hr />
+<h3 id="bump-version-interactive.sh-new---interactive-manual">2.
+<code>bump-version-interactive.sh</code> (NEW - Interactive Manual)</h3>
+<p><strong>Use when:</strong> You want manual control with helpful
+prompts at each step</p>
+<p><strong>Prerequisites:</strong> - On VPN - Git credentials configured
+- Working directories exist</p>
+<p><strong>Usage:</strong></p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">./bump-version-interactive.sh</span> v0.6.0 main</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">./bump-version-interactive.sh</span> v0.6.1 mh-doc-version-2</span></code></pre></div>
+<p><strong>What it does:</strong> 1. Prompts before each major operation
+2. Shows what will be done before doing it 3. Validates builds before
+tagging 4. Color-coded output (✓ ✗ ⚠ ℹ) 5. Allows skipping steps</p>
+<p><strong>Example session:</strong></p>
+<pre><code>? Ready to proceed? [y/N] y
+ℹ Setting up Go environment...
+✓ Environment configured
+
+? Clean and tidy mrvacommander? [y/N] y
+✓ Cleaned and tidied
+
+? Create tag v0.6.0 in mrvacommander? [y/N] y
+✓ Tag v0.6.0 created
+
+...</code></pre>
+<hr />
+<h3 id="manual-bump-version.sh-new---semi-automated-manual">3.
+<code>manual-bump-version.sh</code> (NEW - Semi-Automated Manual)</h3>
+<p><strong>Use when:</strong> You want a script that follows manual
+workflow but automates the tedious parts</p>
+<p><strong>Prerequisites:</strong> - On VPN - Git credentials configured
+- Working directories exist</p>
+<p><strong>Usage:</strong></p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">./manual-bump-version.sh</span> v0.6.0 main</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">./manual-bump-version.sh</span> v0.6.1 mh-doc-version-2</span></code></pre></div>
+<p><strong>What it does:</strong> 1. Validates version format 2. Shows
+before/after for go.mod changes 3. Builds to verify before committing 4.
+Confirms before tagging/pushing 5. Processes all three components in
+sequence</p>
+<p><strong>Confirmation points:</strong> - Tag mrvacommander? [y/N] -
+Commit/tag/push server-commander? [y/N] - Commit/tag/push
+agent-commander-argo? [y/N]</p>
+<hr />
+<h3 id="manual-bump-reference.sh-new---referencechecklist">4.
+<code>manual-bump-reference.sh</code> (NEW - Reference/Checklist)</h3>
+<p><strong>Use when:</strong> You want to copy-paste individual
+commands</p>
+<p><strong>This is NOT meant to be run directly.</strong> It’s a
+reference showing: - Individual commands for each step - Comments
+explaining what each command does - Alternative approaches (sed vs
+manual editing) - A checklist at the end</p>
+<p><strong>Usage:</strong></p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Don&#39;t run it:</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co"># ./manual-bump-reference.sh</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Instead, open it in an editor and copy sections:</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> manual-bump-reference.sh</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Copy the commands you need</span></span></code></pre></div>
+<hr />
+<h2 id="workflow-comparison">Workflow Comparison</h2>
+<h3 id="automated-workflow-bump-mrvacommander-version.sh">Automated
+Workflow (bump-mrvacommander-version.sh)</h3>
+<pre><code>User runs script
+  ↓
+Script creates temp workspace
+  ↓
+Clones all repos
+  ↓
+Auto-calculates version
+  ↓
+Tags mrvacommander
+  ↓
+For each dependent repo:
+  - Updates go.mod
+  - Creates PR via enterprise-gh</code></pre>
+<p><strong>Pros:</strong> Fast, repeatable, creates PRs automatically
+<strong>Cons:</strong> Less control, requires enterprise-gh, has 404
+error currently</p>
+<hr />
+<h3
+id="interactive-manual-workflow-bump-version-interactive.sh">Interactive
+Manual Workflow (bump-version-interactive.sh)</h3>
+<pre><code>User runs script with version
+  ↓
+For each component:
+  Shows current state
+    ↓
+  Prompts: &quot;Do this step?&quot;
+    ↓
+  If yes: Does step and shows result
+    ↓
+  Prompts: &quot;Continue?&quot;</code></pre>
+<p><strong>Pros:</strong> Full visibility, can skip steps, validates
+before committing <strong>Cons:</strong> Slower, requires many
+confirmations</p>
+<hr />
+<h3
+id="semi-automated-manual-workflow-manual-bump-version.sh">Semi-Automated
+Manual Workflow (manual-bump-version.sh)</h3>
+<pre><code>User runs script with version
+  ↓
+Script validates input
+  ↓
+For each component:
+  Automates tedious parts
+    ↓
+  Shows important info
+    ↓
+  Confirms at decision points</code></pre>
+<p><strong>Pros:</strong> Good balance of automation and control
+<strong>Cons:</strong> Less flexibility than interactive</p>
+<hr />
+<h2 id="common-workflow">Common Workflow</h2>
+<p>Regardless of which script you use, the flow is:</p>
+<ol type="1">
+<li><strong>mrvacommander</strong> (library)
+<ul>
+<li>Clean and tidy</li>
+<li>Tag with new version</li>
+<li>Push tag</li>
+</ul></li>
+<li><strong>server-commander</strong> (depends on mrvacommander)
+<ul>
+<li>Update go.mod dependency to new mrvacommander tag</li>
+<li>Clean, tidy, build</li>
+<li>Tag with new version</li>
+<li>Push</li>
+</ul></li>
+<li><strong>agent-commander-argo</strong> (depends on mrvacommander)
+<ul>
+<li>Update go.mod dependency to new mrvacommander tag</li>
+<li>Clean, tidy, build</li>
+<li>Tag with new version</li>
+<li>Push</li>
+</ul></li>
+</ol>
+<h2 id="environment-variables">Environment Variables</h2>
+<p>All scripts use these Go environment variables:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">GOPRIVATE</span><span class="op">=</span><span class="st">&quot;*.dev.example.com&quot;</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">GOPROXY</span><span class="op">=</span><span class="st">&quot;https://goproxy.dev.example.com,direct&quot;</span></span></code></pre></div>
+<p>These are required for accessing internal packages.</p>
+<h2 id="version-format">Version Format</h2>
+<p>All scripts expect semantic versioning:</p>
+<ul>
+<li>✅ <code>v0.6.0</code></li>
+<li>✅ <code>v1.0.0</code></li>
+<li>✅ <code>v2.3.4</code></li>
+<li>❌ <code>0.6.0</code> (missing ‘v’ prefix)</li>
+<li>❌ <code>v1.0</code> (incomplete)</li>
+</ul>
+<p>For development branches, the automated script appends branch name
+and timestamp: - <code>v0.6.0-mh-doc-version-2.20260402123456</code></p>
+<h2 id="directories">Directories</h2>
+<p>The scripts expect these directory structures:</p>
+<pre><code>~/mrva/mrvacommander/              # mrvacommander repo
+~/c/example/psa-mrva/
+├── server-commander/              # server-commander repo
+├── agent-commander-argo/          # agent-commander-argo repo
+└── mrvacommander/                 # script location
+    ├── bump-mrvacommander-version.sh
+    ├── bump-version-interactive.sh
+    ├── manual-bump-version.sh
+    └── manual-bump-reference.sh</code></pre>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="directory-not-found">“Directory not found”</h3>
+<ul>
+<li>Check directory paths in the script</li>
+<li>Ensure repos are cloned in expected locations</li>
+</ul>
+<h3 id="go-mod-tidy-failed">“go mod tidy failed”</h3>
+<ul>
+<li>Check <code>GOPRIVATE</code> and <code>GOPROXY</code> environment
+variables</li>
+<li>Verify VPN connection</li>
+<li>Run <code>go clean -modcache</code> and retry</li>
+</ul>
+<h3 id="build-failed">“Build failed”</h3>
+<ul>
+<li>Check error messages from <code>go build</code></li>
+<li>Ensure dependency versions are compatible</li>
+<li>Check for merge conflicts in go.mod</li>
+</ul>
+<h3 id="push-failed">“Push failed”</h3>
+<ul>
+<li>Verify git credentials</li>
+<li>Check remote name (should be ‘psa’)</li>
+<li>Verify branch name</li>
+</ul>
+<h3 id="tag-already-exists">“Tag already exists”</h3>
+<ul>
+<li>List tags: <code>git tag -l | grep v0.6.0</code></li>
+<li>Delete local tag: <code>git tag -d v0.6.0</code></li>
+<li>Delete remote tag: <code>git push --delete psa v0.6.0</code></li>
+</ul>
+<h2 id="which-script-should-i-use">Which Script Should I Use?</h2>
+<h3 id="use-bump-mrvacommander-version.sh-if">Use
+<code>bump-mrvacommander-version.sh</code> if:</h3>
+<ul>
+<li>✅ You want PRs created automatically</li>
+<li>✅ You trust the auto-version calculation</li>
+<li>✅ You have enterprise-gh working</li>
+<li>⚠️ Currently has 404 error</li>
+</ul>
+<h3 id="use-bump-version-interactive.sh-if">Use
+<code>bump-version-interactive.sh</code> if:</h3>
+<ul>
+<li>✅ You want to see every step</li>
+<li>✅ You want to verify before each action</li>
+<li>✅ You’re learning the process</li>
+<li>✅ You want to skip certain steps</li>
+</ul>
+<h3 id="use-manual-bump-version.sh-if">Use
+<code>manual-bump-version.sh</code> if:</h3>
+<ul>
+<li>✅ You want automation but with checkpoints</li>
+<li>✅ You want to specify the version explicitly</li>
+<li>✅ You want to review changes before committing</li>
+</ul>
+<h3 id="use-manual-bump-reference.sh-if">Use
+<code>manual-bump-reference.sh</code> if:</h3>
+<ul>
+<li>✅ You want to run commands manually</li>
+<li>✅ You need a reference for what to do</li>
+<li>✅ You’re customizing the workflow</li>
+</ul>
+<h2 id="examples">Examples</h2>
+<h3 id="bump-to-v0.6.0-on-main-branch">Bump to v0.6.0 on main
+branch</h3>
+<p><strong>Interactive (recommended for first time):</strong></p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">./bump-version-interactive.sh</span> v0.6.0 main</span></code></pre></div>
+<p><strong>Semi-automated:</strong></p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">./manual-bump-version.sh</span> v0.6.0 main</span></code></pre></div>
+<p><strong>Fully automated (when 404 is fixed):</strong></p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">./bump-mrvacommander-version.sh</span> main</span></code></pre></div>
+<h3 id="bump-to-v0.6.1-on-development-branch">Bump to v0.6.1 on
+development branch</h3>
+<p><strong>Interactive:</strong></p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">./bump-version-interactive.sh</span> v0.6.1 mh-doc-version-2</span></code></pre></div>
+<p><strong>Semi-automated:</strong></p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">./manual-bump-version.sh</span> v0.6.1 mh-doc-version-2</span></code></pre></div>
+<h2 id="future-improvements">Future Improvements</h2>
+<ul class="task-list">
+<li><label><input type="checkbox" />Fix 404 error in
+<code>bump-mrvacommander-version.sh</code></label></li>
+<li><label><input type="checkbox" />Add dry-run mode to all
+scripts</label></li>
+<li><label><input type="checkbox" />Add rollback
+functionality</label></li>
+<li><label><input type="checkbox" />Validate that version doesn’t
+already exist</label></li>
+<li><label><input type="checkbox" />Check CI/CD status before
+tagging</label></li>
+<li><label><input type="checkbox" />Add support for major/minor version
+bumps</label></li>
+</ul>
+</body>
+</html>

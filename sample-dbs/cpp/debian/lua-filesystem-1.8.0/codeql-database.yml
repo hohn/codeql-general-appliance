@@ -1,0 +1,12 @@
+---
+sourceLocationPrefix: /build/lua-filesystem-1.8.0
+baselineLinesOfCode: 934
+unicodeNewlines: false
+columnKind: utf8
+primaryLanguage: cpp
+creationMetadata:
+  cliVersion: 2.23.8
+  creationTime: 2026-01-22T03:38:17.399358076Z
+overlayBaseDatabase: false
+overlayDatabase: false
+finalised: true

@@ -1,0 +1,112 @@
+#!/usr/bin/env bash
+#
+# srfi -- SARIF ingest convenience wrapper.
+#
+# A thin shell front-end around the tools under bin/ and scripts/:
+#
+#   srfi tolite   <name.sarif> [out.sqlite] [--user USER]
+#                                                -> name.sqlite (default: <stem>.sqlite)
+#   srfi toduck   <name> <a.sqlite> [b.sqlite ...] -> name.duckdb
+#   srfi showprob <name.[sqlite|duckdb]>      -> show all kind:problem results
+#   srfi showpath <name.[sqlite|duckdb]>      -> show all kind:path-problem results
+#
+# The show* subcommands pick sqlite3 or duckdb based on the file extension.
+set -euo pipefail
+
+SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(dirname "$SELF_DIR")"
+BIN_DIR="$ROOT_DIR/bin"
+SCRIPTS_DIR="$ROOT_DIR/scripts"
+
+usage() {
+    sed -n '3,12p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+    exit "${1:-0}"
+}
+
+die() { echo "srfi: $*" >&2; exit 1; }
+
+need_cmd() {
+    command -v "$1" >/dev/null 2>&1 || die "required command not found: $1"
+}
+
+# Pick a query engine ("sqlite3" or "duckdb") from a database file extension.
+engine_for() {
+    case "$1" in
+        *.sqlite) echo sqlite3 ;;
+        *.duckdb) echo duckdb ;;
+        *) die "unrecognized database extension (want .sqlite or .duckdb): $1" ;;
+    esac
+}
+
+# Run a scripts/*.sql query against a sqlite or duckdb database.
+run_query() {
+    local db="$1" sql="$2" engine
+    [ -f "$db" ] || die "database not found: $db"
+    engine="$(engine_for "$db")"
+    need_cmd "$engine"
+    case "$engine" in
+        sqlite3)
+            sqlite3 -header -column "$db" < "$sql"
+            ;;
+        duckdb)
+            duckdb "$db" < "$sql"
+            ;;
+    esac
+}
+
+cmd_tolite() {
+    [ $# -ge 1 ] || usage 1
+    local sarif="$1" out=""
+    shift
+    [ -f "$sarif" ] || die "SARIF input not found: $sarif"
+    if [ $# -gt 0 ] && [ "$1" != "--user" ]; then
+        out="$1"
+        shift
+    fi
+    if [ -z "$out" ]; then
+        local dir base
+        dir="$(dirname "$sarif")"
+        base="$(basename "$sarif")"
+        out="$dir/${base%.sarif}.sqlite"
+    fi
+    need_cmd python3
+    python3 "$BIN_DIR/sarif-results-sqlite" -o "$out" "$sarif" "$@"
+}
+
+cmd_toduck() {
+    [ $# -ge 2 ] || usage 1
+    local name="$1"; shift
+    local out="$name"
+    case "$out" in
+        *.duckdb) ;;
+        *) out="${out}.duckdb" ;;
+    esac
+    need_cmd python3
+    need_cmd duckdb
+    python3 "$BIN_DIR/sarif-cumulative" -o "$out" "$@"
+}
+
+cmd_showprob() {
+    [ $# -eq 1 ] || usage 1
+    run_query "$1" "$SCRIPTS_DIR/showprob.sql"
+}
+
+cmd_showpath() {
+    [ $# -eq 1 ] || usage 1
+    run_query "$1" "$SCRIPTS_DIR/showpath.sql"
+}
+
+main() {
+    [ $# -ge 1 ] || usage 1
+    local sub="$1"; shift
+    case "$sub" in
+        tolite)   cmd_tolite "$@" ;;
+        toduck)   cmd_toduck "$@" ;;
+        showprob) cmd_showprob "$@" ;;
+        showpath) cmd_showpath "$@" ;;
+        -h|--help|help) usage 0 ;;
+        *) die "unknown subcommand: $sub (try 'srfi --help')" ;;
+    esac
+}
+
+main "$@"

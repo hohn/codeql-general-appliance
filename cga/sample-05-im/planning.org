@@ -1,0 +1,124 @@
+* NEXT generalize cgast state propagation
+** Abstract Description
+  - These points refer to cga/sample-05-i. cga/sample-05-i is not to be changed;
+    This tree, cga/sample-05-im, can copy as needed.
+
+  - Problem: cgast state propagation in single-machine-mrva/cga gets complex when
+    applied to multi-run scenarios; branching and tracking state needs to be
+    addressed.
+
+  - For cga, the docs state:
+    Because stdout is only the CGAST, the components pipe together:
+    #+BEGIN_SRC sh 
+      submitted=$(
+        echo '{}' \
+          | cgadl getmeta db-collection.global/metadata.sql \
+          | cgadl select --user demo primary_language cpp \
+          | cgadl download --output-dir "$MRVA_DB_SERVE_DIR" \
+          | cgaql index ../sample-query \
+          | cgaql select --user demo language cpp \
+          | cgaql pack \
+          | cgamr submit --name demo-1 --user demo --language cpp
+      )
+    #+END_SRC
+
+  - The cgast flows though a pipe; if we consider intermediate states and
+    operations, we have, for example,
+    : cgadl < st01 > st02
+    : cgaql < st02 > st03
+    : cgamr < st03 > st04
+    In data flow form, this is just a chain / linked list
+    : st01 -> cgadl -> st02 -> cgaql -> st03 -> cgamr -> st04
+
+    #+HEADER: :file cga-chain.svg :exports results :results file
+    #+BEGIN_SRC dot
+      digraph chain {
+        rankdir=LR;
+        node [fontname="monospace"];
+        node [shape=ellipse]; st01; st02; st03; st04;
+        node [shape=box];     cgadl; cgaql; cgamr;
+        st01 -> cgadl -> st02 -> cgaql -> st03 -> cgamr -> st04;
+      }
+    #+END_SRC
+
+  - In actual use, there will be more than one chain.  We can have multiple
+    parallel chains, or even subtrees.
+    Thus, the flow topology is more complex.
+    let the numbered arguments to cga* denote distinct parameters.
+
+    - The parallel case 
+      : st01 -> cgadl 0 -> st02 -> cgaql 0 -> st03 -> cgamr 0 -> st04
+      : st11 -> cgadl 1 -> st12 -> cgaql 1 -> st13 -> cgamr 1 -> st14
+      : st21 -> cgadl 2 -> st22 -> cgaql 2 -> st23 -> cgamr 2 -> st24
+      : st31 -> cgadl 3 -> st32 -> cgaql 3 -> st33 -> cgamr 3 -> st34
+
+      #+HEADER: :file cga-parallel.svg :exports results :results file
+      #+BEGIN_SRC dot
+        digraph parallel {
+          rankdir=LR;
+          node [fontname="monospace"];
+          node [shape=box];
+          cgadl0 [label="cgadl 0"]; cgaql0 [label="cgaql 0"]; cgamr0 [label="cgamr 0"];
+          cgadl1 [label="cgadl 1"]; cgaql1 [label="cgaql 1"]; cgamr1 [label="cgamr 1"];
+          cgadl2 [label="cgadl 2"]; cgaql2 [label="cgaql 2"]; cgamr2 [label="cgamr 2"];
+          cgadl3 [label="cgadl 3"]; cgaql3 [label="cgaql 3"]; cgamr3 [label="cgamr 3"];
+          node [shape=ellipse];
+          st01 -> cgadl0 -> st02 -> cgaql0 -> st03 -> cgamr0 -> st04;
+          st11 -> cgadl1 -> st12 -> cgaql1 -> st13 -> cgamr1 -> st14;
+          st21 -> cgadl2 -> st22 -> cgaql2 -> st23 -> cgamr2 -> st24;
+          st31 -> cgadl3 -> st32 -> cgaql3 -> st33 -> cgamr3 -> st34;
+        }
+      #+END_SRC
+  
+    - A sample nested branch case.  
+      - First run is
+        : st01 -> cgadl 0 -> st02 -> cgaql 0 -> st03 -> cgamr 0 -> st04
+      - Then user refines the DB choice via cgadl.  
+        : st01 -> cgadl 1 -> st12 -> cgaql 0 -> st13 -> cgamr 0 -> st14
+      - Together, these form a tree.
+
+        #+HEADER: :file cga-tree1.svg :exports results :results file
+        #+BEGIN_SRC dot
+          digraph tree1 {
+            rankdir=LR;
+            node [fontname="monospace"];
+            node [shape=box];
+            cgadl0  [label="cgadl 0"]; cgaql0a [label="cgaql 0"]; cgamr0a [label="cgamr 0"];
+            cgadl1  [label="cgadl 1"]; cgaql0b [label="cgaql 0"]; cgamr0b [label="cgamr 0"];
+            node [shape=ellipse];
+            st01 -> cgadl0 -> st02 -> cgaql0a -> st03 -> cgamr0a -> st04;
+            st01 -> cgadl1 -> st12 -> cgaql0b -> st13 -> cgamr0b -> st14;
+          }
+        #+END_SRC
+
+    - Another nested branch case (case real01)
+      First run is
+      : st01 -> cgadl 0 -> st02 -> cgaql 0 -> st03 -> cgamr 0 -> st04
+      Then user refines the DB choice via cgadl.  This now yields a tree
+      : st01 -> cgadl 1 -> st12 -> cgaql 0 -> st13 -> cgamr 0 -> st14
+      Now additionally refine the query choice via cgaql
+      : st01 -> cgadl 1 -> st12 -> cgaql 1 -> st23 -> cgamr 0 -> st24
+      #+HEADER: :file cga-tree2.svg :exports results :results file
+      #+BEGIN_SRC dot
+        digraph tree2 {
+          rankdir=LR;
+          node [fontname="monospace"];
+          node [shape=box];
+          cgadl0  [label="cgadl 0"]; cgaql0a [label="cgaql 0"]; cgamr0a [label="cgamr 0"];
+          cgadl1  [label="cgadl 1"]; cgaql0b [label="cgaql 0"]; cgamr0b [label="cgamr 0"];
+          cgaql1  [label="cgaql 1"]; cgamr0c [label="cgamr 0"];
+          node [shape=ellipse];
+          st01 -> cgadl0 -> st02 -> cgaql0a -> st03 -> cgamr0a -> st04;
+          st01 -> cgadl1 -> st12 -> cgaql0b -> st13 -> cgamr0b -> st14;
+          st12 -> cgaql1 -> st23 -> cgamr0c -> st24;
+        }
+      #+END_SRC
+** Concrete sample of case real01
+   A sequential, no-pipe shell walk of case real01 lives in [[file:real01.sh]]
+   (with DB choices [[file:real01-dbs-0.sql]] / [[file:real01-dbs-1.sql]]). One
+   state file per dot-graph node (st01..st24); the tree forks at the shared
+   states st01 and st12. Single user bob. Prerequisite: sample-05-i infra up.
+
+# Local Variables:
+# org-confirm-babel-evaluate: nil
+# End:

@@ -1,0 +1,674 @@
+#!/usr/bin/env bash
+#
+# run-system-06 -- standalone AGENT TIMEOUT / RESPAWN e2e test.
+#
+# Axis under test: TIME. Specifically, that the worker pool scales to zero when
+# idle (agents self-terminate after their idle timeout) and then spawns FRESH
+# agents when new work arrives later. The DB/query/language choices are
+# irrelevant to what is tested; they only need to produce real jobs.
+#
+# Test axes:
+#   users              : 1        (alice)
+#   sessions per user  : 3        (session-1, session-2, session-3)
+#   packs              : 1 per session
+#   jobs per session   : 3 / 2 / 3
+#   workers            : multiple (MRVA_POOL_MAX_WORKERS defaults to 3 here)
+#   submission         : time-delayed; each next session is submitted only AFTER
+#                        the previous session's agents have timed out and exited.
+#
+# Scenario (phase_all):
+#   1. setup: preflight, reset, stage, build, start
+#   2. session-1 (cpp, 3 repos): submit, poll to done while sampling live agents
+#   3. wait for ALL agents to time out and EXIT (observe via `ps`/pgrep AND the
+#      server's /sysview/data worker states)
+#   4. sleep ~2s
+#   5. session-2 (python, 2 repos): submit, poll to done, sample agents
+#   6. wait for agents to exit
+#   7. sleep ~2s
+#   8. session-3 (cpp, 3 repos): submit, poll to done, sample agents
+#   9. wait for agents to exit
+#  10. verify: each session succeeded; each session was served by a NON-EMPTY,
+#      pairwise-DISJOINT set of agent PIDs (i.e. brand-new processes each time),
+#      the agent count returned to zero between sessions, and /sysview/data
+#      corroborates (workers reach the Exited state; no active workers remain).
+#
+# Verification uses two independent observers:
+#   - the host process table (`pgrep -x mrvaagent`), and
+#   - the server's live /sysview/data endpoint (worker status info).
+#
+# Like its siblings, this LEAVES the Go server running and Postgres populated on
+# exit (for `query`); run `cleanup` when done. Run ONE run-system-* at a time.
+#
+# Linux only. Run from the system-tests/ directory. Requires: go,
+# codeql >= 2.23.6, host PostgreSQL, python3, pgrep, jq.
+
+set -euo pipefail
+
+# --- independent on-disk identity --------------------------------------
+export MRVA_WORK_DIR="${MRVA_WORK_DIR:-/tmp/mrva-standalone-timeouts}"
+export RUN_TAG="${RUN_TAG:-timeouts}"
+
+# Storage backend is irrelevant to this test; default to the dependency-light
+# filesystem store (override with MRVA_STANDALONE_STORAGE=minio).
+export MRVA_STANDALONE_STORAGE="${MRVA_STANDALONE_STORAGE:-filesystem}"
+
+# --- knobs that make the timeout/respawn behavior observable -----------
+# Short idle timeout so agents exit soon after a session drains (but well above
+# the 2s claim-poll so a worker never exits mid-session). This flows to the
+# server and, via LocalArgoClient (which only injects its 30s default when the
+# var is UNSET), to the spawned agents.
+export MRVA_POOL_IDLE_TIMEOUT_SECONDS="${MRVA_POOL_IDLE_TIMEOUT_SECONDS:-8}"
+# Allow multiple concurrent workers so a multi-repo session spawns several.
+export MRVA_POOL_MAX_WORKERS="${MRVA_POOL_MAX_WORKERS:-3}"
+# Capture sysview snapshots for optional replay (sysview-view); on by default
+# here since the test is about observing agent state over time.
+export MRVA_DBG_DUMP_SYSVIEW="${MRVA_DBG_DUMP_SYSVIEW:-1}"
+
+# Seconds to pause after agents exit before submitting the next session.
+INTER_SESSION_SLEEP="${INTER_SESSION_SLEEP:-2}"
+
+# shellcheck source=standalone-multi-agent-lib.sh
+. "$(dirname "$0")/standalone-multi-agent-lib.sh"
+
+load_state
+
+# ---- One-user, three-session scenario ---------------------------------
+#
+# Each entry is a SESSION with a NAME used on the command line and as the
+# state-file key suffix. All sessions belong to the same user (alice).
+SUBMISSIONS=(session-1 session-2 session-3)
+
+declare -A SUB_USER SUB_LANG SUB_QUERY SUB_REPOS
+SUB_USER[session-1]="alice"
+SUB_LANG[session-1]="cpp"
+SUB_QUERY[session-1]="../../sample-query/ReturnValueIgnored.ql"
+SUB_REPOS[session-1]="debian/iniparser-4.1 debian/libgmpada-1.5 debian/libjsonparser-1.1.0"
+
+SUB_USER[session-2]="alice"
+SUB_LANG[session-2]="python"
+SUB_QUERY[session-2]="../../sample-query/python/ToDoComment.ql"
+SUB_REPOS[session-2]="asweigart/pyperclip benjaminp/six"
+
+SUB_USER[session-3]="alice"
+SUB_LANG[session-3]="cpp"
+SUB_QUERY[session-3]="../../sample-query/DeadCodeCondition.ql"
+SUB_REPOS[session-3]="debian/lua-filesystem-1.8.0 debian/mate-terminal-1.26.0 debian/tolua-5.2.4-0.1"
+
+# Union of all sessions' repos (deduplicated) -- what needs staging on disk.
+_all_repos() {
+    local n
+    for n in "${SUBMISSIONS[@]}"; do
+        printf '%s\n' ${SUB_REPOS[$n]}
+    done
+}
+mapfile -t STAGE_REPOS < <(_all_repos | sort -u)
+
+# Map each repo (owner/repo) to its language for staging under
+# $SAMPLE_DB_ROOT/<language>/<owner>/<repo>.
+declare -A REPO_LANG
+for _n in "${SUBMISSIONS[@]}"; do
+    for _r in ${SUB_REPOS[$_n]}; do REPO_LANG["$_r"]="${SUB_LANG[$_n]}"; done
+done
+
+# Total jobs across all sessions (informational).
+NJOBS_TOTAL=0
+for _n in "${SUBMISSIONS[@]}"; do
+    # shellcheck disable=SC2206
+    _arr=(${SUB_REPOS[$_n]})
+    NJOBS_TOTAL=$(( NJOBS_TOTAL + ${#_arr[@]} ))
+done
+
+# Record the phase that just ran, so `where` can point at the current step.
+_mark() { CURRENT_PHASE="$1"; save_state CURRENT_PHASE "$1"; }
+
+# --- helpers -----------------------------------------------------------
+
+# Sanitize a session name into a shell-safe state-file key suffix
+# (session-1 -> session_1).
+_key_suffix() { printf '%s' "${1//[^A-Za-z0-9]/_}"; }
+_state_key()  { printf 'SID_%s'  "$(_key_suffix "$1")"; }
+_gen_key()    { printf 'GEN_%s'  "$(_key_suffix "$1")"; }
+
+_get_sid() {
+    load_state
+    local key; key="$(_state_key "$1")"
+    printf '%s' "${!key:-}"
+}
+
+_require_submission() {
+    local name="$1" n
+    for n in "${SUBMISSIONS[@]}"; do
+        [ "$n" = "$name" ] && return 0
+    done
+    echo "ERROR: unknown session '${name}' (known: ${SUBMISSIONS[*]})" >&2
+    return 2
+}
+
+# --- observers ---------------------------------------------------------
+
+# Live agent PIDs (the standalone agents spawned by the server). `pgrep -x`
+# matches the exact process name so it never picks up the mrvaserver itself.
+# NOTE: pgrep exits 1 when there is no match; with `set -o pipefail` that would
+# abort the script, so every observer helper below is written to always exit 0.
+_agent_pids() {
+    local pids
+    pids="$(pgrep -x mrvaagent 2>/dev/null | sort -n | tr '\n' ' ' | sed 's/ *$//')" || true
+    printf '%s' "$pids"
+}
+_agent_count() {
+    local pids; pids="$(_agent_pids)"
+    if [ -z "$pids" ]; then echo 0; else printf '%s\n' "$pids" | wc -w | tr -d ' '; fi
+}
+
+# Fetch the server's live sysview snapshot (open in standalone).
+_sysview_json() {
+    local out; out="$(curl -sf "$SERVER/sysview/data" 2>/dev/null)" || true
+    [ -n "$out" ] && printf '%s' "$out" || printf '%s' '{}'
+}
+
+# Human-readable worker-status summary from /sysview/data. Worker status codes:
+# 0=idle 1=busy 2=draining 3=exited. Prints e.g. "workers: total=3 idle=0
+# busy=0 exited=3 active=0".
+_sysview_worker_summary() {
+    _sysview_json | jq -r '
+      (.workers // []) as $w
+      | { total: ($w|length),
+          idle:   ([$w[]|select(.status==0)]|length),
+          busy:   ([$w[]|select(.status==1)]|length),
+          drain:  ([$w[]|select(.status==2)]|length),
+          exited: ([$w[]|select(.status==3)]|length) }
+      | "workers: total=\(.total) idle=\(.idle) busy=\(.busy) drain=\(.drain) exited=\(.exited) active=\(.idle+.busy)"
+    ' 2>/dev/null || echo "workers: (sysview unavailable)"
+}
+
+# Count of active (idle+busy) workers per /sysview/data.
+_sysview_active_workers() {
+    _sysview_json | jq -r '[(.workers // [])[]|select(.status==0 or .status==1)]|length' 2>/dev/null || echo "?"
+}
+
+# Fetch a session's overall status string via CGA (quietly).
+_fetch_overall() {
+    cga_status_json "$1" | jq -r '.status'
+}
+
+# ======================================================================
+# Global setup phases (adapted from the sibling harnesses)
+# ======================================================================
+
+phase_preflight() {
+    echo "--- preflight ---"
+    if [ -z "$CODEQL_CLI_PATH" ]; then
+        echo "ERROR: codeql not found on PATH"; exit 1
+    fi
+    codeql version --format=terse | sed 's/^/codeql version: /'
+    go version | sed 's/^/go version: /'
+    for tool in pgrep jq; do
+        command -v "$tool" >/dev/null || { echo "ERROR: '$tool' required but not found"; exit 1; }
+    done
+
+    pg_ensure_running
+    pg_isready -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" | sed 's/^/pg_isready: /'
+    pg_ensure_role_db
+
+    # Reclaim the server port via the ss-based helper (robust; no lsof needed).
+    local p
+    for p in $(pids_on_port "$PORT"); do
+        echo "killing stale process on port ${PORT}: ${p}"
+        kill "$p" 2>/dev/null || true
+    done
+    minio_reclaim_port
+    db_server_reclaim_port
+}
+
+phase_reset() {
+    echo "--- reset (clean slate) ---"
+    psql_mrva -q -c "
+DROP TABLE IF EXISTS $(IFS=,; echo "${MRVA_TABLES[*]}") CASCADE;
+DROP SEQUENCE IF EXISTS $(IFS=,; echo "${MRVA_SEQUENCES[*]}") CASCADE;
+" >/dev/null
+    rm -rf "$MRVA_WORK_DIR" "$MRVA_TMP_DIR"
+    mkdir -p "$MRVA_ARTIFACT_DIR" "$MRVA_QLDB_DIR" "$MRVA_DB_SERVE_DIR" "$MRVA_TMP_DIR"
+    echo "  dropped tables; wiped ${MRVA_WORK_DIR} and transient files"
+}
+
+phase_stage() {
+    echo "--- staging ${#STAGE_REPOS[@]} CodeQL DBs (union of all sessions) ---"
+    local repo name owner lang src
+    for repo in "${STAGE_REPOS[@]}"; do
+        name="$(basename "$repo")"; owner="$(dirname "$repo")"; lang="${REPO_LANG[$repo]}"
+        src="${SAMPLE_DB_ROOT}/${lang}/${owner}/${name}"
+        if [ ! -d "$src" ]; then
+            local zipf="${src}.zip" tmpd bundle
+            if [ ! -f "$zipf" ]; then
+                echo "ERROR: neither DB dir nor zip found for ${repo}" >&2
+                echo "  looked for: $src  and  $zipf" >&2; exit 1
+            fi
+            echo "  extracting ${zipf##*/}"
+            tmpd="$(mktemp -d "${TMPDIR:-/tmp}/mrva-db.XXXXXX")"
+            unzip -q "$zipf" -d "$tmpd"
+            bundle="$(find "$tmpd" -mindepth 1 -maxdepth 1 -type d | head -1)"
+            [ -z "$bundle" ] && { echo "ERROR: ${zipf} contained no top-level dir" >&2; rm -rf "$tmpd"; exit 1; }
+            mv "$bundle" "$src"; rm -rf "$tmpd"
+        fi
+        mkdir -p "$MRVA_DB_SERVE_DIR/${owner}/${name}"
+        cga db zip --db-dir "$src" \
+            --output "$MRVA_DB_SERVE_DIR/${owner}/${name}/${owner}_${name}_db.zip"
+        echo "  staged ${repo} (${lang})"
+    done
+    find "$MRVA_DB_SERVE_DIR" -name '*_db.zip' -exec ls -lh {} \;
+}
+
+phase_build() {
+    echo "--- building server + agent ---"
+    make -s -C ../../server-commander mrvaserver mrvaagent
+}
+
+phase_start() {
+    echo "--- starting Go server on :${PORT} (no Docker) ---"
+    echo "  idle_timeout=${MRVA_POOL_IDLE_TIMEOUT_SECONDS}s  max_workers=${MRVA_POOL_MAX_WORKERS}  storage=${MRVA_STANDALONE_STORAGE}"
+    minio_start
+    db_server_start
+    nohup ../../server-commander/mrvaserver --mode=standalone --loglevel=info \
+        --dbpath="$MRVA_QLDB_DIR" \
+        ${MRVA_DBG_DUMP_SYSVIEW:+--dbg-dump-sysview} \
+        > "$SERVER_LOG" 2>&1 &
+    SERVER_PID=$!
+    echo "$SERVER_PID" > "$SERVER_PID_FILE"
+    save_state SERVER_PID "$SERVER_PID"
+    [ -n "${MRVA_DBG_DUMP_SYSVIEW:-}" ] && save_state SYSVIEW_DUMP_PATH "$SYSVIEW_DUMP_PATH"
+
+    local _
+    for _ in $(seq 1 20); do
+        curl -sf "$SERVER/" >/dev/null 2>&1 && break
+        sleep 0.5
+    done
+    if ! curl -sf "$SERVER/" >/dev/null 2>&1; then
+        echo "ERROR: server did not come up. Tail:"; tail -30 "$SERVER_LOG"; exit 1
+    fi
+    echo "  server up (pid ${SERVER_PID})"
+}
+
+# ======================================================================
+# Parameterized phases (take a session name)
+# ======================================================================
+
+phase_pack() {
+    local name="$1"; _require_submission "$name"
+    local query="${SUB_QUERY[$name]}" language="${SUB_LANG[$name]}"
+    local out="${MRVA_WORK_DIR}/query-pack-${name}.tgz"
+    mkdir -p "$MRVA_WORK_DIR"
+    echo "--- pack ${name}: build ${language} pack from ${query##*/} -> ${out##*/} ---"
+    cga_pack_query "$query" "$out" >> "$REQ_LOG" 2>&1
+    ls -lh "$out"
+    echo "  ${out##*/} sha1=$(sha1sum "$out" | awk '{print $1}')"
+}
+
+phase_submit() {
+    local name="$1"; _require_submission "$name"
+    local user="${SUB_USER[$name]}" language="${SUB_LANG[$name]}"
+    local pack="${MRVA_WORK_DIR}/query-pack-${name}.tgz"
+    # shellcheck disable=SC2206
+    local repos=(${SUB_REPOS[$name]})
+    if [ ! -f "$pack" ]; then
+        echo "ERROR: pack for ${name} not built; run: $(basename "$0") pack ${name}" >&2; exit 1
+    fi
+    echo "--- submit ${name} (user=${user}, ${language}): ${#repos[@]} repos, pack ${pack##*/} ---"
+    printf '    %s\n' "${repos[@]}"
+
+    local out_json="${SUBMIT_JSON%.json}-${name}.json"
+    cga_submit "$name" "$user" "$language" "$pack" "$SERVER" "${repos[@]}" > "$out_json"
+    cat "$out_json"; echo
+    local sid
+    sid="$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['id'])" "$out_json")"
+    echo "${name} session=${sid}"
+    save_state "$(_state_key "$name")" "$sid"
+}
+
+# --- run-session <name>: submit, then poll to done while sampling the live
+# agent processes serving this session. The union of agent PIDs observed while
+# the session is active is saved as this session's "generation" (GEN_<name>).
+phase_run_session() {
+    local name="$1"; _require_submission "$name"
+    phase_submit "$name"; echo
+    local sid; sid="$(_get_sid "$name")"
+    echo "--- run-session ${name} (session ${sid}): poll to done, sampling agents ---"
+    local deadline overall="" seen="" now_pids
+    deadline=$(( $(date +%s) + POLL_DEADLINE_SECS ))
+    while true; do
+        now_pids="$(_agent_pids)"
+        if [ -n "$now_pids" ]; then seen="${seen} ${now_pids}"; fi
+        overall="$(_fetch_overall "$name")"
+        printf '  [%s] overall=%-12s agents=[%s]  %s\n' \
+            "$(date +%T)" "${overall:-?}" "$now_pids" "$(_sysview_worker_summary)"
+        case "$overall" in succeeded|failed|cancelled) break ;; esac
+        if [ "$(date +%s)" -ge "$deadline" ]; then echo "  -> TIMEOUT after ${POLL_DEADLINE_SECS}s"; break; fi
+        sleep 1
+    done
+    # Deduplicate the observed PIDs into this session's generation. Stored
+    # comma-joined so the value is a single token that survives `. state.env`.
+    local gen; gen="$(printf '%s\n' $seen | sed '/^$/d' | sort -un | tr '\n' ' ' | sed 's/ *$//')"
+    save_state "$(_gen_key "$name")" "${gen// /,}"
+    echo "  ${name} final overall=${overall}"
+    echo "  ${name} agent generation (PIDs observed alive): [${gen:-<none>}]"
+}
+
+# --- wait-exit: block until every agent has timed out and exited, observing
+# both the host process table and /sysview/data. Returns 0 iff the agent count
+# reached zero within the deadline.
+phase_wait_exit() {
+    local budget="${1:-$(( MRVA_POOL_IDLE_TIMEOUT_SECONDS + 30 ))}"
+    local deadline; deadline=$(( $(date +%s) + budget ))
+    echo "--- wait-exit: waiting up to ${budget}s for agents to time out and exit ---"
+    local cnt
+    while true; do
+        cnt="$(_agent_count)"
+        printf '  [%s] live mrvaagent procs=%s  %s\n' \
+            "$(date +%T)" "$cnt" "$(_sysview_worker_summary)"
+        if [ "$cnt" -eq 0 ]; then
+            echo "  -> all agents have exited (ps confirms 0; sysview active=$(_sysview_active_workers))"
+            return 0
+        fi
+        if [ "$(date +%s)" -ge "$deadline" ]; then
+            echo "  -> TIMEOUT: ${cnt} agent(s) still alive after ${budget}s"
+            pgrep -ax mrvaagent 2>/dev/null | sed 's/^/    /' || true
+            return 1
+        fi
+        sleep 1
+    done
+}
+
+# --- agents: one-shot snapshot of the current agent processes + sysview -----
+phase_agents() {
+    echo "--- agents snapshot ---"
+    echo "  host process table (pgrep -ax mrvaagent):"
+    pgrep -ax mrvaagent 2>/dev/null | sed 's/^/    /' || echo "    (none)"
+    echo "  $(_sysview_worker_summary)"
+    echo "  sysview workers detail:"
+    _sysview_json | jq -r '(.workers // [])[] | "    \(.worker_id)  status=\(.status)  job=\(.current_job)  done=\(.jobs_completed)  hb=\(.hb_age_s)s"' 2>/dev/null \
+        || echo "    (sysview unavailable)"
+}
+
+# ======================================================================
+# Scripted run + verify
+# ======================================================================
+
+# Shared error scan (benign mrva-project-resolver warnings excluded).
+_error_check() {
+    if grep -E "ERROR|panic|fatal" "$SERVER_LOG" 2>/dev/null \
+         | grep -v 'mrva-project-resolver' >/dev/null; then
+        echo "errors (excluding benign mrva-project-resolver):"
+        grep -E "ERROR|panic|fatal" "$SERVER_LOG" | grep -v 'mrva-project-resolver' | head -10
+        return 1
+    fi
+    echo "NO ERRORS (mrva-project-resolver warnings are benign on dev hosts)"
+    return 0
+}
+
+phase_logs() {
+    echo "--- server log tail ---"; tail -25 "$SERVER_LOG"
+    echo "--- errors in server log ---"; _error_check || true
+}
+
+# --- all: the time-delayed, timeout-driven interaction -----------------
+phase_all() {
+    phase_preflight; echo
+    phase_reset;     echo
+    phase_stage;     echo
+    phase_build;     echo
+    phase_start;     echo
+
+    local name
+    for name in "${SUBMISSIONS[@]}"; do
+        phase_pack "$name"; echo
+    done
+
+    # Baseline: no agents before any submission.
+    echo "--- baseline (pre-submission) ---"
+    phase_agents; echo
+
+    local first=1
+    for name in "${SUBMISSIONS[@]}"; do
+        if [ "$first" -eq 0 ]; then
+            echo "--- inter-session pause: sleep ${INTER_SESSION_SLEEP}s (agents already exited) ---"
+            sleep "$INTER_SESSION_SLEEP"; echo
+        fi
+        first=0
+
+        phase_run_session "$name"; echo
+        # Core of the test: after this session drains, its agents must time out
+        # and exit before we submit the next one.
+        phase_wait_exit || echo "  WARNING: not all agents exited for ${name}"
+        echo
+    done
+
+    phase_logs; echo
+    phase_verify
+}
+
+# --- verify: timeout/respawn PASS/FAIL gate ----------------------------
+#
+# Gates:
+#   (a) every session got a session id (submit worked),
+#   (b) the STATUS request returned "succeeded" for each session,
+#   (c) each session was served by a NON-EMPTY set of agent PIDs (agents were
+#       spawned on demand),
+#   (d) the agent generations are pairwise DISJOINT (each session ran on FRESH
+#       processes -> agents genuinely exited and respawned across the timeouts),
+#   (e) at the end, /sysview/data shows NO active workers (idle+busy == 0), and
+#       at least one worker in the Exited state, corroborating (c)/(d), and
+#   (f) no real server errors.
+phase_verify() {
+    load_state
+    echo "--- verify (agent timeout / respawn) ---"
+    local name sid ok=1
+    local n_sids=0 n_done=0 n_gen_nonempty=0
+    local all_pids="" disjoint=1
+
+    for name in "${SUBMISSIONS[@]}"; do
+        sid="$(_get_sid "$name")"
+        if [ -n "$sid" ]; then n_sids=$(( n_sids + 1 ))
+        else echo "  MISSING session id for ${name}"; ok=0; continue; fi
+
+        local overall; overall="$(_fetch_overall "$name")"
+        if [ "$overall" = "succeeded" ]; then n_done=$(( n_done + 1 ))
+        else echo "  ${name}: overall '${overall}' (want succeeded)"; ok=0; fi
+
+        local gk; gk="$(_gen_key "$name")"; load_state
+        local gen="${!gk:-}"; gen="${gen//,/ }"
+        local ngen; ngen="$(printf '%s\n' $gen | sed '/^$/d' | wc -l | tr -d ' ')"
+        if [ "$ngen" -gt 0 ]; then n_gen_nonempty=$(( n_gen_nonempty + 1 ))
+        else echo "  ${name}: NO agents observed (expected >=1)"; ok=0; fi
+        echo "  ${name}: status=${overall} agents=${ngen} [${gen}]"
+
+        # Disjointness check against everything seen so far.
+        local p
+        for p in $gen; do
+            case " $all_pids " in
+                *" $p "*) echo "  overlap: PID ${p} reused across sessions"; disjoint=0 ;;
+            esac
+        done
+        all_pids="${all_pids} ${gen}"
+    done
+
+    # sysview corroboration.
+    local active exited
+    active="$(_sysview_active_workers)"
+    exited="$(_sysview_json | jq -r '[(.workers // [])[]|select(.status==3)]|length' 2>/dev/null || echo '?')"
+    echo
+    echo "  sysview: $(_sysview_worker_summary)"
+
+    local log_err; if _error_check; then log_err=0; else log_err=1; fi
+
+    echo
+    echo "sessions: ${SUBMISSIONS[*]} (user: ${SUB_USER[session-1]})"
+    echo "session ids obtained:                 ${n_sids}/${#SUBMISSIONS[@]}"
+    echo "sessions succeeded (status request):  ${n_done}/${#SUBMISSIONS[@]}"
+    echo "sessions with agents spawned:         ${n_gen_nonempty}/${#SUBMISSIONS[@]}"
+    echo "agent generations pairwise disjoint:  $([ "$disjoint" -eq 1 ] && echo yes || echo NO)"
+    echo "sysview active workers at end:        ${active} (want 0)"
+    echo "sysview exited workers at end:        ${exited} (want >=1)"
+    echo "server still running (pid $(cat "$SERVER_PID_FILE" 2>/dev/null)); Postgres left populated."
+    echo "  inspect:   ./$(basename "$0") query   (or agents)"
+    echo "  tear down: ./$(basename "$0") cleanup"
+
+    if [ "$ok" -eq 1 ] \
+       && [ "$n_sids" -eq "${#SUBMISSIONS[@]}" ] \
+       && [ "$n_done" -eq "${#SUBMISSIONS[@]}" ] \
+       && [ "$n_gen_nonempty" -eq "${#SUBMISSIONS[@]}" ] \
+       && [ "$disjoint" -eq 1 ] \
+       && [ "$active" = "0" ] \
+       && [ "$exited" != "0" ] && [ "$exited" != "?" ] \
+       && [ "$log_err" -eq 0 ]; then
+        echo "PASS: all ${#SUBMISSIONS[@]} sessions succeeded; each ran on a fresh, disjoint set of agents"
+        echo "      that timed out and exited between sessions (agents respawned after timeouts);"
+        echo "      /sysview/data corroborates (0 active, ${exited} exited)."
+        return 0
+    fi
+    echo "FAIL: sids=${n_sids} done=${n_done} spawned=${n_gen_nonempty} disjoint=${disjoint} active=${active} exited=${exited} log_err=${log_err}"
+    return 1
+}
+
+# --- query / cleanup / stop --------------------------------------------
+phase_query()   { exec "$(dirname "$0")/query-standalone-multi-agent-e2e.sh"; }
+phase_cleanup() { exec "$(dirname "$0")/cleanup-standalone-multi-agent-e2e.sh"; }
+
+phase_stop() {
+    load_state
+    echo "--- stopping Go server (keeping state) ---"
+    local pid seen_pids="" stale_pids p
+    for pid in "${SERVER_PID:-}" "$(cat "$SERVER_PID_FILE" 2>/dev/null || true)"; do
+        [ -n "$pid" ] || continue
+        case " $seen_pids " in *" $pid "*) continue ;; esac
+        seen_pids="${seen_pids} ${pid}"
+        if kill "$pid" 2>/dev/null; then echo "  stopped server pid ${pid}"; fi
+    done
+    stale_pids="$(pids_on_port "$PORT")"
+    for p in $stale_pids; do kill "$p" 2>/dev/null && echo "  stopped stale pid ${p} on :${PORT}"; done
+    # Any lingering agents from an interrupted run.
+    for p in $(pgrep -x mrvaagent 2>/dev/null || true); do
+        kill "$p" 2>/dev/null && echo "  stopped lingering agent pid ${p}"
+    done
+    db_server_stop
+    minio_stop
+    rm -f "$SERVER_PID_FILE"
+    echo "  done (tables + work dir kept; restart with 'start')"
+}
+
+phase_where() {
+    load_state
+    echo "run-system-06: agent timeout / respawn test"
+    echo "  sessions: ${SUBMISSIONS[*]} (user ${SUB_USER[session-1]})"
+    echo "  last phase: ${CURRENT_PHASE:-<none>}"
+    echo "  global:   preflight reset stage build start"
+    echo "  per-name: pack <n>  submit <n>  run-session <n>"
+    echo "  observe:  agents   wait-exit"
+    echo "  meta:     all verify logs stop query cleanup"
+}
+
+# ======================================================================
+# Dispatch
+# ======================================================================
+usage() {
+    cat <<USAGE
+Usage: $(basename "$0") [COMMAND ...]
+
+Standalone AGENT TIMEOUT / RESPAWN e2e test. One user (alice), three sessions
+submitted with time delays: each next session is submitted only AFTER the
+previous session's agents have timed out and exited. Verifies the pool scales to
+zero when idle and spawns FRESH agents for later work.
+
+Sessions: ${SUBMISSIONS[*]}
+  session-1: ${SUB_LANG[session-1]} repos=[${SUB_REPOS[session-1]}]
+  session-2: ${SUB_LANG[session-2]} repos=[${SUB_REPOS[session-2]}]
+  session-3: ${SUB_LANG[session-3]} repos=[${SUB_REPOS[session-3]}]
+
+Key knobs (env, current defaults):
+  MRVA_POOL_IDLE_TIMEOUT_SECONDS=${MRVA_POOL_IDLE_TIMEOUT_SECONDS}   agent idle timeout
+  MRVA_POOL_MAX_WORKERS=${MRVA_POOL_MAX_WORKERS}                concurrent workers
+  INTER_SESSION_SLEEP=${INTER_SESSION_SLEEP}                  pause after agents exit
+
+Global phases (no argument):
+  preflight | pre      check codeql/go/pgrep/jq, ensure Postgres, free the port
+  reset | clean-slate  drop mrva tables, wipe work dir + logs
+  stage                stage the union of all sessions' CodeQL DBs
+  build                build mrvaserver + mrvaagent
+  start                launch the Go server in --mode=standalone
+
+Per-session commands (take a session NAME, e.g. session-1):
+  pack <name>          build that session's query pack
+  submit <name>        POST that session (records its session id)
+  run-session <name>   submit + poll to done while sampling live agents
+
+Observers:
+  agents               one-shot snapshot: mrvaagent procs + /sysview/data
+  wait-exit            block until all agents time out and exit (ps + sysview)
+
+Meta:
+  all                  full scripted timeout/respawn interaction + verify
+  verify               final PASS/FAIL gate (exit code reflects result)
+  logs                 tail the server log + scan for errors
+  where | -w           show the command groups
+  query                dump Postgres state (query-*.sh)
+  stop                 stop the server (+agents/minio/db-server), keep state
+  cleanup              stop + drop tables + remove work dir (cleanup-*.sh)
+  -h | --help | help   show this help
+
+Examples:
+  $(basename "$0") all
+  $(basename "$0") run-session session-1 wait-exit agents
+USAGE
+}
+
+_takes_name() {
+    case "$1" in
+        pack|submit|run-session|run_session) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+dispatch_one() {
+    local token="$1" arg="${2:-}"
+    case "$token" in
+        preflight|pre)           phase_preflight ;;
+        reset|clean-slate|clean) phase_reset ;;
+        stage)                   phase_stage ;;
+        build)                   phase_build ;;
+        start)                   phase_start ;;
+        pack)                    phase_pack "$arg" ;;
+        submit)                  phase_submit "$arg" ;;
+        run-session|run_session) phase_run_session "$arg" ;;
+        agents)                  phase_agents ;;
+        wait-exit|wait_exit)     phase_wait_exit ;;
+        logs)                    phase_logs ;;
+        verify)                  phase_verify; return ;;
+        all)                     phase_all; return ;;
+        query)                   phase_query; return ;;
+        stop)                    phase_stop; return ;;
+        cleanup)                 phase_cleanup; return ;;
+        -h|--help|help)          usage; return ;;
+        -w|--where|where)        phase_where; return ;;
+        *)
+            echo "unknown command: $token" >&2
+            echo "try: $(basename "$0") -h" >&2
+            return 2 ;;
+    esac
+    _mark "$token"
+}
+
+main() {
+    if [ "$#" -eq 0 ]; then usage; return; fi
+    while [ "$#" -gt 0 ]; do
+        local token="$1"; shift
+        if _takes_name "$token"; then
+            if [ "$#" -eq 0 ]; then
+                echo "ERROR: '${token}' requires a session name (${SUBMISSIONS[*]})" >&2; exit 2
+            fi
+            dispatch_one "$token" "$1"; shift
+        else
+            dispatch_one "$token"
+        fi
+        echo
+    done
+}
+
+main "$@"

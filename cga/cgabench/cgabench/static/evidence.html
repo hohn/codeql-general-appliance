@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Session evidence | CGA Bench</title>
+    <link rel="stylesheet" href="bench.css" />
+    <script src="evidence.js" defer></script>
+  </head>
+  <body class="evidence-window">
+    <header><h1 id="evidence-title">Session evidence</h1></header>
+    <section class="session-evidence-panel" aria-label="Read-only evidence SQL">
+      <p id="evidence-schema"></p>
+      <p>
+        Run one SELECT or WITH query over this session's retained evidence.
+        Writes and external filesystem/network access are disabled.
+        Each query times out after 15 seconds.
+      </p>
+      <div id="findings-controls" hidden>
+        <form id="result-filters">
+          <label>Repository<select name="file_name"><option value="">All repositories</option></select></label>
+          <label>Rule ID<input name="rule_id" /></label>
+          <label>Kind<input name="kind" placeholder="problem" /></label>
+          <label>File URI<input name="uri" /></label>
+          <label>Start line<input name="start_line" type="number" min="0" step="1" /></label>
+          <div class="actions">
+            <button>Apply exact-match filters</button>
+            <button id="clear-result-filters" type="button">Clear filters</button>
+          </div>
+        </form>
+        <p>
+          Nonempty filters are combined with AND. Matches are exact and case-sensitive.
+          Running SQL replaces this filtered view; applying filters switches back to search.
+        </p>
+      </div>
+      <form id="evidence-sql">
+        <label>SQL<textarea name="sql" rows="6" spellcheck="false" required></textarea></label>
+        <div class="actions">
+          <button>Run read-only SQL</button>
+          <button id="evidence-reset" type="button">Show all rows</button>
+        </div>
+        <div id="findings-editor" hidden>
+          <button id="open-editor" type="button">Open VS Code</button>
+          <p id="editor-status" role="status"></p>
+        </div>
+      </form>
+      <p id="evidence-status" role="status"></p>
+      <p id="evidence-error" role="alert"></p>
+      <div class="table-scroll">
+        <table aria-label="Evidence query results">
+          <thead id="evidence-head"></thead>
+          <tbody id="evidence-rows"></tbody>
+        </table>
+      </div>
+      <div class="actions">
+        <button id="evidence-previous" type="button" disabled>Previous</button>
+        <button id="evidence-next" type="button" disabled>Next</button>
+      </div>
+    </section>
+  </body>
+</html>

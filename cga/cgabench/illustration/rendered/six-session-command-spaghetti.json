@@ -1,0 +1,14 @@
+{
+  "title": "Commands: one long thread",
+  "source": "six-session-shell-equivalent.sh",
+  "source_sha256": "ff6e7433a7685e26156fe5d6acfec8ed532be1868ab12dcb30aa92cd7cb3914a",
+  "source_lines": 354,
+  "page_points": [
+    2384.0,
+    3370.0
+  ],
+  "font_points": 8.874569120023484,
+  "path_length_points": 70180.2214790655,
+  "text_end_points": 70130.22147907775,
+  "path_subpaths": 1
+}

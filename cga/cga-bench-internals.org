@@ -1,0 +1,143 @@
+#+TITLE: CGA Bench Internals
+
+* Starting the UI
+
+The normal command that serves the CGA Bench UI at
+http://127.0.0.1:8610/ is:
+
+#+BEGIN_SRC sh
+cga -C cgabench/my-bench bench serve
+#+END_SRC
+
+The current live instance was started without automatic service management:
+
+#+BEGIN_SRC sh
+cga -C cgabench/my-bench bench serve --no-services
+#+END_SRC
+
+The command definitions are spread across several files.  The complete
+=cga bench= command vocabulary is registered in one dispatcher line at
+=cga/cga:47= and parsed in =cga/cgabench/cgabench/cli.py=.
+
+* Human UI actions
+
+| UI control                 | Effective command                                                                                   |
+|----------------------------+-----------------------------------------------------------------------------------------------------|
+| Add session                | =cga bench session=                                                                                 |
+| Prepare services           | =cga bench infrastructure setup=                                                                    |
+| Check services             | =cga bench infrastructure check=                                                                    |
+| Stop services              | =cga bench infrastructure stop=                                                                     |
+| Maintenance: preflight     | =cga bench infrastructure preflight=                                                                |
+| Maintenance: reset         | =cga bench infrastructure reset=                                                                    |
+| Maintenance: rebuild       | =cga bench infrastructure build=                                                                    |
+| Maintenance: cleanup       | =cga bench infrastructure cleanup=                                                                  |
+| Load database catalogue    | =cga bench catalogue PATH --session N=                                                              |
+| Import built catalogue     | =cga bench catalogue PATH --source user --session N=                                                |
+| Index query library        | =cga bench library DIRECTORY --session N=                                                           |
+| Use selected databases     | =cga bench choose-databases --session N --generation HASH --source list\vert{}user --rows ...=       |
+| Use selected query         | =cga bench choose-query --session N --generation HASH --source list\vert{}user --rows ...=           |
+| Create query workspace     | =cga bench create-query --session N --directory DIR --name NAME --language LANG=                     |
+| Save query                 | =cga bench edit-query --session N --source SOURCE=                                                   |
+| Continue / Check progress  | =cga bench advance --session N=                                                                      |
+| Record development note    | =cga bench work --session N --stage D\vert{}Q --note NOTE=                                           |
+| Compare selected sessions  | =cga bench compare N ...=                                                                            |
+
+* Commands invoked underneath
+
+Some =cga bench= commands orchestrate other CGA components.
+
+** Infrastructure
+
+#+BEGIN_SRC sh
+cga local-mrva preflight
+cga local-mrva reset
+cga local-mrva build
+cga local-mrva start
+cga local-mrva check
+cga local-mrva stop
+cga local-mrva cleanup
+#+END_SRC
+
+** Database preparation
+
+#+BEGIN_SRC sh
+cga db-lib getmeta PATH
+cga db-lib download --force [--output-dir DIR]
+#+END_SRC
+
+** Query preparation
+
+#+BEGIN_SRC sh
+cga query-lib index DIRECTORY
+cga query-lib pack
+#+END_SRC
+
+** Analysis lifecycle
+
+#+BEGIN_SRC sh
+cga mrva-request submit --name NAME --user USER
+cga mrva-request status --name NAME
+cga mrva-request download --name NAME
+cga mrva-request verify NAME
+cga sarif-ingest ingest --name NAME
+#+END_SRC
+
+=cga bench advance= selects the necessary lifecycle commands according to the
+current D/Q/J/R state.  It does not run the entire sequence unconditionally.
+
+* Assistant-only command surface
+
+=POST /api/command= permits the following =cga bench= commands, including some
+that have no direct human control:
+
+#+BEGIN_SRC text
+session
+database
+query
+work
+tool
+advance
+compare
+infrastructure
+catalogue
+library
+choose-databases
+choose-query
+create-query
+edit-query
+#+END_SRC
+
+Examples:
+
+#+BEGIN_SRC sh
+cga bench tool --session 1 --stage Q -- ql list 20
+cga bench database --session 1 ...
+cga bench query --session 1 ...
+#+END_SRC
+
+* Operations that are not CGA commands
+
+- Result filters and custom SQL use =/api/results= and =cgasi.store=.  DuckDB
+  is invoked read-only.
+- Catalogue discovery scans files directly.
+- The system summary reads the sysview HTTP endpoint.
+- D/R terminals manage PTYs directly.
+- *Insert Copilot command* constructs =copilot --yolo ...=.  It does not invoke
+  =cga=.
+- Reloading, selecting cells, pagination, and terminal resizing are browser/API
+  operations.
+
+* Source layout
+
+| Responsibility                    | File                                                            |
+|-----------------------------------+-----------------------------------------------------------------|
+| Top-level dispatcher registration | =cga/cga=                                                       |
+| Full =cga bench= parser/execution  | =cga/cgabench/cgabench/cli.py=                                 |
+| HTTP actions to =cga bench= argv  | =cga/cgabench/cgabench/server.py=                              |
+| Browser controls and requests     | =cga/cgabench/cgabench/static/bench.js=                        |
+| Page structure                    | =cga/cgabench/cgabench/static/index.html=                      |
+| D/Q selection and preparation     | =cga/cgabench/cgabench/inputs.py=                              |
+| MRVA submission and R processing  | =cga/cgabench/cgabench/engine.py=                              |
+| Infrastructure command expansion  | =cga/cgabench/cgabench/services.py=                            |
+| Result search and SQL             | =cga/cgabench/cgabench/results.py=, =cga/cgasi/cgasi/store.py= |
+| Persistent terminals              | =cga/cgabench/cgabench/terminal.py=                            |

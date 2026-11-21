@@ -1,0 +1,31 @@
+{
+  "eligible_cves": 19,
+  "query_bindings": 19,
+  "unique_query_packs": 4,
+  "databases": 114,
+  "successful_submissions": 19,
+  "downloaded_sarif_archives": 114,
+  "ingested_sarif_files": 114,
+  "finding_rows": 666,
+  "cves": [
+    "cve-2016-9843",
+    "cve-2018-1000052",
+    "cve-2018-1000127",
+    "cve-2018-1000880",
+    "cve-2018-10887",
+    "cve-2018-12326",
+    "cve-2018-12982",
+    "cve-2018-13785",
+    "cve-2018-16554",
+    "cve-2018-17540",
+    "cve-2018-19886",
+    "cve-2018-20182",
+    "cve-2018-20534",
+    "cve-2018-5205",
+    "cve-2019-11072",
+    "cve-2019-13115",
+    "cve-2019-15296",
+    "cve-2019-15945",
+    "cve-2019-5052"
+  ]
+}

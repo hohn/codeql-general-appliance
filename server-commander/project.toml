@@ -1,0 +1,10 @@
+[_]
+schema-version = "0.2"
+
+[io.buildpacks]
+builder = "artprod.dev.example.com/devise-builders/buildpack-builder:latest"
+exclude = [".git"]
+
+[[io.buildpacks.env.build]]
+name="BP_DPKG_RUNTIME_DEPENDS"
+value="mrva-project-resolver,example-codeql,ca-certificates,openssl-bin"

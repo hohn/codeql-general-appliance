@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>cgamx — CodeQL generic appliance: standalone MRVA infrastructure</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="../../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../../docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">cgamx — CodeQL generic appliance: standalone MRVA
+infrastructure</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a
+href="#cgamx-codeql-generic-appliance-standalone-mrva-infrastructure"
+id="toc-cgamx-codeql-generic-appliance-standalone-mrva-infrastructure">cgamx
+— CodeQL generic appliance: standalone MRVA infrastructure</a>
+<ul>
+<li><a href="#commands" id="toc-commands">Commands</a></li>
+<li><a href="#configuration"
+id="toc-configuration">Configuration</a></li>
+<li><a href="#the-command-server-cgamx-cmd"
+id="toc-the-command-server-cgamx-cmd">The command server
+(<code>cgamx cmd</code>)</a></li>
+<li><a href="#layout" id="toc-layout">Layout</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1
+id="cgamx-codeql-generic-appliance-standalone-mrva-infrastructure">cgamx
+— CodeQL generic appliance: standalone MRVA infrastructure</h1>
+<p><code>cgamx</code> owns the <strong>standalone MRVA
+infrastructure</strong> for the cga appliance: Postgres, the MinIO
+artifact store, the CodeQL-database HTTP server, and the
+<code>mrvaserver</code> process — plus the build, reset, log-scan and
+cleanup steps around them. It is the CGAST-native replacement for the
+global phases that the cga samples used to borrow from
+<code>cga/system-tests/run-system-05</code> (via a bash
+<code>system_phase</code>/<code>phase_*</code> shim). With
+<code>cgamx</code>, an operator script drives the whole lifecycle
+through cga* binaries only, passing all state as CGAST.</p>
+<p>Like every cga* program it is a JSON-in / JSON-out filter: each
+command reads the CGAST from stdin, runs one infrastructure phase,
+records runtime state (process ids, chosen ports/paths) under the
+<code>cgamx</code> key, and writes the merged CGAST to stdout. All
+human-readable and progress output goes to stderr, so the program
+composes in a pipe with <code>cgadl</code>, <code>cgaql</code>,
+<code>cgamr</code>, and <code>cgasi</code>.</p>
+<h2 id="commands">Commands</h2>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cgamx</span> preflight   <span class="co"># check codeql/go, ensure Postgres, free the ports</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cgamx</span> reset       <span class="co"># drop mrva tables, wipe work dir + logs</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">cgamx</span> build       <span class="co"># build mrvaserver + mrvaagent</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="ex">cgamx</span> start       <span class="co"># start CodeQL DB server + mrvaserver (+ MinIO if storage=minio)</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="ex">cgamx</span> logs        <span class="co"># tail the server log + scan for errors</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="ex">cgamx</span> check       <span class="co"># error gate: non-zero exit on non-benign server errors</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="ex">cgamx</span> stop        <span class="co"># stop services, keep tables + work dir</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="ex">cgamx</span> cleanup     <span class="co"># stop services, drop tables, remove work dir</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="ex">cgamx</span> info        <span class="co"># print current infrastructure state (from the CGAST)</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="ex">cgamx</span> cmd         <span class="co"># serve the localhost command server (runs cga* commands)</span></span></code></pre></div>
+<p>Typical standalone bring-up and tear-down, threading one CGAST
+through:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="va">s</span><span class="op">=</span>cga-tmp/session.json</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> phase <span class="kw">in</span> preflight reset build start<span class="kw">;</span> <span class="cf">do</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="ex">cgamx</span> <span class="st">&quot;</span><span class="va">$phase</span><span class="st">&quot;</span> <span class="op">&lt;</span> <span class="st">&quot;</span><span class="va">$s</span><span class="st">&quot;</span> <span class="op">&gt;</span> <span class="st">&quot;</span><span class="va">$s</span><span class="st">&quot;</span>.n <span class="kw">&amp;&amp;</span> <span class="fu">mv</span> <span class="st">&quot;</span><span class="va">$s</span><span class="st">&quot;</span>.n <span class="st">&quot;</span><span class="va">$s</span><span class="st">&quot;</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="cf">done</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># ... run cgadl / cgaql / cgamr / cgasi against the live server ...</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="ex">cgamx</span> logs  <span class="op">&lt;</span> <span class="st">&quot;</span><span class="va">$s</span><span class="st">&quot;</span> <span class="op">&gt;</span> <span class="st">&quot;</span><span class="va">$s</span><span class="st">&quot;</span>.n <span class="kw">&amp;&amp;</span> <span class="fu">mv</span> <span class="st">&quot;</span><span class="va">$s</span><span class="st">&quot;</span>.n <span class="st">&quot;</span><span class="va">$s</span><span class="st">&quot;</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="ex">cgamx</span> check <span class="op">&lt;</span> <span class="st">&quot;</span><span class="va">$s</span><span class="st">&quot;</span> <span class="op">&gt;</span> <span class="st">&quot;</span><span class="va">$s</span><span class="st">&quot;</span>.n <span class="kw">&amp;&amp;</span> <span class="fu">mv</span> <span class="st">&quot;</span><span class="va">$s</span><span class="st">&quot;</span>.n <span class="st">&quot;</span><span class="va">$s</span><span class="st">&quot;</span>   <span class="co"># PASS/FAIL gate</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="ex">cgamx</span> cleanup <span class="op">&lt;</span> <span class="st">&quot;</span><span class="va">$s</span><span class="st">&quot;</span> <span class="op">&gt;</span> <span class="st">&quot;</span><span class="va">$s</span><span class="st">&quot;</span>.n <span class="kw">&amp;&amp;</span> <span class="fu">mv</span> <span class="st">&quot;</span><span class="va">$s</span><span class="st">&quot;</span>.n <span class="st">&quot;</span><span class="va">$s</span><span class="st">&quot;</span></span></code></pre></div>
+<p>Inside an initialized workflow the top-level dispatcher performs that
+state threading and immutable recording:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> init .</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> mx preflight</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> chain start</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> mx reset</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> mx build</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> mx start</span></code></pre></div>
+<p><code>start</code> records the <code>mrvaserver</code>, MinIO, and
+DB-server process ids in the CGAST <code>cgamx</code> object, so a later
+<code>stop</code>/<code>cleanup</code> in a separate invocation finds
+them there (PID files under the tmp dir and <code>ss</code>-based port
+reclaim are backstops). Detached services are stopped by process group,
+ensuring that spawned MRVA agents and in-flight CodeQL subprocesses
+cannot survive the server as orphans.</p>
+<h2 id="configuration">Configuration</h2>
+<p><code>cgamx</code> resolves every setting from the environment and
+computes a sane default <strong>only when the variable is
+unset</strong>, so operator/harness overrides always win and spawned
+<code>mrvaserver</code>/<code>mrvaagent</code> subprocesses inherit
+identical values.</p>
+<p>Build sources, the server executable, and the default agent
+executable are anchored to the checkout containing <code>cgamx</code>,
+not to <code>CGAST_ROOT</code> or <code>CGA_ROOT</code>. Those variables
+control CGAST artifact paths; a separate workflow directory does not
+relocate the source checkout. An explicit
+<code>MRVA_ENVSIM_AGENT_BINARY</code> still overrides the default agent
+executable.</p>
+<p>Notable variables (defaults in parentheses):</p>
+<table>
+<colgroup>
+<col style="width: 54%" />
+<col style="width: 45%" />
+</colgroup>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PORT</code></td>
+<td><code>8081</code> (mrvaserver)</td>
+</tr>
+<tr>
+<td><code>MRVA_STANDALONE_STORAGE</code></td>
+<td><code>filesystem</code> (or <code>minio</code>)</td>
+</tr>
+<tr>
+<td><code>MRVA_WORK_DIR</code></td>
+<td><code>/tmp/mrva-cgamx</code></td>
+</tr>
+<tr>
+<td><code>RUN_TAG</code> / <code>MRVA_TMP_DIR</code></td>
+<td><code>cgamx</code> / <code>/tmp/mrva-&lt;RUN_TAG&gt;</code></td>
+</tr>
+<tr>
+<td><code>POSTGRES_{HOST,PORT,USER,PASSWORD,DB}</code></td>
+<td><code>localhost/active local cluster port/$USER/mrva/mrvadev</code></td>
+</tr>
+<tr>
+<td><code>MINIO_PORT</code> / <code>MRVA_MINIO_*</code></td>
+<td><code>9000</code> / <code>minioadmin</code></td>
+</tr>
+<tr>
+<td><code>DB_SERVER_PORT</code> / <code>MRVA_DB_SERVER_URL</code></td>
+<td><code>9080</code> / <code>http://127.0.0.1:9080</code></td>
+</tr>
+<tr>
+<td><code>MRVA_QLDB_DIR</code></td>
+<td><code>$MRVA_WORK_DIR/qldbs</code></td>
+</tr>
+<tr>
+<td><code>MRVA_DB_SERVE_DIR</code></td>
+<td><code>$MRVA_WORK_DIR/db-serve</code></td>
+</tr>
+<tr>
+<td><code>MRVA_CODEQL_THREADS</code> /
+<code>MRVA_POOL_MAX_WORKERS</code></td>
+<td><code>2</code> / <code>(cores-1)/threads</code></td>
+</tr>
+<tr>
+<td><code>MRVA_ENVSIM_AGENT_BINARY</code></td>
+<td><code>&lt;repo&gt;/agent-commander-argo/mrvaagent</code></td>
+</tr>
+<tr>
+<td><code>CODEQL_JAVA_HOME</code></td>
+<td><code>/usr</code> (required on arm64)</td>
+</tr>
+<tr>
+<td><code>SERVER_LOG</code></td>
+<td><code>$MRVA_TMP_DIR/server.log</code></td>
+</tr>
+</tbody>
+</table>
+<p>The CodeQL databases are served over HTTP from
+<code>MRVA_DB_SERVE_DIR</code>; populate it with
+<code>cgadl download --output-dir "$MRVA_WORK_DIR/db-serve"</code> so
+<code>cgamx start</code> and <code>cgamr submit</code> agree on the
+qldbstore tree.</p>
+<p><code>cga mx preflight</code> performs an autoconf-style PostgreSQL
+presence check before starting infrastructure. It reports the discovered
+server executable and version, <code>pg_isready</code>, local
+<code>pg_lsclusters</code> entries, and probes the configured port plus
+likely local ports (<code>5432</code>, <code>5433</code>,
+<code>55432</code>, and <code>55440</code>). Findings are printed and
+persisted under <code>cgamx.postgres_probe</code>; the configured
+endpoint must still become ready before preflight succeeds.</p>
+<p>Set <code>MRVA_DBG_DUMP_SYSVIEW=1</code> to have <code>start</code>
+pass <code>--dbg-dump-sysview</code> to the server (dump path defaults
+in Go to <code>sysview-dump</code>, override with
+<code>MRVA_SYSVIEW_DUMP_PATH</code>); <code>cleanup</code> removes the
+dump.</p>
+<h2 id="the-command-server-cgamx-cmd">The command server
+(<code>cgamx cmd</code>)</h2>
+<p><code>cgamx cmd</code> is the one cga* server that is
+<strong>not</strong> a read-only fragment viewer: it lets the composite
+page turn a click into a real cga* command. The page is only a
+<em>view</em> — its inputs are scratch space until you apply them — and
+applying a change is defined to be <em>exactly</em> the same as a user
+or LLM typing a new cga* command in the shell. <code>cgamx cmd</code>
+makes that literally true.</p>
+<p>It binds to <code>127.0.0.1:$CGA_CGAMX_PORT</code> (default
+<code>8607</code>) and exposes:</p>
+<pre class="text"><code>GET  /healthz   # readiness probe (launcher)
+GET  /          # JSON index
+POST /run       # run one cga* command as a CGAST filter</code></pre>
+<p><code>POST /run</code> accepts a JSON body of either
+<code>{"argv": ["cgasi", "view", ...]}</code> (preferred — no quoting
+ambiguity) or <code>{"command": "cgasi view ..."}</code>
+(<code>shlex</code>-split, <strong>never</strong> a shell). It runs the
+named program with the shared session CGAST (<code>$CGA_SESSION</code>)
+on stdin and, on success, atomically replaces the session with the
+program’s stdout. The command’s stderr (its human channel) and exit code
+come back as JSON.</p>
+<p>When <code>CGA_WORKFLOW_ROOT</code> identifies an initialized
+<code>.cga/</code> workflow, the server routes supported filter
+components through the top-level dispatcher instead. Dashboard changes
+then create normal immutable steps with source <code>dashboard</code>;
+<code>.cga/current.json</code> remains the viewer compatibility
+copy.</p>
+<p>Safety: only programs whose base name matches <code>cga*</code>
+<strong>and</strong> resolve on <code>PATH</code> may run, and the
+server is localhost-only. Anything else is refused with a non-zero exit
+code and an explanatory message.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-s</span> <span class="at">-X</span> POST http://127.0.0.1:8607/run <span class="dt">\</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">-H</span> <span class="st">&#39;Content-Type: application/json&#39;</span> <span class="dt">\</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">-d</span> <span class="st">&#39;{&quot;argv&quot;:[&quot;cgasi&quot;,&quot;view&quot;,&quot;--erc&quot;,&quot;40&quot;,&quot;--user&quot;,&quot;^bob$&quot;,&quot;--clear&quot;]}&#39;</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># -&gt; {&quot;ok&quot;: true, &quot;exit_code&quot;: 0, ...}; $CGA_SESSION now has the new view</span></span></code></pre></div>
+<h2 id="layout">Layout</h2>
+<p>Standard-library Python, mirroring the other cga* handlers:</p>
+<ul>
+<li><code>bin/cgamx</code> — thin POSIX launcher (puts
+<code>cgamx</code> and <code>cga/cgalib</code> on the path).</li>
+<li><code>cgamx/cli.py</code> — argparse + CGAST glue (subcommand
+dispatch).</li>
+<li><code>cgamx/infra.py</code> — the phase implementations and
+Postgres/MinIO/DB-server helpers (ported from
+<code>cga/system-tests/standalone-multi-agent-lib.sh</code> and the
+global phases of <code>cga/system-tests/run-system-05</code>).</li>
+<li><code>cgamx/cmd.py</code> — the <code>cmd</code> command server
+(POST /run whitelist + atomic session swap).</li>
+<li><code>tests/test_cli.py</code> — filter-contract, config, and
+log-scan tests.</li>
+<li><code>tests/test_cmd.py</code> — command-server whitelist, body
+parsing, and session-threading tests.</li>
+<li><code>tests/test_infra.py</code> — detached process-group
+termination tests.</li>
+</ul>
+<p>Linux only: the phases rely on Linux process-management tools
+(<code>ss</code>, <code>kill</code>, <code>setsid</code>) and a host
+Postgres. <code>cgamx</code> shares the MRVA server port and Postgres
+with the rest of the appliance, so run only one MRVA scenario at a
+time.</p>
+</body>
+</html>

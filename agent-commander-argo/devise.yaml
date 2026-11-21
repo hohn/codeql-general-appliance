@@ -1,0 +1,5 @@
+verify:
+  go:
+    actions:
+      - test
+      - build

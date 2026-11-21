@@ -1,0 +1,59 @@
+[book]
+title = "CGA reference manual"
+description = "Detailed workflow, component, and operation reference, assembled in place from canonical READMEs."
+# The files under src/ are symlinks to the real component READMEs, so the
+# existing READMEs stay the single source of truth and are never copied or
+# modified. Editing a README updates the book on the next `mdbook build`.
+src = "src"
+
+[build]
+build-dir = "book"
+create-missing = false
+
+[output.html]
+# Use mdBook's built-in MathJax integration. Math in source Markdown uses the
+# mdBook delimiters \\( ... \\) and \\[ ... \\], not dollar delimiters.
+mathjax-support = true
+# Requires mdBook >= 0.5. Shows the current page's headings (h2..h6) nested in
+# the left sidebar, giving a multi-level table of contents without splitting
+# the symlinked component READMEs. Level 3+ start folded (click to expand).
+# This is the default in 0.5; set here explicitly to document the intent.
+sidebar-header-nav = true
+
+# The reading guide uses canonical repository paths. These aliases keep its
+# links working when existing chapters have shorter book-specific names.
+[output.html.redirect]
+"README.html" = "overview.html"
+"READING-GUIDE.html" = "reading-guide.html"
+"INTRODUCTORY-GUIDE.html" = "introductory-guide.html"
+"server-commander/README.html" = "../server-commander.html"
+"agent-commander-argo/README.html" = "../agent-commander-argo.html"
+"mrvacommander/README.html" = "../mrvacommander.html"
+"cga/README.html" = "../cga.html"
+"cga/cgamr/README.html" = "../../cgamr.html"
+"cga/README-prep.html" = "../cga-prep.html"
+"cga/cgasi/README.html" = "../../cgasi.html"
+"cga/sample-05/README.html" = "../../cga-sample-05.html"
+"cga/sample-05-i/README.html" = "../../cga-sample-05-i.html"
+"cga/examples/cves/README.html" = "../../../cga-prep-cves.html"
+"cga/system-tests/README.html" = "../../system-tests.html"
+"INSTALL.html" = "install-dependencies.html"
+"REMOTE-CONNECTION.html" = "remote-connection.html"
+"sysview-view/README.html" = "../sysview-view.html"
+".agent-notes/README.html" = "index.html"
+"cga/mrva-flow/README.html" = "index.html"
+"cga/cgabench/README.html" = "index.html"
+"cga/cgaex/README.html" = "index.html"
+"cga/cgauv/README.html" = "index.html"
+"cga/cgactl/README.html" = "index.html"
+"cga/analysis/README.html" = "index.html"
+"cga/analysis/CVE-2016-9843/README.html" = "index.html"
+"cga/analysis/CVE-2016-9843/query-030/README.html" = "index.html"
+"cga/analysis/run-system-10-2026-08-24/query-effectiveness/README.html" = "index.html"
+"cga/system-tests/run-system-09/README.html" = "../../../system-tests/run-system-09/index.html"
+"cga/system-tests/run-system-10/README.html" = "../../../system-tests/run-system-10/index.html"
+"docs/README.html" = "index.html"
+"docs/cga-overview.html" = "../../cga-overview.html"
+"docs/cga-help.html" = "../../cga-help.html"
+"docs/book/index.html" = "../../index.html"
+"notes/README.html" = "index.html"

@@ -1,0 +1,21 @@
+{
+	"folders": [
+        {
+            "name": "mrvaserver",
+            "path": "."
+        },
+        {
+            "name": "mrvaagent",
+            "path": "../mrvaagent"
+        },
+        {
+            "name": "mrvacommander",
+            "path": "../mrvacommander"
+        }
+    ],
+    "settings": {
+        "makefile.configureOnOpen": false,
+        "git.ignoreLimitWarning": true,
+        "sarif-viewer.connectToGithubCodeScanning": "off"
+    }
+}

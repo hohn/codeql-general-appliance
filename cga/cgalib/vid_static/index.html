@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>CGA element inspector</title>
+  <link rel="stylesheet" href="vid-vendor/xterm.css">
+  <link rel="stylesheet" href="vid.css">
+  <script src="vid-vendor/xterm.js" defer></script>
+  <script src="vid-vendor/addon-fit.js" defer></script>
+  <script src="vid.js" defer></script>
+</head>
+<body class="cga-inspector">
+  <div id="color-bar" aria-hidden="true"></div>
+  <header><h1 id="reference">CGA element</h1><button id="copy">Copy full reference</button></header>
+  <p><code id="qualified-reference"></code></p>
+  <p id="context"></p>
+  <p id="error" role="alert"></p>
+  <details open><summary>Summary and properties</summary><pre id="properties"></pre></details>
+  <details><summary>Accumulated immutable facts</summary><pre id="facts"></pre></details>
+  <section><h2>Related elements</h2><div id="relations"></div></section>
+  <div class="terminal-actions">
+    <button id="insert" disabled>Paste Copilot command with context</button>
+    <button id="stop" disabled>Stop terminal</button>
+    <span id="terminal-status" role="status">Starting a separate terminal for this window...</span>
+  </div>
+  <p>The command is inserted, not executed. This shell uses your normal OS account and permissions.</p>
+  <div id="terminal" aria-label="Inspector terminal"></div>
+</body>
+</html>

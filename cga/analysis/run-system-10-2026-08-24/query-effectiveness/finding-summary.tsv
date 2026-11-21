@@ -1,0 +1,19 @@
+cve	source_package	variant	mode	version	query_id	result_count	primary_locations	sarif
+CVE-2016-9843	zlib	vulnerable	none	1:1.2.8.dfsg-2	cga/cve-2016-9843-crc32-location	1	crc32.c x1	ingest/e2e-cve-2016-9843/job-05-debian-zlib-vulnerable-none.sarif
+CVE-2016-9843	zlib	vulnerable	trace	1:1.2.8.dfsg-2	cga/cve-2016-9843-crc32-location	2	crc32.c x1; debian/32/crc32.c x1	ingest/e2e-cve-2016-9843/job-06-debian-zlib-vulnerable-trace.sarif
+CVE-2016-9843	zlib	patched	none	1:1.2.8.dfsg-2+deb8u1	cga/cve-2016-9843-crc32-location	2	.pc/CVE-2016-9843.patch/crc32.c x1; crc32.c x1	ingest/e2e-cve-2016-9843/job-03-debian-zlib-patched-none.sarif
+CVE-2016-9843	zlib	patched	trace	1:1.2.8.dfsg-2+deb8u1	cga/cve-2016-9843-crc32-location	2	crc32.c x1; debian/32/crc32.c x1	ingest/e2e-cve-2016-9843/job-04-debian-zlib-patched-trace.sarif
+CVE-2016-9843	zlib	most-recent	none	1:1.3.dfsg+really1.3.2-3	cga/cve-2016-9843-crc32-location	1	crc32.c x1	ingest/e2e-cve-2016-9843/job-01-debian-zlib-most-recent-none.sarif
+CVE-2016-9843	zlib	most-recent	trace	1:1.3.dfsg+really1.3.2-3	cga/cve-2016-9843-crc32-location	2	crc32.c x1; debian/32/crc32.c x1	ingest/e2e-cve-2016-9843/job-02-debian-zlib-most-recent-trace.sarif
+CVE-2018-1000880	libarchive	vulnerable	none	3.3.3-1	cpp/overrun-write	0	-	ingest/e2e-cve-2018-1000880/job-05-debian-libarchive-vulnerable-none.sarif
+CVE-2018-1000880	libarchive	vulnerable	trace	3.3.3-1	cpp/overrun-write	0	-	ingest/e2e-cve-2018-1000880/job-06-debian-libarchive-vulnerable-trace.sarif
+CVE-2018-1000880	libarchive	patched	none	3.3.3-2	cpp/overrun-write	0	-	ingest/e2e-cve-2018-1000880/job-03-debian-libarchive-patched-none.sarif
+CVE-2018-1000880	libarchive	patched	trace	3.3.3-2	cpp/overrun-write	0	-	ingest/e2e-cve-2018-1000880/job-04-debian-libarchive-patched-trace.sarif
+CVE-2018-1000880	libarchive	most-recent	none	3.8.9-1	cpp/overrun-write	0	-	ingest/e2e-cve-2018-1000880/job-01-debian-libarchive-most-recent-none.sarif
+CVE-2018-1000880	libarchive	most-recent	trace	3.8.9-1	cpp/overrun-write	0	-	ingest/e2e-cve-2018-1000880/job-02-debian-libarchive-most-recent-trace.sarif
+CVE-2018-16554	jhead	vulnerable	none	1:3.00-7	cpp/tainted-format-string	0	-	ingest/e2e-cve-2018-16554/job-05-debian-jhead-vulnerable-none.sarif
+CVE-2018-16554	jhead	vulnerable	trace	1:3.00-7	cpp/tainted-format-string	2	jhead.c:628 x2	ingest/e2e-cve-2018-16554/job-06-debian-jhead-vulnerable-trace.sarif
+CVE-2018-16554	jhead	patched	none	1:3.00-8	cpp/tainted-format-string	0	-	ingest/e2e-cve-2018-16554/job-03-debian-jhead-patched-none.sarif
+CVE-2018-16554	jhead	patched	trace	1:3.00-8	cpp/tainted-format-string	2	jhead.c:628 x2	ingest/e2e-cve-2018-16554/job-04-debian-jhead-patched-trace.sarif
+CVE-2018-16554	jhead	most-recent	none	1:3.08-3	cpp/tainted-format-string	1	jhead.c:665 x1	ingest/e2e-cve-2018-16554/job-01-debian-jhead-most-recent-none.sarif
+CVE-2018-16554	jhead	most-recent	trace	1:3.08-3	cpp/tainted-format-string	2	jhead.c:665 x2	ingest/e2e-cve-2018-16554/job-02-debian-jhead-most-recent-trace.sarif

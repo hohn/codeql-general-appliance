@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Documentation notes</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+  </style>
+  <link rel="stylesheet" href="../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Documentation notes</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#documentation-notes"
+id="toc-documentation-notes">Documentation notes</a>
+<ul>
+<li><a href="#cga-overview-revision-contract"
+id="toc-cga-overview-revision-contract">CGA overview revision
+contract</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="documentation-notes">Documentation notes</h1>
+<ul>
+<li><a href="../READING-GUIDE.md">READING-GUIDE.md</a> is advanced
+guidance for experienced CodeQL users and LLMs. <a
+href="../INTRODUCTORY-GUIDE.md">INTRODUCTORY-GUIDE.md</a> routes to
+simpler usage outlines under <code>guides/introductory/</code>. Keep the
+two levels distinct; audience markers are not difficulty ratings. The
+agent core is the only mandatory agent-note read.</li>
+<li>All repository material is prototype work. Keep useful examples for
+future experimentation; remove obsolete explanations rather than
+archiving them. Usage examples and supporting code evolve together.</li>
+<li>Human entry order is overview, command help, then the reference
+book. Repository/docs <code>index.html</code> files redirect to
+<code>docs/cga-overview.html</code>; root, CGA, and docs READMEs
+introduce the same roles. The book remains detailed reference, not a
+competing introduction; preserve its substantive chapters. Keep the
+independent LLM onboarding route unchanged.</li>
+<li>For remote browsers, the CGA gateway serves the same checkout tree
+below <code>/documentation/</code> on 8599. Do not introduce absolute
+<code>file://</code> navigation or hand-maintained copies of pages;
+rebuild generated pages and the optional book normally.
+<code>cga public-html setup</code> prepares a static clone and prints
+the operator’s documented setup script without running its steps. Static
+web servers can publish a separate clone with the full
+repository-relative layout; <code>docs/lighttpd-public-html.conf</code>
+is the scoped public_html example. Retain its metadata/scratch and
+symlink boundaries, keep directory listings off, and preserve public LLM
+sources. A fresh clone needs <code>make -C docs book</code> for
+reference-manual links, not a rebuild of checked-in HTML.</li>
+<li>Markdown uses Prettier with
+<code>--prose-wrap always --print-width 80</code>. Use targeted
+formatting rather than reformatting unrelated files.</li>
+<li><code>make -C docs html</code> renders canonical repository Markdown
+beside its source as HTML; <code>make -C docs readmes</code> selects
+only READMEs. By default, both use Synonym and CMU Typewriter Text
+embedded in the shared <code>docs/readme-fonts.css</code> for reliable
+<code>file://</code> viewing. Rebuilding the CSS requires Python 3 and
+the fonts under <code>~/.fonts</code>. All Markdown pages share
+<code>docs/readme-layout.css</code>: fixed-left TOC, inline on narrow
+screens and in print. The CGA, Unified View, and Bench READMEs
+additionally opt into <code>docs/cga-reference.css</code> through
+<code>CGA_REFERENCE_HTML</code> in <code>docs/Makefile</code>, matching
+the overview’s typography and neutral panels without changing other
+pages. Edit that stylesheet, not their generated HTML; preserve Markdown
+content, heading anchors, and reference navigation. Exclude
+<code>docs/src/</code> and <code>notes/src/</code> aliases: HTML
+siblings there overwrite mdBook chapters during asset copying.</li>
+<li>Standalone rendering runs <code>docs/html_links.py</code> after
+Pandoc: local human navigation targets HTML, while
+<code>AGENTS.md</code>, <code>.agent-notes/</code>, and Org guides
+retain source-format links for LLMs. Agent-instruction HTML retains
+source navigation throughout; external links are unchanged. Keep
+Markdown sources’ links in Markdown form. Run
+<code>make -C docs test-html-links</code> to check the normalizer,
+human-document destinations/fragments, and all tracked HTML, including
+legacy pages without a Markdown owner. When mdBook is available, the
+same suite builds a temporary book and checks its entry links and
+assets.</li>
+<li><a href="../docs/README.md">docs/</a> assembles the project book
+from canonical Markdown via <code>docs/src/</code> symlinks. Add a
+symlink and a SUMMARY entry for a new chapter; do not copy its content.
+Build with <code>make -C docs book</code>.</li>
+<li><code>docs/cga-overview.html</code> is the human front door;
+<code>docs/cga-help.html</code> is the self-contained task/command
+reference separate from mdBook. <code>make -C docs help</code>
+regenerates it and its tracked human tutorial HTML from canonical
+Markdown. <code>cga help --export docs/cga-help.html</code> refreshes
+only the command browser. Stage refreshed artifacts with their source
+changes.</li>
+<li><a href="../docs/cga-help-llm.org">docs/cga-help-llm.org</a> is the
+independent, hand-maintained LLM entry point. Keep it a selective
+task-routing layer, linking canonical help/contracts and read-only state
+projections, not a copy of the human tutorial or a generated command
+dump. <code>AGENTS.md</code> routes through the core to this guide for
+CGA work; broad project maps are a last resort, not an intervening
+onboarding step. Keep topic-note introductions from redirecting agents
+to entire manuals or root indexes.</li>
+<li><code>docs/cga-overview.html</code> is a hand-maintained, standalone
+CGA introduction, not generated Markdown output. Follow the <a
+href="#cga-overview-revision-contract">revision contract</a> below when
+changing it.</li>
+<li><a href="../notes/README.md">notes/</a> is a separate conceptual
+mdBook, not another project manual. <code>notes/src/</code> links
+canonical note sources. Its intentionally tracked rendered HTML/PDF are
+rebuilt explicitly, not incidental clutter.</li>
+<li>Math in the project book uses mdBook delimiters
+<code>\\( ... \\)</code> and <code>\\[ ... \\]</code>, not dollar
+delimiters. Keep Markdown escaping for TeX underscores, punctuation, and
+display-block row breaks; see <a
+href="../docs/README.md#mathematics">book mathematics</a>.</li>
+<li><a href="../INSTALL.md">INSTALL.md</a> owns Debian/Ubuntu
+dependencies; keep host installer inventories aligned. <a
+href="../REMOTE-CONNECTION.md">REMOTE-CONNECTION.md</a> owns remote
+access details.</li>
+<li>Root <code>count-lines</code> reports tracked source by language,
+human docs, and LLM docs. It excludes symlinks and rendered/binary
+documentation; <code>--list</code> audits classification. Agent topic
+files remain LLM documentation.</li>
+</ul>
+<h2 id="cga-overview-revision-contract">CGA overview revision
+contract</h2>
+<p>Make focused edits to <code>docs/cga-overview.html</code>, its inline
+CSS, and vanilla JavaScript. Do not introduce a generator, framework, or
+external runtime assets without an explicit request. Preserve these
+design and behavioral boundaries:</p>
+<ul>
+<li>Keep the four numbered chapters: CGA introduction, CVE case studies
+marked future work, Sample 05 reference architecture, and getting
+started. Preserve chapter and detail IDs, sticky section navigation, and
+existing deep links. <code>docs/cga-sample-05.html</code> forwards to
+section 03, retaining supplied fragments.</li>
+<li>Retain the restrained visual language: whitespace, regular-weight
+sans-serif headings, thin grey borders, no shadows, a dotted diagram
+canvas, pale-blue inputs, lavender workflow cards, and neutral result
+artifacts. Keep the linked OpenAI Defense Factory credit in the
+footer.</li>
+<li>Sample 05 is a fixed worked example: five prepared databases,
+<code>Fprintf.ql</code>, and SARIF to SQLite to cumulative DuckDB. Keep
+its five learning milestones; shell recipes remain authoritative in
+<code>cga/cgalib/sample_help.py</code>. Do not add configuration
+controls, database building, patching, or a run-all action.</li>
+<li>This is offline, read-only documentation, not a live dashboard or
+execution interface. Cards open explanations and commands; they do not
+install tools, launch services, or submit work. Label expected artifacts
+honestly and retain the distinction between pipeline completion and
+demonstrated CVE detection.</li>
+<li>Use semantic HTML, native expandable sections/dialogs, keyboard
+focus return, explicit clipboard-failure feedback, and a usable
+no-JavaScript fallback. Keep multi-line shell blocks in
+<code>&lt;pre&gt;&lt;code&gt;</code> so formatting cannot merge
+commands. Match installation snippets to <code>INSTALL.md</code>, the
+host-installer READMEs, and <code>cga/README.md</code>; never execute
+snippets to test this page.</li>
+</ul>
+<p>Run <code>make -C docs test-overview</code> after revisions. It
+checks canonical recipes, local links, offline operation, navigation,
+dialogs, copied commands, forwarding, desktop/mobile layout, and the
+three reference pages’ matching styles and responsive contents without
+running MRVA or installation commands. Requires Python 3, Chromium, and
+Node with built-in WebSocket support (22+); no npm packages are needed.
+For layout changes, also open the page at desktop and narrow widths:
+smoke tests protect behavior, not visual design quality.</p>
+</body>
+</html>

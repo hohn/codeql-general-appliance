@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>MRVA Architecture Migration: RabbitMQ to Argo Workflows</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      font-family: Synonym;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: CMU Typewriter Text;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="../../docs/readme-fonts.css" />
+  <link rel="stylesheet" href="../../docs/readme-layout.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">MRVA Architecture Migration: RabbitMQ to Argo
+Workflows</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#mrva-architecture-migration-rabbitmq-to-argo-workflows"
+id="toc-mrva-architecture-migration-rabbitmq-to-argo-workflows">MRVA
+Architecture Migration: RabbitMQ to Argo Workflows</a>
+<ul>
+<li><a href="#overview" id="toc-overview">Overview</a></li>
+<li><a href="#documentation-structure"
+id="toc-documentation-structure">Documentation Structure</a></li>
+<li><a href="#why-the-migration" id="toc-why-the-migration">Why the
+Migration?</a>
+<ul>
+<li><a href="#problems-with-old-architecture"
+id="toc-problems-with-old-architecture">Problems with Old
+Architecture</a></li>
+<li><a href="#benefits-of-new-architecture"
+id="toc-benefits-of-new-architecture">Benefits of New
+Architecture</a></li>
+</ul></li>
+<li><a href="#architectural-comparison"
+id="toc-architectural-comparison">Architectural Comparison</a>
+<ul>
+<li><a href="#old-architecture-rabbitmq-agent-polling"
+id="toc-old-architecture-rabbitmq-agent-polling">Old Architecture:
+RabbitMQ + Agent Polling</a></li>
+<li><a href="#new-architecture-argo-workflows-fair-scheduler"
+id="toc-new-architecture-argo-workflows-fair-scheduler">New
+Architecture: Argo Workflows + Fair Scheduler</a></li>
+</ul></li>
+<li><a href="#mathematical-representation-changes"
+id="toc-mathematical-representation-changes">Mathematical Representation
+Changes</a>
+<ul>
+<li><a href="#old-model-symbols" id="toc-old-model-symbols">Old Model
+Symbols</a></li>
+<li><a href="#new-model-symbols" id="toc-new-model-symbols">New Model
+Symbols</a></li>
+</ul></li>
+<li><a href="#database-schema-changes"
+id="toc-database-schema-changes">Database Schema Changes</a>
+<ul>
+<li><a href="#extended-job_info-table"
+id="toc-extended-job_info-table">Extended <code>job_info</code>
+Table</a></li>
+<li><a href="#new-scheduler_lock-table"
+id="toc-new-scheduler_lock-table">New <code>scheduler_lock</code>
+Table</a></li>
+</ul></li>
+<li><a href="#fair-scheduling-algorithm"
+id="toc-fair-scheduling-algorithm">Fair Scheduling Algorithm</a>
+<ul>
+<li><a href="#priority-function" id="toc-priority-function">Priority
+Function</a></li>
+<li><a href="#round-robin-allocation"
+id="toc-round-robin-allocation">Round-Robin Allocation</a></li>
+<li><a href="#example" id="toc-example">Example</a></li>
+</ul></li>
+<li><a href="#leader-election" id="toc-leader-election">Leader
+Election</a>
+<ul>
+<li><a href="#lock-mechanism" id="toc-lock-mechanism">Lock
+Mechanism</a></li>
+<li><a href="#lock-lifecycle" id="toc-lock-lifecycle">Lock
+Lifecycle</a></li>
+</ul></li>
+<li><a href="#job-lifecycle-changes" id="toc-job-lifecycle-changes">Job
+Lifecycle Changes</a>
+<ul>
+<li><a href="#old-lifecycle-rabbitmq"
+id="toc-old-lifecycle-rabbitmq">Old Lifecycle (RabbitMQ)</a></li>
+<li><a href="#new-lifecycle-argo-workflows"
+id="toc-new-lifecycle-argo-workflows">New Lifecycle (Argo
+Workflows)</a></li>
+</ul></li>
+<li><a href="#argo-workflows-integration"
+id="toc-argo-workflows-integration">Argo Workflows Integration</a>
+<ul>
+<li><a href="#workflow-specification"
+id="toc-workflow-specification">Workflow Specification</a></li>
+<li><a href="#status-polling" id="toc-status-polling">Status
+Polling</a></li>
+</ul></li>
+<li><a href="#configuration-parameters"
+id="toc-configuration-parameters">Configuration Parameters</a></li>
+<li><a href="#migration-impact" id="toc-migration-impact">Migration
+Impact</a>
+<ul>
+<li><a href="#for-users" id="toc-for-users">For Users</a></li>
+<li><a href="#for-operators" id="toc-for-operators">For
+Operators</a></li>
+<li><a href="#for-developers" id="toc-for-developers">For
+Developers</a></li>
+</ul></li>
+<li><a href="#code-references" id="toc-code-references">Code
+References</a>
+<ul>
+<li><a href="#scheduler-implementation"
+id="toc-scheduler-implementation">Scheduler Implementation</a></li>
+<li><a href="#argo-workflows-integration-1"
+id="toc-argo-workflows-integration-1">Argo Workflows
+Integration</a></li>
+<li><a href="#database-layer" id="toc-database-layer">Database
+Layer</a></li>
+<li><a href="#schema-migration" id="toc-schema-migration">Schema
+Migration</a></li>
+</ul></li>
+<li><a href="#summary" id="toc-summary">Summary</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="mrva-architecture-migration-rabbitmq-to-argo-workflows">MRVA
+Architecture Migration: RabbitMQ to Argo Workflows</h1>
+<h2 id="overview">Overview</h2>
+<p>This document describes the architectural evolution of the MRVA
+(Multi-Repository Variant Analysis) system from a RabbitMQ-based agent
+polling model to a centralized Argo Workflows scheduler with fair
+scheduling.</p>
+<h2 id="documentation-structure">Documentation Structure</h2>
+<p>The MRVA system has two mathematical specifications that correspond
+to different architectural generations:</p>
+<ol type="1">
+<li><strong><a
+href="mrva-overview-rabbitmq.tex">mrva-overview-rabbitmq.tex</a></strong>
+- Original specification for RabbitMQ-based architecture (historical
+reference)</li>
+<li><strong><a
+href="mrva-overview-argo-scheduler.tex">mrva-overview-argo-scheduler.tex</a></strong>
+- Current specification for Argo Workflows architecture (active)</li>
+</ol>
+<p>This migration guide provides context for understanding the
+differences between these two approaches.</p>
+<h2 id="why-the-migration">Why the Migration?</h2>
+<p>The migration from RabbitMQ agents to Argo Workflows was driven by
+several requirements:</p>
+<h3 id="problems-with-old-architecture">Problems with Old
+Architecture</h3>
+<ol type="1">
+<li><strong>No fairness</strong>: Jobs were processed
+first-come-first-served. A single user could monopolize all agent
+resources.</li>
+<li><strong>No resource limits</strong>: Agents had no per-job
+CPU/memory constraints, leading to resource contention.</li>
+<li><strong>Static capacity</strong>: Agent count was fixed; scaling
+required manual intervention.</li>
+<li><strong>No user attribution</strong>: Jobs were anonymous - couldn’t
+track which user submitted which job.</li>
+<li><strong>Limited visibility</strong>: No built-in observability for
+job execution progress.</li>
+</ol>
+<h3 id="benefits-of-new-architecture">Benefits of New Architecture</h3>
+<ol type="1">
+<li><strong>Fair scheduling</strong>: Round-robin allocation ensures
+users get equitable access to compute resources.</li>
+<li><strong>Resource control</strong>: Each job runs in a pod with
+explicit CPU (4 cores) and memory (16Gi) limits.</li>
+<li><strong>Dynamic scaling</strong>: Kubernetes can scale pod count
+based on demand.</li>
+<li><strong>User tracking</strong>: All jobs tagged with user ID from
+JWT token.</li>
+<li><strong>High availability</strong>: Leader election allows multiple
+scheduler instances for redundancy.</li>
+<li><strong>Observability</strong>: Argo Workflows UI provides real-time
+visibility into job execution.</li>
+</ol>
+<h2 id="architectural-comparison">Architectural Comparison</h2>
+<h3 id="old-architecture-rabbitmq-agent-polling">Old Architecture:
+RabbitMQ + Agent Polling</h3>
+<pre><code>┌────────┐                   ┌──────────┐                 ┌───────┐
+│ Client │─── submit ───────▶│  Server  │─── enqueue ────▶│ Queue │
+└────────┘     (Q, R)        └──────────┘    (Q, Ri)      │ (MQ)  │
+                                     ▲                    └───┬───┘
+                                     │                         │
+                                     │       ┌─────────────────┘
+                                     │       │  poll (5s)
+                                     │       ▼
+                                     │    ┌───────┐
+                                     │    │ Agent │─── execute ──▶ Results
+                                     │    │ α     │
+                                     │    └───────┘
+                                     │
+                                     └─── results ──</code></pre>
+<p><strong>Key characteristics:</strong> - Autonomous agents poll
+RabbitMQ every 5 seconds - Agents are long-lived containers - FIFO job
+ordering - Stateless execution - Direct queue communication</p>
+<h3 id="new-architecture-argo-workflows-fair-scheduler">New
+Architecture: Argo Workflows + Fair Scheduler</h3>
+<h4 id="latex-diagram">LaTeX Diagram</h4>
+<p>\[]</p>
+<h4 id="ascii-diagram">ASCII Diagram</h4>
+<pre><code>┌────────┐                   ┌──────────┐                 ┌──────────┐
+│ Client │─── submit ───────▶│  Server  │─── store ──────▶│ Database │
+└────────┘     (Q, R, u)     └──────────┘    (Jᵢ, uᵢ)     │  (PG)    │
+                                     ▲                    └────┬─────┘
+                                     │                         │
+                                     │       ┌─────────────────┘
+                                     │       │  poll (10s)
+                                     │       ▼
+                                     │    ┌───────────┐
+                                     │    │ Scheduler │─ fair    ┌─────────────┐
+                                     │    │   (ℒ)     │─ select─▶│    Argo     │
+                                     │    └───────────┘          │  Workflows  │
+                                     │                           └──────┬──────┘
+                                     │                                  │
+                                     │       ┌──────────────────────────┘
+                                     │       │  create pod
+                                     │       ▼
+                                     │    ┌─────────┐
+                                     │    │ K8s Pod │─── execute ──▶ Results
+                                     │    │  (ωᵢ)   │
+                                     │    └─────────┘
+                                     │
+                                     └─── results ──</code></pre>
+<p><strong>Key characteristics:</strong> - Centralized scheduler with
+leader election - Per-job Kubernetes pods (ephemeral) - Fair scheduling
+algorithm - Stateful tracking (PostgreSQL) - Database-centric
+coordination</p>
+<h2 id="mathematical-representation-changes">Mathematical Representation
+Changes</h2>
+<h3 id="old-model-symbols">Old Model Symbols</h3>
+<table>
+<thead>
+<tr>
+<th>Symbol</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>\(Q\)</td>
+<td>RabbitMQ job queue</td>
+</tr>
+<tr>
+<td>\(\)</td>
+<td>Agent (autonomous worker)</td>
+</tr>
+<tr>
+<td>\(A\)</td>
+<td>Set of all agents</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Old execution flow:</strong></p>
+<pre><code>C → S → Q → α → S → C</code></pre>
+<h3 id="new-model-symbols">New Model Symbols</h3>
+<table>
+<thead>
+<tr>
+<th>Symbol</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>\(D\)</td>
+<td>PostgreSQL database</td>
+</tr>
+<tr>
+<td>\(\)</td>
+<td>Scheduler (centralized)</td>
+</tr>
+<tr>
+<td>\(L\) or \(_L\)</td>
+<td>Leader scheduler instance</td>
+</tr>
+<tr>
+<td>\(\)</td>
+<td>Argo Workflows</td>
+</tr>
+<tr>
+<td>\(_i\)</td>
+<td>Individual workflow (pod) for job \(i\)</td>
+</tr>
+<tr>
+<td>\(u\)</td>
+<td>User identifier</td>
+</tr>
+<tr>
+<td>\(n_u^r\)</td>
+<td>Running job count for user \(u\)</td>
+</tr>
+<tr>
+<td>\(n_u^p\)</td>
+<td>Pending job count for user \(u\)</td>
+</tr>
+<tr>
+<td>\(_u\)</td>
+<td>Recent runtime for user \(u\)</td>
+</tr>
+<tr>
+<td>\(W\)</td>
+<td>Max concurrent workers</td>
+</tr>
+<tr>
+<td>\(W_a\)</td>
+<td>Available worker slots</td>
+</tr>
+<tr>
+<td>\(t_i^s\)</td>
+<td>Job start timestamp</td>
+</tr>
+<tr>
+<td>\(t_i^c\)</td>
+<td>Job completion timestamp</td>
+</tr>
+</tbody>
+</table>
+<p><strong>New execution flow:</strong></p>
+<p>C → S → D → \(Σ_L\) → Ω → \(ω_i\) → S → C</p>
+<h2 id="database-schema-changes">Database Schema Changes</h2>
+<h3 id="extended-job_info-table">Extended <code>job_info</code>
+Table</h3>
+<p>Four new columns were added:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">ALTER</span> <span class="kw">TABLE</span> job_info <span class="kw">ADD</span> <span class="kw">COLUMN</span> user_id TEXT <span class="kw">NOT</span> <span class="kw">NULL</span> <span class="kw">DEFAULT</span> <span class="st">&#39;&#39;</span>;</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">ALTER</span> <span class="kw">TABLE</span> job_info <span class="kw">ADD</span> <span class="kw">COLUMN</span> started_at <span class="dt">TIMESTAMP</span>;</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="kw">ALTER</span> <span class="kw">TABLE</span> job_info <span class="kw">ADD</span> <span class="kw">COLUMN</span> completed_at <span class="dt">TIMESTAMP</span>;</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="kw">ALTER</span> <span class="kw">TABLE</span> job_info <span class="kw">ADD</span> <span class="kw">COLUMN</span> argo_workflow_id TEXT <span class="kw">NOT</span> <span class="kw">NULL</span> <span class="kw">DEFAULT</span> <span class="st">&#39;&#39;</span>;</span></code></pre></div>
+<p><strong>Purpose:</strong> - <code>user_id</code>: Track job ownership
+for fair scheduling - <code>started_at</code>: Measure job start time
+for runtime calculations - <code>completed_at</code>: Measure job
+completion time for runtime calculations -
+<code>argo_workflow_id</code>: Link to Argo Workflows for status
+polling</p>
+<h3 id="new-scheduler_lock-table">New <code>scheduler_lock</code>
+Table</h3>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> scheduler_lock (</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    lock_name TEXT <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    instance_id TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    acquired_at <span class="dt">TIMESTAMP</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    expires_at <span class="dt">TIMESTAMP</span> <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    heartbeat_at <span class="dt">TIMESTAMP</span> <span class="kw">NOT</span> <span class="kw">NULL</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>);</span></code></pre></div>
+<p><strong>Purpose:</strong> Database-based leader election for
+high-availability multi-instance deployments.</p>
+<h2 id="fair-scheduling-algorithm">Fair Scheduling Algorithm</h2>
+<p>The new scheduler implements a fair allocation policy based on three
+factors:</p>
+<h3 id="priority-function">Priority Function</h3>
+<p>Users are sorted by lexicographic ordering of:</p>
+<p>\(π(u) = (nᵤʳ, τᵤ, -nᵤᵖ)\)</p>
+<p>Where: 1. \(nᵤʳ\) - Running job count (ascending) - users with fewer
+running jobs get higher priority 2. \(τᵤ\) - Recent runtime (ascending)
+- users who have consumed less CPU time get higher priority 3. \(-nᵤᵖ\)
+- Pending job count (descending) - among ties, users with more pending
+jobs get priority</p>
+<h3 id="round-robin-allocation">Round-Robin Allocation</h3>
+<p>Once users are sorted by priority, available worker slots are
+distributed in round-robin fashion:</p>
+<pre><code>While slots available:
+    For each user (in priority order):
+        If user has pending jobs:
+            Allocate 1 job to user
+            Decrease available slots</code></pre>
+<h3 id="example">Example</h3>
+<p>Given: - User A: 2 running, 100 pending, 3600s recent runtime - User
+B: 0 running, 10 pending, 0s recent runtime - User C: 1 running, 50
+pending, 1800s recent runtime - Available slots: 4</p>
+<p><strong>Priority order:</strong> B → C → A</p>
+<p><strong>Allocation:</strong> B gets 2 jobs, C gets 1 job, A gets 1
+job</p>
+<p>This ensures B (who has 0 running jobs) gets more slots than C and
+A.</p>
+<h2 id="leader-election">Leader Election</h2>
+<p>Multiple scheduler instances can run concurrently for high
+availability. They coordinate using a database lock:</p>
+<h3 id="lock-mechanism">Lock Mechanism</h3>
+<ul>
+<li>Lock name: <code>"mrva-scheduler"</code></li>
+<li>Expiration: 30 seconds</li>
+<li>Renewal: Every 10 seconds</li>
+<li>Check interval: Every 10 seconds</li>
+</ul>
+<h3 id="lock-lifecycle">Lock Lifecycle</h3>
+<pre><code>Instance A                    Database                   Instance B
+    |                             |                            |
+    |─── AcquireLock ───────────▶ |                            |
+    |◀──── Success ───────────────│                            |
+    |                             |                            |
+    |  (becomes leader)           |                            |
+    |                             |                            |
+    |─── RenewLock (10s) ────────▶|                            |
+    |◀──── Success ───────────────│                            |
+    |                             |                            |
+    |  (Instance A crashes)       |                            |
+    |                             |                            |
+    |                          (30s expiry)                    |
+    |                             |                            |
+    |                             |◀─── AcquireLock ───────────│
+    |                             │──── Success ──────────────▶|
+    |                             |                            |
+    |                             |            (Instance B becomes leader)</code></pre>
+<p>If an instance crashes, its lock expires after 30 seconds and another
+instance can take over.</p>
+<h2 id="job-lifecycle-changes">Job Lifecycle Changes</h2>
+<h3 id="old-lifecycle-rabbitmq">Old Lifecycle (RabbitMQ)</h3>
+<pre><code>Created → Enqueued → Polling →   Executing →   Done
+          (in MQ)    (by agent)  (by agent)</code></pre>
+<p><strong>States:</strong> - Pending: In RabbitMQ queue - InProgress:
+Agent claimed job - Succeeded/Failed: Agent reported result</p>
+<p><strong>No timestamps tracked.</strong></p>
+<h3 id="new-lifecycle-argo-workflows">New Lifecycle (Argo
+Workflows)</h3>
+<p>\[]</p>
+<p><strong>States:</strong> - Pending: Stored in database, not yet
+scheduled - InProgress: Submitted to Argo, workflow created - Succeeded:
+Argo workflow phase = “Succeeded” - Failed: Argo workflow phase =
+“Failed” or “Error”</p>
+<p><strong>Timestamps tracked:</strong> - <code>created_at</code>: When
+job was created - <code>started_at</code>: When submitted to Argo -
+<code>completed_at</code>: When Argo workflow finished</p>
+<h2 id="argo-workflows-integration">Argo Workflows Integration</h2>
+<h3 id="workflow-specification">Workflow Specification</h3>
+<p>Each job is submitted as an Argo Workflow with:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> argoproj.io/v1alpha1</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Workflow</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">generateName</span><span class="kw">:</span><span class="at"> mrva-agent-workflow-prod-go-</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">entrypoint</span><span class="kw">:</span><span class="at"> mrva-agent</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">templates</span><span class="kw">:</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mrva-agent</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">script</span><span class="kw">:</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> agent-commander-argo:latest</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;/layers/paketo-buildpacks_go-build/targets/bin/mrvaagent&quot;</span><span class="kw">]</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">args</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;--job&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;&lt;job_json&gt;&quot;</span><span class="kw">]</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">env</span><span class="kw">:</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> CODEQL_CLI_PATH</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/workspace/codeql&quot;</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="co">          # ... other env vars ...</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;4&quot;</span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;16Gi&quot;</span></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;4&quot;</span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;16Gi&quot;</span></span></code></pre></div>
+<h3 id="status-polling">Status Polling</h3>
+<p>The scheduler polls Argo every 10 seconds (configurable) to check
+workflow status:</p>
+<table>
+<thead>
+<tr>
+<th>Argo Phase</th>
+<th>Job Status</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Pending</td>
+<td>InProgress</td>
+<td>Wait</td>
+</tr>
+<tr>
+<td>Running</td>
+<td>InProgress</td>
+<td>Wait</td>
+</tr>
+<tr>
+<td>Succeeded</td>
+<td>Succeeded</td>
+<td>Set <code>completed_at</code>, free slot</td>
+</tr>
+<tr>
+<td>Failed</td>
+<td>Failed</td>
+<td>Set <code>completed_at</code>, free slot</td>
+</tr>
+<tr>
+<td>Error</td>
+<td>Failed</td>
+<td>Set <code>completed_at</code>, free slot</td>
+</tr>
+</tbody>
+</table>
+<h2 id="configuration-parameters">Configuration Parameters</h2>
+<p>The new scheduler introduces several configurable parameters:</p>
+<table style="width:100%;">
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 38%" />
+<col style="width: 16%" />
+<col style="width: 24%" />
+</colgroup>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Environment Variable</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Max Workers (W)</td>
+<td><code>MRVA_SCHEDULER_MAX_WORKERS</code></td>
+<td>10</td>
+<td>Maximum concurrent jobs</td>
+</tr>
+<tr>
+<td>Poll Interval (T_poll)</td>
+<td><code>MRVA_SCHEDULER_POLL_INTERVAL_SECONDS</code></td>
+<td>10</td>
+<td>Scheduling cycle frequency</td>
+</tr>
+<tr>
+<td>Runtime Window (T_w)</td>
+<td><code>MRVA_SCHEDULER_RECENT_RUNTIME_WINDOW_SECONDS</code></td>
+<td>3600</td>
+<td>Time window for runtime tracking</td>
+</tr>
+<tr>
+<td>Lock Expiration (T_exp)</td>
+<td>(hardcoded)</td>
+<td>30</td>
+<td>Leader lock expiration time</td>
+</tr>
+<tr>
+<td>Leader Check (T_check)</td>
+<td>(hardcoded)</td>
+<td>10</td>
+<td>Leader election check interval</td>
+</tr>
+</tbody>
+</table>
+<h2 id="migration-impact">Migration Impact</h2>
+<h3 id="for-users">For Users</h3>
+<ul>
+<li><strong>Fairness</strong>: Users can no longer monopolize all
+compute resources</li>
+<li><strong>Visibility</strong>: Job progress visible in Argo Workflows
+UI</li>
+<li><strong>Quotas</strong>: Implicit fair-share quota based on running
+jobs and recent runtime</li>
+</ul>
+<h3 id="for-operators">For Operators</h3>
+<ul>
+<li><strong>Scaling</strong>: Can scale by adjusting
+<code>MRVA_SCHEDULER_MAX_WORKERS</code> instead of agent count</li>
+<li><strong>High Availability</strong>: Can run multiple scheduler
+instances for redundancy</li>
+<li><strong>Observability</strong>: Argo Workflows provides built-in
+metrics and dashboards</li>
+<li><strong>Resource Control</strong>: Per-job resource limits prevent
+resource exhaustion</li>
+</ul>
+<h3 id="for-developers">For Developers</h3>
+<ul>
+<li><strong>Database schema</strong>: Four new columns in
+<code>job_info</code>, one new table <code>scheduler_lock</code></li>
+<li><strong>New components</strong>: Scheduler, Argo client, leader
+election</li>
+<li><strong>New queries</strong>: Fair scheduling queries
+(<code>GetUserJobCounts</code>, <code>GetUserRecentRuntime</code>)</li>
+<li><strong>Workflow templates</strong>: Argo Workflow spec
+generation</li>
+</ul>
+<h2 id="code-references">Code References</h2>
+<h3 id="scheduler-implementation">Scheduler Implementation</h3>
+<ul>
+<li>Main loop with leader election: <a
+href="../pkg/scheduler/scheduler.go">pkg/scheduler/scheduler.go:116-196</a></li>
+<li>Fair scheduling algorithm: <a
+href="../pkg/scheduler/scheduler.go">pkg/scheduler/scheduler.go:302-395</a></li>
+<li>Job submission: <a
+href="../pkg/scheduler/scheduler.go">pkg/scheduler/scheduler.go:398-427</a></li>
+<li>Status polling: <a
+href="../pkg/scheduler/scheduler.go">pkg/scheduler/scheduler.go:431-470</a></li>
+</ul>
+<h3 id="argo-workflows-integration-1">Argo Workflows Integration</h3>
+<ul>
+<li>Argo client: <a
+href="../pkg/scheduler/argo_client.go">pkg/scheduler/argo_client.go</a></li>
+<li>Workflow submission: <a
+href="../pkg/scheduler/argo_client.go">pkg/scheduler/argo_client.go:420-533</a></li>
+<li>Token management: <a
+href="../pkg/scheduler/argo_client.go">pkg/scheduler/argo_client.go:169-245</a></li>
+</ul>
+<h3 id="database-layer">Database Layer</h3>
+<ul>
+<li>Leader election: <a
+href="../pkg/state/state_postgres.go">pkg/state/state_postgres.go:770-853</a></li>
+<li>Fair scheduling queries: <a
+href="../pkg/state/state_postgres.go">pkg/state/state_postgres.go:604-663</a></li>
+</ul>
+<h3 id="schema-migration">Schema Migration</h3>
+<ul>
+<li>Documentation: <a
+href="../db_schema_changes/scheduler/SCHEDULER_DB_SCHEMA_CHANGES.html">db_schema_changes/scheduler/SCHEDULER_DB_SCHEMA_CHANGES.md</a></li>
+<li>Migration SQL: <a
+href="../db_schema_changes/scheduler/migrate_database_schema.sql">db_schema_changes/scheduler/migrate_database_schema.sql</a></li>
+</ul>
+<h2 id="summary">Summary</h2>
+<p>The migration from RabbitMQ to Argo Workflows represents a
+fundamental architectural shift:</p>
+<p><strong>From:</strong> Stateless, autonomous agent polling with FIFO
+ordering</p>
+<p><strong>To:</strong> Stateful, centralized fair scheduling with
+leader election and Kubernetes orchestration</p>
+<p>This change enables: - ✅ Fair resource distribution across users -
+✅ High availability through leader election - ✅ Dynamic resource
+allocation in Kubernetes - ✅ Comprehensive job tracking and
+observability - ✅ Explicit resource limits per job</p>
+<p>The mathematical specifications in <a
+href="mrva-overview-argo-scheduler.tex">mrva-overview-argo-scheduler.tex</a>
+provide a rigorous foundation for understanding and extending the new
+scheduling system.</p>
+</body>
+</html>
