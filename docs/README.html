@@ -256,6 +256,8 @@ id="toc-cga-and-mrva-entry-point">CGA and MRVA entry point</a></li>
 id="toc-revising-the-cga-overview">Revising the CGA overview</a></li>
 <li><a href="#build-serve" id="toc-build-serve">Build / serve</a>
 <ul>
+<li><a href="#github-pages-publication"
+id="toc-github-pages-publication">GitHub Pages publication</a></li>
 <li><a href="#static-publication-with-lighttpd"
 id="toc-static-publication-with-lighttpd">Static publication with
 lighttpd</a></li>
@@ -419,13 +421,67 @@ with links back to the overview and help; compatibility redirects keep
 those links working inside the book. Its system-font stylesheet is a
 book source asset, so the generated site needs no optional font bundle
 from the mdBook installation.</p>
+<h3 id="github-pages-publication">GitHub Pages publication</h3>
+<p>From an installed checkout with a GitHub <code>origin</code>,
+run:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> github.io setup</span></code></pre></div>
+<p>Setup creates <code>.github/workflows/documentation.yml</code> in
+that checkout, using <code>origin</code> for the site address and the
+current branch for automatic publication. An identical workflow is
+reused unchanged; differing configuration or symlinks are rejected for
+manual review. Setup prints the remaining steps. It does not build,
+commit, push, change GitHub settings, or deploy anything.</p>
+<p>Review and commit the setup implementation, documentation, and
+generated workflow, then push only the public branch. In the
+repository’s <strong>Settings → Pages → Build and deployment</strong>,
+set <strong>Source</strong> to <strong>GitHub Actions</strong>. Under
+<strong>Actions → Documentation</strong>, select <strong>Run
+workflow</strong>, choose the publication branch (<code>master</code>
+here), then <strong>Run workflow</strong>. If the first push ran before
+Pages was enabled, rerun it after selecting the source. Later pushes to
+that branch publish automatically. If the <code>github-pages</code>
+environment has deployment branch restrictions, allow that branch.</p>
+<p>This repository’s site is <a
+href="https://hohn.github.io/codeql-general-appliance/"
+class="uri">https://hohn.github.io/codeql-general-appliance/</a>. Its
+entry remains <strong>Overview → Help → Reference manual</strong>. No
+custom domain, Jekyll, personal access token, or running CGA service is
+needed. The workflow uses GitHub’s short-lived token with Pages
+deployment permissions.</p>
+<p>The workflow reuses checked-in HTML and installs pinned mdBook 0.5.4
+to build the reference manual. The standard-library <a
+href="github_pages.py">publisher</a> builds a documentation-only
+artifact with the repository-relative layout, not just
+<code>docs/</code>. It includes tracked document sources for LLM
+navigation, linked static assets, and the built book. Linked source
+files/directories point to the corresponding GitHub commit instead of
+being copied into the site. Untracked saved pages, ignored files, Git
+metadata, workflow state, and runtime/scratch directories are not
+publication inputs. The book is built from tracked inputs in a temporary
+tree, so untracked files under <code>docs/src/</code> are excluded
+too.</p>
+<p>The publisher adds <code>index.html</code> redirects for
+documentation directories with a <code>README.html</code>, preserving
+queries and fragments. It checks document targets, section anchors, CSS
+resources, and relative URLs before deployment. Public
+<code>.agent-notes</code> documentation is retained: the workflow
+explicitly archives the filtered tree because
+<code>upload-pages-artifact</code> drops dot directories.</p>
+<p>For a local check, with mdBook installed and an absent or empty
+destination:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> docs/github_pages.py <span class="at">--output</span> /tmp/cga-pages</span></code></pre></div>
+<p>The publisher refuses to replace nonempty output directories. It
+changes no tracked source files and runs no CGA workflows or services.
+Tests:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> cga</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> <span class="at">-m</span> unittest discover <span class="at">-s</span> tests <span class="at">-p</span> test_github_io.py</span></code></pre></div>
 <h3 id="static-publication-with-lighttpd">Static publication with
 lighttpd</h3>
 <p>Publish a separate clone rather than the development checkout:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> public-html setup <span class="op">&gt;</span> /tmp/cga-public-html.sh</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> <span class="at">-n</span> /tmp/cga-public-html.sh</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">less</span> /tmp/cga-public-html.sh</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> /tmp/cga-public-html.sh</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> public-html setup <span class="op">&gt;</span> /tmp/cga-public-html.sh</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> <span class="at">-n</span> /tmp/cga-public-html.sh</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">less</span> /tmp/cga-public-html.sh</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> /tmp/cga-public-html.sh</span></code></pre></div>
 <p><code>setup</code> clones the installed CGA checkout’s committed HEAD
 into <code>~/public_html/single-machine-mrva</code> when absent or
 empty. It does not depend on the current directory. Unpushed commits are
@@ -460,14 +516,15 @@ class="uri">http://svm/~hohn/single-machine-mrva/</a> from the
 workstation. The root opens the overview; help and the built reference
 manual retain the same URL prefix. This is independent of the loopback
 CGA gateway and needs no SSH tunnel. A basic host-side check is:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-I</span> http://127.0.0.1/~hohn/single-machine-mrva/</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-I</span> http://127.0.0.1/~hohn/single-machine-mrva/.git/config</span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-I</span> http://127.0.0.1/~hohn/single-machine-mrva/</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-I</span> http://127.0.0.1/~hohn/single-machine-mrva/.git/config</span></code></pre></div>
 <p>Expect 200 for the entry page and 403 for Git metadata. Open the
 entry in a browser as well: its HTML redirect is not followed by
 <code>curl</code>. For updates, commit changes in the source checkout,
 then fast-forward the publication clone and rebuild its book:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> <span class="at">-C</span> <span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/public_html/single-machine-mrva&quot;</span> pull <span class="at">--ff-only</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> <span class="at">-C</span> <span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/public_html/single-machine-mrva/docs&quot;</span> book</span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> <span class="at">-C</span> <span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/public_html/single-machine-mrva&quot;</span> pull <span class="at">--ff-only</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> <span class="at">-C</span> <span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/public_html/single-machine-mrva/docs&quot;</span> book</span></code></pre></div>
 <p>Apache or another static server can publish the same
 repository-relative tree; apply equivalent metadata exclusions, symlink
 restrictions, and disabled directory listings. No CGI or CGA backend is
@@ -477,9 +534,11 @@ needed.</p>
 including the introductory guides. Book-source aliases under
 <code>docs/src/</code> and <code>notes/src/</code> are excluded so their
 standalone HTML cannot overwrite mdBook chapters:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> <span class="at">-C</span> docs html</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> <span class="at">-C</span> docs html</span></code></pre></div>
 <p>To regenerate only the README pages:</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> <span class="at">-C</span> docs readmes</span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> <span class="at">-C</span> docs readmes</span></code></pre></div>
 <p>Standalone rendering runs <code>html_links.py</code> after Pandoc.
 Local human-document links point to <code>.html</code>, preserving query
 strings and section fragments; Markdown sources keep their
@@ -488,9 +547,9 @@ strings and section fragments; Markdown sources keep their
 formats for LLM use. External links, including GitHub-rendered Markdown,
 are unchanged. The same normalizer can refresh legacy HTML without
 changing its layout:</p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> docs/html_links.py path/to/page.html</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> <span class="at">-C</span> docs test-html-links</span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> docs/html_links.py path/to/page.html</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> <span class="at">-C</span> docs test-html-links</span></code></pre></div>
 <p>The checks cover rewriting rules, human-document destinations and
 fragments, and all tracked HTML, excluding source navigation inside
 agent-instruction pages. When mdBook is installed, they also build a
@@ -517,17 +576,17 @@ Their content and anchors still come from Markdown. The
 <code>CGA_REFERENCE_HTML</code> list in the Makefile limits this style
 to those three pages; keep the additional stylesheet with them when
 copying documentation. To rebuild only these references:</p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> <span class="at">-C</span> docs ../cga/README.html ../cga/cgauv/README.html ../cga/cgabench/README.html</span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> <span class="at">-C</span> docs ../cga/README.html ../cga/cgauv/README.html ../cga/cgabench/README.html</span></code></pre></div>
 <p>Rebuilding <code>readme-fonts.css</code> requires Python 3 and the
 fonts under <code>~/.fonts</code>; <code>make -C docs -B html</code>
 refreshes the embedded copies from those files.</p>
 <p>Requires <strong>mdBook &gt;= 0.5</strong> (for the sidebar heading
 navigation, see below).</p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> docs</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> book          <span class="co"># renders to docs/book/ (gitignored)</span></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> view-book     <span class="co"># live-reloading preview at http://localhost:3000</span></span></code></pre></div>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> docs</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> book          <span class="co"># renders to docs/book/ (gitignored)</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> view-book     <span class="co"># live-reloading preview at http://localhost:3000</span></span></code></pre></div>
 <h2 id="multi-level-table-of-contents">Multi-level table of
 contents</h2>
 <p>mdBook &gt;= 0.5 shows the <strong>current page’s headings</strong>

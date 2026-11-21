@@ -150,6 +150,64 @@ help; compatibility redirects keep those links working inside the book. Its
 system-font stylesheet is a book source asset, so the generated site needs no
 optional font bundle from the mdBook installation.
 
+### GitHub Pages publication
+
+From an installed checkout with a GitHub `origin`, run:
+
+```sh
+cga github.io setup
+```
+
+Setup creates `.github/workflows/documentation.yml` in that checkout, using
+`origin` for the site address and the current branch for automatic publication.
+An identical workflow is reused unchanged; differing configuration or symlinks
+are rejected for manual review. Setup prints the remaining steps. It does not
+build, commit, push, change GitHub settings, or deploy anything.
+
+Review and commit the setup implementation, documentation, and generated
+workflow, then push only the public branch. In the repository's **Settings →
+Pages → Build and deployment**, set **Source** to **GitHub Actions**. Under
+**Actions → Documentation**, select **Run workflow**, choose the publication
+branch (`master` here), then **Run workflow**. If the first push ran before
+Pages was enabled, rerun it after selecting the source. Later pushes to that
+branch publish automatically. If the `github-pages` environment has deployment
+branch restrictions, allow that branch.
+
+This repository's site is <https://hohn.github.io/codeql-general-appliance/>.
+Its entry remains **Overview → Help → Reference manual**. No custom domain,
+Jekyll, personal access token, or running CGA service is needed. The workflow
+uses GitHub's short-lived token with Pages deployment permissions.
+
+The workflow reuses checked-in HTML and installs pinned mdBook 0.5.4 to build
+the reference manual. The standard-library [publisher](github_pages.py) builds a
+documentation-only artifact with the repository-relative layout, not just
+`docs/`. It includes tracked document sources for LLM navigation, linked static
+assets, and the built book. Linked source files/directories point to the
+corresponding GitHub commit instead of being copied into the site. Untracked
+saved pages, ignored files, Git metadata, workflow state, and runtime/scratch
+directories are not publication inputs. The book is built from tracked inputs in
+a temporary tree, so untracked files under `docs/src/` are excluded too.
+
+The publisher adds `index.html` redirects for documentation directories with a
+`README.html`, preserving queries and fragments. It checks document targets,
+section anchors, CSS resources, and relative URLs before deployment. Public
+`.agent-notes` documentation is retained: the workflow explicitly archives the
+filtered tree because `upload-pages-artifact` drops dot directories.
+
+For a local check, with mdBook installed and an absent or empty destination:
+
+```sh
+python3 docs/github_pages.py --output /tmp/cga-pages
+```
+
+The publisher refuses to replace nonempty output directories. It changes no
+tracked source files and runs no CGA workflows or services. Tests:
+
+```sh
+cd cga
+python3 -m unittest discover -s tests -p test_github_io.py
+```
+
 ### Static publication with lighttpd
 
 Publish a separate clone rather than the development checkout:

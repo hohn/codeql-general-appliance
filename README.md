@@ -43,6 +43,11 @@ Choose the depth you need:
 The repository and implementation reference follows below. The
 [advanced reading guide](READING-GUIDE.md) supplies deeper task-based paths.
 
+For GitHub Pages publication, run `cga github.io setup`. It prepares the local
+workflow and prints the remaining repository settings for
+<https://hohn.github.io/codeql-general-appliance/>. See
+[GitHub Pages setup](docs/README.md#github-pages-publication).
+
 This repository is a science experiment and prototype for handling CodeQL
 databases and queries, applying queries to databases, and supporting human/LLM
 investigation. Code, examples, and usage documentation evolve together. Examples

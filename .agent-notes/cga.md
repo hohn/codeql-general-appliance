@@ -28,6 +28,12 @@ when the task needs its contract, not the whole manual as a prerequisite.
   or applies lighttpd configuration; preserve its differing-config guard and the
   shared `docs/lighttpd-public-html.conf` policy. Tests:
   `cd cga && python3 -m unittest discover -s tests -p test_public_html.py`.
+- `cga github.io setup` creates a guarded Pages workflow in the installed
+  checkout and prints manual repository settings; it never commits, pushes,
+  builds, deploys, changes GitHub settings, or records workflow state. Reuse an
+  identical workflow and refuse differing configuration/symlinks. The publisher
+  is `docs/github_pages.py`; tests:
+  `cd cga && python3 -m unittest discover -s tests -p test_github_io.py`.
 - `cga help --export FILE.html` uses `cgalib/help_view.py` and its own
   `help_static/` assets to embed authoritative help in a standalone file. Bench
   is only a visual reference, never a runtime or styling dependency. Navigation

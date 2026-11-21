@@ -23,6 +23,14 @@
   metadata/scratch and symlink boundaries, keep directory listings off, and
   preserve public LLM sources. A fresh clone needs `make -C docs book` for
   reference-manual links, not a rebuild of checked-in HTML.
+- `cga github.io setup` prepares GitHub Actions Pages publishing; see
+  `docs/README.md#github-pages-publication`. `docs/github_pages.py` stages
+  tracked documentation and linked assets, builds the book from isolated tracked
+  inputs, adds directory entry redirects, and checks links under a project URL
+  prefix. Keep the repository-relative layout and public `.agent-notes` links.
+  Archive the filtered site explicitly: `upload-pages-artifact` excludes dot
+  directories. Setup must not overwrite differing operator configuration or
+  deploy.
 - Markdown uses Prettier with `--prose-wrap always --print-width 80`. Use
   targeted formatting rather than reformatting unrelated files.
 - `make -C docs html` renders canonical repository Markdown beside its source

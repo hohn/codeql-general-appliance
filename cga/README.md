@@ -45,6 +45,7 @@ cga llm context bench     # assistant context for an experiment (alias: llm cb)
 cga llm context unified   # assistant context for a workflow (alias: llm cu)
 cga serve start            # analysis + preparation dashboards
 cga public-html setup      # static documentation clone + printed setup script
+cga github.io setup        # GitHub Pages workflow + printed repository settings
 ```
 
 Install the dispatcher on your user `PATH` from anywhere inside the checkout:
@@ -545,6 +546,11 @@ stdout is a documented Bash script for the extra book/lighttpd/permission steps,
 not a transcript. Review it before running; setup itself starts no services and
 changes no permissions. See
 [static publication](../docs/README.md#static-publication-with-lighttpd).
+
+For GitHub Pages instead, run `cga github.io setup`. It writes the publication
+workflow in the installed checkout and prints the manual GitHub settings. It
+does not commit, push, change remote settings, or deploy. See
+[GitHub Pages publication](../docs/README.md#github-pages-publication).
 
 The direct ports below remain available for development.
 

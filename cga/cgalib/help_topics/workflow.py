@@ -878,6 +878,28 @@ TOPICS = {
             ("CGA_PREP_RUN_DIR", "Preparation service PID/log directory; defaults to .run-prep."),
         ),
     ),
+    ("github.io",): HelpTopic(
+        "Prepare documentation publishing on GitHub Pages.",
+        "Write the Pages workflow in the installed checkout and print the\n"
+        "remaining GitHub settings. Reuse identical configuration; refuse\n"
+        "differing configuration or symlinks. No build, commit, push, deployment,\n"
+        "GitHub settings change, or workflow recording occurs during setup.",
+        ("cga github.io setup",),
+    ),
+    ("github.io", "setup"): HelpTopic(
+        "Create a guarded Pages workflow and print the manual setup steps.",
+        "Identify the GitHub repository from origin and the publication branch\n"
+        "from the installed checkout's current branch. Create\n"
+        ".github/workflows/documentation.yml, or leave an identical file intact.\n"
+        "The workflow reuses checked-in HTML, builds the reference book, and\n"
+        "checks a documentation-only artifact with repository-relative links.\n"
+        "It publishes after pushes to that branch or a manual workflow run.\n"
+        "Commit/push the setup files, enable Pages with Source: GitHub Actions,\n"
+        "then run the Documentation workflow. Setup only writes the local\n"
+        "workflow and prints instructions; it starts no services or deployment.",
+        ("cga github.io setup",
+         "python3 docs/github_pages.py --output /tmp/cga-pages"),
+    ),
     ("public-html",): HelpTopic(
         "Prepare a static documentation publication and print its setup script.",
         "Publish documentation independently of the CGA gateway and viewers.\n"

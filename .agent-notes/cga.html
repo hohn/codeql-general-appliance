@@ -227,6 +227,13 @@ builds the book, changes ACLs, or applies lighttpd configuration;
 preserve its differing-config guard and the shared
 <code>docs/lighttpd-public-html.conf</code> policy. Tests:
 <code>cd cga &amp;&amp; python3 -m unittest discover -s tests -p test_public_html.py</code>.</li>
+<li><code>cga github.io setup</code> creates a guarded Pages workflow in
+the installed checkout and prints manual repository settings; it never
+commits, pushes, builds, deploys, changes GitHub settings, or records
+workflow state. Reuse an identical workflow and refuse differing
+configuration/symlinks. The publisher is
+<code>docs/github_pages.py</code>; tests:
+<code>cd cga &amp;&amp; python3 -m unittest discover -s tests -p test_github_io.py</code>.</li>
 <li><code>cga help --export FILE.html</code> uses
 <code>cgalib/help_view.py</code> and its own <code>help_static/</code>
 assets to embed authoritative help in a standalone file. Bench is only a

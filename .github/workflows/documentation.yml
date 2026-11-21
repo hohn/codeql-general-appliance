@@ -1,0 +1,45 @@
+name: Documentation
+
+on:
+  push:
+    branches: ["master"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/configure-pages@v5
+      - name: Install reference book builder
+        run: cargo install mdbook --version 0.5.4 --locked
+      - name: Build and check documentation
+        run: python3 docs/github_pages.py --output "$RUNNER_TEMP/cga-pages"
+      # upload-pages-artifact excludes dot directories, including our public
+      # .agent-notes documentation. Archive the filtered site explicitly.
+      - name: Package documentation
+        run: tar -C "$RUNNER_TEMP/cga-pages" -cf "$RUNNER_TEMP/artifact.tar" .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: github-pages
+          path: ${{ runner.temp }}/artifact.tar
+          if-no-files-found: error
+      - name: Deploy documentation
+        id: deployment
+        uses: actions/deploy-pages@v4

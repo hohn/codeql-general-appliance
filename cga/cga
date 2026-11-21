@@ -46,6 +46,7 @@ view view cga-view
 uv unified-view cgauv start stop status outline search
 gateway gateway gateway start status stop
 public-html public-html public-html setup
+github.io github.io github.io setup
 llm llm llm context cb cu
 show show vid
 open open vid
@@ -369,6 +370,11 @@ main() {
             reject_common_tags || return $?
             shift
             exec python3 "$COLL/cgalib/public_html.py" "$@"
+            ;;
+        github.io)
+            reject_common_tags || return $?
+            shift
+            exec python3 "$COLL/cgalib/github_io.py" "$@"
             ;;
         llm)
             reject_common_tags || return $?

@@ -220,6 +220,15 @@ is the scoped public_html example. Retain its metadata/scratch and
 symlink boundaries, keep directory listings off, and preserve public LLM
 sources. A fresh clone needs <code>make -C docs book</code> for
 reference-manual links, not a rebuild of checked-in HTML.</li>
+<li><code>cga github.io setup</code> prepares GitHub Actions Pages
+publishing; see <code>docs/README.md#github-pages-publication</code>.
+<code>docs/github_pages.py</code> stages tracked documentation and
+linked assets, builds the book from isolated tracked inputs, adds
+directory entry redirects, and checks links under a project URL prefix.
+Keep the repository-relative layout and public <code>.agent-notes</code>
+links. Archive the filtered site explicitly:
+<code>upload-pages-artifact</code> excludes dot directories. Setup must
+not overwrite differing operator configuration or deploy.</li>
 <li>Markdown uses Prettier with
 <code>--prose-wrap always --print-width 80</code>. Use targeted
 formatting rather than reformatting unrelated files.</li>

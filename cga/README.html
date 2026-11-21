@@ -313,7 +313,8 @@ either works:</p>
 <span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> llm context bench     <span class="co"># assistant context for an experiment (alias: llm cb)</span></span>
 <span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> llm context unified   <span class="co"># assistant context for a workflow (alias: llm cu)</span></span>
 <span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> serve start            <span class="co"># analysis + preparation dashboards</span></span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> public-html setup      <span class="co"># static documentation clone + printed setup script</span></span></code></pre></div>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> public-html setup      <span class="co"># static documentation clone + printed setup script</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="ex">cga</span> github.io setup        <span class="co"># GitHub Pages workflow + printed repository settings</span></span></code></pre></div>
 <p>Install the dispatcher on your user <code>PATH</code> from anywhere
 inside the checkout:</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="va">repo_root</span><span class="op">=</span><span class="va">$(</span><span class="fu">git</span> rev-parse <span class="at">--show-toplevel</span><span class="va">)</span></span>
@@ -861,6 +862,12 @@ clone is left untouched. Its stdout is a documented Bash script for the
 extra book/lighttpd/permission steps, not a transcript. Review it before
 running; setup itself starts no services and changes no permissions. See
 <a href="../docs/README.html#static-publication-with-lighttpd">static
+publication</a>.</p>
+<p>For GitHub Pages instead, run <code>cga github.io setup</code>. It
+writes the publication workflow in the installed checkout and prints the
+manual GitHub settings. It does not commit, push, change remote
+settings, or deploy. See <a
+href="../docs/README.html#github-pages-publication">GitHub Pages
 publication</a>.</p>
 <p>The direct ports below remain available for development.</p>
 <p>Start the CGA page at <a href="http://127.0.0.1:8600/"
